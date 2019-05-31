@@ -1,0 +1,9 @@
+[package]
+name = "ruft"
+version = "0.1.0"
+authors = ["Shamil Gadelshin <shamil.gadelshin@hellotickets.com>"]
+edition = "2018"
+
+[dependencies]
+rand = "0.6.5"
+crossbeam-channel = "0.3"
