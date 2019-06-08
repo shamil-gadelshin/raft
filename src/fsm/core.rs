@@ -1,7 +1,8 @@
-use std::time::Duration;
+use std::time::{Duration};
 use rand::Rng;
+use chrono::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug,Copy, Clone)]
 pub struct Node {
     pub id : u64,
     pub current_term: u64,
@@ -42,3 +43,9 @@ pub fn random_awaiting_leader_duration_ms() -> Duration{
     Duration::from_millis(rng.gen_range(range_start, range_stop))
 }
 
+pub fn print_event(message : String){
+
+    let now: DateTime<Local> = Local::now();
+
+    println!("{:?} {:?}",now.format("%H:%M:%S.%3f").to_string(),message );
+}

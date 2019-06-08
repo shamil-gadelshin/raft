@@ -8,7 +8,7 @@ pub mod communication;
 mod core;
 mod leader_watcher;
 mod peer_notifier;
-mod vote_requester;
+mod vote_request_processor;
 mod election;
 
 use self::core::*;
@@ -60,10 +60,10 @@ pub fn start(config : NodeConfiguration) {
     let request_processor_thread_event_sender = tx.clone();
     let request_processor_thread_communicator = config.communicator.clone();
     let request_processor_thread_rx_channel = config.request_rx_channel.clone();
-    let request_processor_thread = thread::spawn(move|| vote_requester::vote_request_processor(request_processor_thread_event_sender,
-                                                                               request_processor_thread_node_mutex,
-                                                                               request_processor_thread_communicator,
-                                                                               request_processor_thread_rx_channel));
+    let request_processor_thread = thread::spawn(move|| vote_request_processor::vote_request_processor(request_processor_thread_event_sender,
+                                                                                                       request_processor_thread_node_mutex,
+                                                                                                       request_processor_thread_communicator,
+                                                                                                       request_processor_thread_rx_channel));
 
 
     let check_debug_node_thread = thread::spawn(move|| debug_node_status( mutex_node.clone()));
@@ -93,8 +93,12 @@ pub fn start(config : NodeConfiguration) {
 
 fn debug_node_status(mutex_node: Arc<Mutex<Node>>) {
     loop {
-        let node = mutex_node.lock().expect("lock is poisoned");
-        println!("{:?}", node);
+//        let node_copy;
+//        {
+//            let node = mutex_node.lock().expect("lock is poisoned");
+//            node_copy = node.clone();
+//        }
+//        print_event(format!("Node {:?}. {:?}", node_copy.id, node_copy));
 
         sleep(Duration::from_millis(1000));
     }

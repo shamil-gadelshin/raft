@@ -11,7 +11,7 @@ pub fn watch_leader_status(mutex_node: Arc<Mutex<Node>>,
             recv(timeout) -> _  => {},
             recv(watchdog_event_rx) -> _ => {
                 let node = mutex_node.lock().expect("lock is poisoned");
-                println!("Received reset watchdog for node_id {:?}", node.id);
+                print_event(format!("Node {:?} Received reset watchdog ", node.id));
                 continue
             },
             //TODO : notify leadership
@@ -20,7 +20,7 @@ pub fn watch_leader_status(mutex_node: Arc<Mutex<Node>>,
         let node = mutex_node.lock().expect("lock is poisoned");
 
         if let NodeStatus::Follower = node.status {
-            println!("Leader awaiting time elapsed. Starting new election.");
+            print_event(format!("Node {:?} Leader awaiting time elapsed. Starting new election.", node.id));
 
             let current_leader_id = node.current_leader_id.clone();
 

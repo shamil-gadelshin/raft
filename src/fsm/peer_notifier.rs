@@ -23,7 +23,7 @@ pub fn notify_peers(term : u64,
     loop {
         select!(
             recv(timeout) -> _ => {
-                println!("Leader election failed for {:?} ", node_id);
+                print_event(format!("Leader election failed for {:?} ", node_id));
                 election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term}))
                     .expect("cannot send LeaderElectionEvent");
                 return;
@@ -35,7 +35,7 @@ pub fn notify_peers(term : u64,
             recv(vote_response_event_rx) -> response => {
                 let resp = response.unwrap(); //TODO
 
-                println!("receiving response {:?}", resp);
+                print_event(format!("Node {:?} Receiving response {:?}",node_id,  resp));
                 if (resp.term == term) && (resp.vote_granted) {
                     votes += 1;
 

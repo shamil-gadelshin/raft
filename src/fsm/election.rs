@@ -19,7 +19,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
     {
         let node = mutex_node.lock().expect("lock is poisoned");
 
-        println!("Node {:?} started", node.id );
+        print_event(format!("Node {:?} started", node.id ));
     }// mutex lock release
 
     loop {
@@ -32,6 +32,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 let mut node = mutex_node.lock().expect("lock is poisoned");
 
                 node.status = NodeStatus::Candidate;
+                print_event(format!("Node {:?} Status changed to Candidate", node.id));
                 node.current_leader_id = None;
                 let event_sender = leader_election_event_tx.clone();
 
@@ -58,6 +59,8 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 //        node.voted_for_id = None;
                 node.current_term = term;
                 node.status = NodeStatus::Leader;
+                print_event(format!("Node {:?} Status changed to Leader", node.id));
+
                 watchdog_event_tx.send(LeaderElectedEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
             },
             LeaderElectionEvent::ResetNodeToFollower(vr) => {
@@ -66,6 +69,8 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 node.current_term = vr.term;
                 node.current_leader_id = Some(vr.candidate_id);
                 node.status = NodeStatus::Follower;
+                print_event(format!("Node {:?} Status changed to Follower", node.id));
+
                 watchdog_event_tx.send(LeaderElectedEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
             },
         }

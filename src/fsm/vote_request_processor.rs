@@ -15,7 +15,7 @@ pub fn vote_request_processor(  leader_election_event_tx : Sender<LeaderElection
         let request = request_result.unwrap(); //TODO
         let mut node = mutex_node.lock().expect("lock is poisoned");
 
-        println!("Received request {:?}", request);
+        print_event(format!("Node {:?} Received request {:?}", node.id, request));
         let mut vote_granted = false;
 
         if node.current_term < request.term {

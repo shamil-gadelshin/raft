@@ -7,11 +7,12 @@ use std::collections::HashMap;
 
 #[macro_use]
 extern crate crossbeam_channel;
+extern crate chrono;
 
 use crossbeam_channel::{Sender, Receiver};
 
 fn main() {
-    let node_ids = vec![1,2];
+    let node_ids = vec![1,2,3];
 
     let mut request_tx_channels = HashMap::new();
     let mut request_rx_channels = HashMap::new();
@@ -67,6 +68,7 @@ TODO:
 - generic identity?
 - tarpc
 - consider replacing mutex with cas
+- check channels overflow
 
 Features:
 - log replication
