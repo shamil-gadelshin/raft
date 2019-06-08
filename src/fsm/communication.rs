@@ -24,11 +24,11 @@ pub struct InProcNodeCommunicator {
 impl InProcNodeCommunicator {
     pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
         println!("sending request {:?}, {:?}", destination_node_id, request);
-        self.request_channels_tx[&destination_node_id].send(request);
+        self.request_channels_tx[&destination_node_id].send(request).expect("cannot send vote request");
     }
     pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) {
         println!("sending response {:?}, {:?}", destination_node_id, response);
-        self.response_channels_tx[&destination_node_id].send(response);
+        self.response_channels_tx[&destination_node_id].send(response).expect("cannot send vote response");
     }
 }
 
