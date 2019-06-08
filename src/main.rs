@@ -66,6 +66,7 @@ TODO:
 - identity - libp2p
 - generic identity?
 - tarpc
+- consider replacing mutex with cas
 
 Features:
 - log replication

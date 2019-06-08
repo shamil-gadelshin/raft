@@ -11,7 +11,7 @@ pub struct VoteRequest {
 #[derive(Clone, Copy, Debug)]
 pub struct VoteResponse {
     pub term : u64,
-    pub voted_for_candidate_id : u64,
+    pub vote_granted: bool,
     pub peer_id: u64
 }
 
@@ -23,9 +23,11 @@ pub struct InProcNodeCommunicator {
 
 impl InProcNodeCommunicator {
     pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
+        println!("sending request {:?}, {:?}", destination_node_id, request);
         self.request_channels_tx[&destination_node_id].send(request);
     }
     pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) {
+        println!("sending response {:?}, {:?}", destination_node_id, response);
         self.response_channels_tx[&destination_node_id].send(response);
     }
 }
