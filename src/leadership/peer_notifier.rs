@@ -1,8 +1,9 @@
 use std::time::Duration;
 use crossbeam_channel::{Sender, Receiver};
 
-use super::core::*;
+use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::*;
+use crate::core::*;
 
 pub fn notify_peers(term : u64,
                 election_event_tx : Sender<LeaderElectionEvent>,

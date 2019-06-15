@@ -1,8 +1,7 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::leadership::core::*; //TODO change project structure
-use crate::communication::*; //TODO change project structure
+use crate::core::*;
 
 
 pub fn append_entries_processor(

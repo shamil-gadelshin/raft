@@ -2,9 +2,22 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 use std::thread;
 
-use super::core::*;
+use crate::core::*;
 use crate::communication::*;
+
 use super::peer_notifier;
+
+pub enum LeaderElectionEvent {
+    PromoteNodeToCandidate(ElectionNotice),
+    PromoteNodeToLeader(u64),
+    ResetNodeToFollower(ElectionNotice),
+}
+
+pub struct ElectionNotice {
+    pub term : u64,
+    pub candidate_id : u64
+}
+
 
 pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                                    leader_election_event_tx : Sender<LeaderElectionEvent>,

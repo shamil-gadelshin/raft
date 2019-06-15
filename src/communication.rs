@@ -1,26 +1,7 @@
 use crossbeam_channel::{Sender};
 use std::collections::HashMap;
 
-use crate::leadership::core::print_event; //TODO project structure
-
-#[derive(Clone, Copy, Debug)]
-pub struct VoteRequest {
-    pub term : u64,
-    pub candidate_id : u64
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct AppendEntriesRequest {
-    pub term : u64,
-    pub leader_id : u64
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct VoteResponse {
-    pub term : u64,
-    pub vote_granted: bool,
-    pub peer_id: u64
-}
+use crate::core::*;
 
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {

@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 
-use crate::leadership::core::*; //TODO change project structure
+use crate::core::*;
 use crate::communication::*;
 
 pub fn send_append_entries(mutex_node: Arc<Mutex<Node>>,

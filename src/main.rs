@@ -9,14 +9,14 @@ use crossbeam_channel::{Sender, Receiver};
 extern crate chrono;
 
 
+mod core;
+mod runner;
 mod leadership;
-use crate::communication::{VoteRequest, VoteResponse, AppendEntriesRequest};
-use crate::communication::{InProcNodeCommunicator};
-
 mod communication;
 mod log_replication;
-mod runner;
 
+use communication::{InProcNodeCommunicator};
+use crate::core::{VoteRequest, VoteResponse, AppendEntriesRequest};
 
 fn main() {
     let node_ids = vec![1,2];

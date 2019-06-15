@@ -4,7 +4,10 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender, Receiver};
 
-use super::core::*;
+use crate::core::*;
+
+use super::election::{LeaderElectionEvent, ElectionNotice};
+
 
 pub fn watch_leader_status(mutex_node: Arc<Mutex<Node>>,
                        leadership_event_tx : Sender<LeaderElectionEvent>,

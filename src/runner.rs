@@ -4,8 +4,8 @@ use std::thread::sleep;
 use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::leadership::core::*;
-use crate::communication::{VoteResponse, VoteRequest, AppendEntriesRequest};
+use crate::core::*;
+
 use crate::communication::{InProcNodeCommunicator};
 
 use crate::leadership::election::*;
@@ -92,21 +92,6 @@ pub fn start(config : NodeConfiguration) {
     let _ = run_thread.join();
 
 }
-
-
-//
-//pub trait Election {
-//    fn request_vote(&self, request : communication::VoteRequest);
-//    fn poll_for_vote_response(&self) -> VoteResponse;
-//
-//    fn send_vote(&self, response : VoteResponse);
-//    fn poll_for_vote_requests(&self) -> VoteRequest;
-//
-////   fn send_leader_heartbeat();
-//}
-
-
-
 
 
 fn debug_node_status(_: Arc<Mutex<Node>>) {
