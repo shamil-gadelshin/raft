@@ -71,7 +71,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 node.status = NodeStatus::Follower;
                 print_event(format!("Node {:?} Status changed to Follower", node.id));
 
-                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
+                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderConfirmationEvent");
             },
         }
     }

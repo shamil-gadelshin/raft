@@ -14,8 +14,8 @@ mod election;
 use self::core::*;
 use self::communication::{VoteResponse, VoteRequest, AppendEntriesRequest};
 use self::communication::{InProcNodeCommunicator};
-use crate::log_replication::*; //TODO change project structure
-use crate::log_replication::append_entries_processor::*;
+use crate::log_replication::append_entries_processor::*; //TODO change project structure
+use crate::log_replication::append_entries_sender::*;
 
 pub struct NodeConfiguration {
     pub node_id: u64,
@@ -75,7 +75,7 @@ pub fn start(config : NodeConfiguration) {
     let append_entries_mutex_clone = mutex_node.clone();
     let append_entries_thread_peer_id_list = config.peers_id_list.clone();
     let append_entries_thread_communicator = config.communicator.clone();
-    let append_entries_thread = thread::spawn(move|| append_entries( append_entries_mutex_clone, append_entries_thread_peer_id_list,append_entries_thread_communicator));
+    let append_entries_thread = thread::spawn(move|| send_append_entries(append_entries_mutex_clone, append_entries_thread_peer_id_list, append_entries_thread_communicator));
 
 
     let append_entries_procesor_mutex_clone = mutex_node.clone();
