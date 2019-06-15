@@ -12,9 +12,9 @@ extern crate chrono;
 mod leadership;
 use leadership::communication::{VoteRequest, VoteResponse, AppendEntriesRequest};
 use leadership::communication::{InProcNodeCommunicator};
-use leadership::{NodeConfiguration, start};
 
 mod log_replication;
+mod runner;
 
 fn main() {
     let node_ids = vec![1,2];
@@ -56,7 +56,7 @@ fn main() {
         let vote_response_rx = vote_response_rx_channels.remove(&node_id).unwrap();
         let append_entries_rx = append_entries_request_rx_channels.remove(&node_id).unwrap();
 
-        let config = NodeConfiguration{
+        let config = runner::NodeConfiguration{
             node_id,
             peers_id_list: peer_ids,
             quorum_size : node_ids.len() as u32,
@@ -65,7 +65,7 @@ fn main() {
             append_entries_rx_channel: append_entries_rx,
             communicator : communicator.clone()
         };
-        thread::spawn(move || start(config));
+        thread::spawn(move || runner::start(config));
 
     }
 
