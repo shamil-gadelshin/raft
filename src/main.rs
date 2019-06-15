@@ -52,8 +52,6 @@ fn main() {
         let mut peer_ids = node_ids.clone();
         peer_ids.retain(|&x| x != node_id);
 
-    //    let (request_tx, response_rx): (Sender<VoteRequest>, Receiver<VoteRequest>) = mpsc::channel();
-
         let vote_request_rx = vote_request_rx_channels.remove(&node_id).unwrap();
         let vote_response_rx = vote_response_rx_channels.remove(&node_id).unwrap();
         let append_entries_rx = append_entries_request_rx_channels.remove(&node_id).unwrap();
@@ -78,7 +76,6 @@ fn main() {
 TODO:
 - logging
 - crossbeam?rayon threading
-- crossbeam msmp channels
 - futures?
 - tests
 - speed & memory profiling
@@ -92,7 +89,5 @@ Features:
 - log replication
 .memory snapshot
 .file snapshot
-.empty snapshot?
 - membership changes
-- leader election
 */
