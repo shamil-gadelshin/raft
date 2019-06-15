@@ -3,7 +3,7 @@ use crossbeam_channel::{Sender, Receiver};
 use std::thread;
 
 use super::core::*;
-use super::communication::*;
+use crate::communication::*;
 use super::peer_notifier;
 
 pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,

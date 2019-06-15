@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use super::core::*;
-use super::communication::*;
+use crate::communication::*;
 
 pub fn vote_request_processor(  leader_election_event_tx : Sender<LeaderElectionEvent>,
                                 mutex_node: Arc<Mutex<Node>>,

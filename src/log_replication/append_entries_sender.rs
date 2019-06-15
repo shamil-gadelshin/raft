@@ -3,12 +3,11 @@ use std::time::Duration;
 
 
 use crate::leadership::core::*; //TODO change project structure
-use crate::leadership::communication::*; //TODO change project structure
+use crate::communication::*;
 
 pub fn send_append_entries(mutex_node: Arc<Mutex<Node>>,
                            peers : Vec<u64>,
                            communicator : InProcNodeCommunicator
-                           //                    watchdog_event_rx : Receiver<LeaderElectedEvent>
 ) {
 
     /*

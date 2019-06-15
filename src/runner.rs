@@ -5,8 +5,8 @@ use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::leadership::core::*;
-use crate::leadership::communication::{VoteResponse, VoteRequest, AppendEntriesRequest};
-use crate::leadership::communication::{InProcNodeCommunicator};
+use crate::communication::{VoteResponse, VoteRequest, AppendEntriesRequest};
+use crate::communication::{InProcNodeCommunicator};
 
 use crate::leadership::election::*;
 use crate::leadership::leader_watcher ::*;

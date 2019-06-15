@@ -1,7 +1,7 @@
 use crossbeam_channel::{Sender};
 use std::collections::HashMap;
 
-use super::core::print_event;
+use crate::leadership::core::print_event; //TODO project structure
 
 #[derive(Clone, Copy, Debug)]
 pub struct VoteRequest {

@@ -10,11 +10,13 @@ extern crate chrono;
 
 
 mod leadership;
-use leadership::communication::{VoteRequest, VoteResponse, AppendEntriesRequest};
-use leadership::communication::{InProcNodeCommunicator};
+use crate::communication::{VoteRequest, VoteResponse, AppendEntriesRequest};
+use crate::communication::{InProcNodeCommunicator};
 
+mod communication;
 mod log_replication;
 mod runner;
+
 
 fn main() {
     let node_ids = vec![1,2];
