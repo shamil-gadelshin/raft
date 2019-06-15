@@ -1,5 +1,4 @@
-use std::time::{Duration};
-use rand::Rng;
+
 use chrono::prelude::*;
 
 #[derive(Debug,Copy, Clone)]
@@ -17,7 +16,7 @@ pub enum LeaderElectionEvent {
     ResetNodeToFollower(ElectionNotice),
 }
 
-pub enum LeaderElectedEvent {
+pub enum LeaderConfirmationEvent {
     ResetWatchdogCounter
 }
 
@@ -35,13 +34,6 @@ pub enum NodeStatus {
 }
 
 
-pub fn random_awaiting_leader_duration_ms() -> Duration{
-    let range_start = 1000;
-    let range_stop = 4000;
-    let mut rng = rand::thread_rng();
-
-    Duration::from_millis(rng.gen_range(range_start, range_stop))
-}
 
 pub fn print_event(message : String){
 

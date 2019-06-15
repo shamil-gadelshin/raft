@@ -10,7 +10,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                                    leader_election_event_tx : Sender<LeaderElectionEvent>,
                                    leader_election_event_rx : Receiver<LeaderElectionEvent>,
                                    response_event_rx : Receiver<VoteResponse>,
-                                   watchdog_event_tx : Sender<LeaderElectedEvent>,
+                                   watchdog_event_tx : Sender<LeaderConfirmationEvent>,
                                    communicator : InProcNodeCommunicator,
                                    peers : Vec<u64>,
                                    quorum_size : u32
@@ -61,7 +61,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 node.status = NodeStatus::Leader;
                 print_event(format!("Node {:?} Status changed to Leader", node.id));
 
-                watchdog_event_tx.send(LeaderElectedEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
+                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
             },
             LeaderElectionEvent::ResetNodeToFollower(vr) => {
                 let mut node = mutex_node.lock().expect("lock is poisoned");
@@ -71,7 +71,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 node.status = NodeStatus::Follower;
                 print_event(format!("Node {:?} Status changed to Follower", node.id));
 
-                watchdog_event_tx.send(LeaderElectedEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
+                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
             },
         }
     }
