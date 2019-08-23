@@ -16,8 +16,9 @@ mod client_requests;
 
 use client_requests::ClientRequestHandler;
 use communication::{InProcNodeCommunicator};
-use crate::core::{ClusterConfiguration};
+use crate::core::{ClusterConfiguration, AddServerRequest};
 use std::time::Duration;
+use std::collections::HashMap;
 
 fn main() {
     let node_ids = vec![1, 2];
@@ -28,27 +29,34 @@ fn main() {
     let mut communicator = InProcNodeCommunicator::new(main_cluster_configuration.get_all());
     communicator.add_node_communication(new_node_id);
 
+    let mut client_handlers : HashMap<u64, ClientRequestHandler> = HashMap::new();
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
+        let client_request_handler = ClientRequestHandler::new();
         let config = node_runner::NodeConfiguration {
             node_id,
             cluster_configuration: protected_cluster_config.clone(),
             communicator: communicator.clone(),
-            client_request_handler: ClientRequestHandler::new(),
+            client_request_handler: client_request_handler.clone(),
         };
-        thread::spawn(move || node_runner::start(config));
+        thread::spawn(move || node_runner::start_node(config));
+
+        client_handlers.insert(node_id, client_request_handler);
     }
 
-//    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
-//    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
-//                                     new_node_id);
+    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
+    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
+                                     client_handlers,
+                                     new_node_id);
 
-    thread::park(); //TODO -  to join
+    //thread::park(); //TODO -  to join
+    thread::sleep(Duration::from_secs(10000));
 }
 
 fn run_add_server_thread_with_delay(communicator : communication::InProcNodeCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
+                                    client_handlers : HashMap<u64, ClientRequestHandler>,
                                     new_node_id : u64) {
 
     let new_server_config;
@@ -68,7 +76,16 @@ fn run_add_server_thread_with_delay(communicator : communication::InProcNodeComm
     select!(
             recv(timeout) -> _  => {},
         );
-    thread::spawn(move || node_runner::start(new_server_config));
+    thread::spawn(move || node_runner::start_node(new_server_config));
+
+    let request = AddServerRequest{new_server : new_node_id};
+    for kv in client_handlers {
+        let (k,v) = kv;
+
+        let resp = v.add_server(request);
+
+        core::print_event(format!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp));
+    }
 }
 /*
 TODO:
@@ -83,6 +100,7 @@ TODO:
 - consider replacing mutex with cas for nodes
 - RW-lock for communicator
 - check channels overflow
+- check channels bounded-unbounded types
 
 Features:
 - log replication

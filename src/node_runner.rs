@@ -26,7 +26,7 @@ pub struct NodeConfiguration {
 }
 
 //TODO check clones number - consider borrowing &
-pub fn start(node_config : NodeConfiguration) {
+pub fn start_node(node_config : NodeConfiguration) {
     let node = Node{id : node_config.node_id, current_term: 0, status : NodeStatus::Follower, current_leader_id: None, voted_for_id : None};
     let protected_node = Arc::new(Mutex::new(node));
 
@@ -68,6 +68,7 @@ pub fn start(node_config : NodeConfiguration) {
                                                                    append_entries_add_server_tx,
                                                                    &node_config);
 
+    let _ = change_membership_thread.join();
     let _ = append_entries_thread.join();
     let _ = append_entries_processor_thread.join();
 //    let _ = check_debug_node_thread.join(); //TODO
@@ -81,11 +82,13 @@ fn create_change_membership_thread(protected_node : Arc<Mutex<Node>>,
                                    append_entries_add_server_tx : Sender<AddServerRequest>,
                                    node_config : &NodeConfiguration) -> JoinHandle<()> {
     let cluster_config = node_config.cluster_configuration.clone();
-    let client_add_server_rx = node_config.client_request_handler.get_add_server_channel_rx();
+    let client_add_server_request_rx = node_config.client_request_handler.get_add_server_request_rx();
+    let client_add_server_response_tx = node_config.client_request_handler.get_add_server_response_tx();
     let change_membership_thread = thread::spawn(move|| change_membership(
         protected_node,
         cluster_config,
-        client_add_server_rx,
+        client_add_server_request_rx,
+        client_add_server_response_tx,
         append_entries_add_server_tx));
 
     change_membership_thread
