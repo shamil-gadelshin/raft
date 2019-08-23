@@ -1,8 +1,6 @@
 use crossbeam_channel::{Sender, Receiver};
-use std::collections::HashMap;
 
 use crate::core::*;
-use std::error::Error;
 use std::time::Duration;
 
 #[derive(Clone)]

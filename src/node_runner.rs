@@ -6,10 +6,8 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
 
-use crate::configuration::cluster::{ClusterConfiguration};
 use crate::configuration::node::{NodeConfiguration};
 
-use crate::communication::peers::{InProcNodeCommunicator};
 
 use crate::leadership::election::*;
 use crate::leadership::leader_watcher ::*;
@@ -18,9 +16,7 @@ use crate::leadership::vote_request_processor ::*;
 use crate::log::replication::append_entries_processor::*; //TODO change project structure
 use crate::log::replication::append_entries_sender::*;
 
-use crate::communication::client::ClientRequestHandler;
 use crate::membership::*;
-use crate::log::storage::Storage;
 
 
 
@@ -55,7 +51,6 @@ pub fn start_node<Storage>(node_config : NodeConfiguration<Storage>) {
     */
 
     let append_entries_thread = create_append_entries_thread(protected_node.clone(),
-                                                             leader_election_tx.clone(),
                                                              append_entries_add_server_rx,
                                                              &node_config);
 
@@ -106,7 +101,6 @@ fn create_append_entries_processor_thread<Storage>(protected_node : Arc<Mutex<No
 }
 
 fn create_append_entries_thread<Storage>(protected_node : Arc<Mutex<Node>>,
-                                leader_election_tx : Sender<LeaderElectionEvent>,
                                 append_entries_add_server_rx : Receiver<AddServerRequest>,
                                 node_config : &NodeConfiguration<Storage>) -> JoinHandle<()> {
 

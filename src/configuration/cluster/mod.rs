@@ -3,7 +3,6 @@ use std::collections::HashMap;
 #[derive(Clone, Debug)]
 pub struct ClusterConfiguration{
     nodes_id_map : HashMap<u64, bool>,
-
 }
 
 impl ClusterConfiguration {
@@ -19,13 +18,13 @@ impl ClusterConfiguration {
     }
 
     pub fn new(peers : Vec<u64>) -> ClusterConfiguration {
-        let mut config = ClusterConfiguration{nodes_id_map : HashMap::new()};
+        let mut cluster_config = ClusterConfiguration{nodes_id_map : HashMap::new()};
 
         for node in peers {
-            config.add_peer(node);
+            cluster_config.add_peer(node);
         }
 
-        config
+        cluster_config
     }
 
     pub fn add_peer(&mut self, peer : u64) {
@@ -33,8 +32,8 @@ impl ClusterConfiguration {
     }
 
     pub fn get_all(&self)-> Vec<u64> {
-        let vector =  self.nodes_id_map.keys().map(|key| *key).collect();
+        let key_vector =  self.nodes_id_map.keys().map(|key| *key).collect();
 
-        vector
+        key_vector
     }
 }
