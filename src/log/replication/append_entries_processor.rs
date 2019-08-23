@@ -6,12 +6,12 @@ use crate::core::*;
 
 pub fn append_entries_processor(
                                 mutex_node: Arc<Mutex<Node>>,
-                                request_event_rx : Receiver<AppendEntriesRequest>,
+                                append_entries_request_rx : Receiver<AppendEntriesRequest>,
                                 reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>)
 {
 
     loop {
-        let request_result = request_event_rx.recv();
+        let request_result = append_entries_request_rx.recv();
         let request = request_result.unwrap(); //TODO
         let node = mutex_node.lock().expect("lock is poisoned");
 

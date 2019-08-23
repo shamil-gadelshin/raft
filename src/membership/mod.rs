@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
+use crate::communication::client::{AddServerRequest,AddServerResponse, ChangeMembershipResponseStatus, ClientRequestHandler};
 use crate::configuration::cluster::{ClusterConfiguration};
 
 //TODO join client request handler

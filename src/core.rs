@@ -33,40 +33,12 @@ pub enum LeaderConfirmationEvent {
     ResetWatchdogCounter
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct VoteRequest {
-    pub term : u64,
-    pub candidate_id : u64
-}
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct AppendEntriesRequest {
     pub term : u64,
     pub leader_id : u64
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum ChangeMembershipResponseStatus {
-    Ok,
-    NotLeader
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct AddServerRequest {
-    pub new_server : u64
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct AddServerResponse {
-    pub status : ChangeMembershipResponseStatus,
-    pub current_leader : Option<u64>
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct VoteResponse {
-    pub term : u64,
-    pub vote_granted: bool,
-    pub peer_id: u64
 }
 
 pub fn print_event(message : String){

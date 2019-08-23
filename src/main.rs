@@ -15,9 +15,8 @@ mod log;
 mod membership;
 mod configuration;
 
-use communication::client::ClientRequestHandler;
+use communication::client::{AddServerRequest,ClientRequestHandler};
 use communication::peers::{InProcNodeCommunicator};
-use crate::core::{AddServerRequest};
 use crate::log::storage::{MemoryStorage};
 use crate::configuration::cluster::ClusterConfiguration;
 use crate::configuration::node::NodeConfiguration;

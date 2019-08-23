@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
-use crate::communication::peers::InProcNodeCommunicator;
+use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
 use crate::core::*;
 
 pub fn vote_request_processor(  leader_election_event_tx : Sender<LeaderElectionEvent>,

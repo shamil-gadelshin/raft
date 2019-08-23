@@ -2,7 +2,7 @@ use std::time::Duration;
 use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
-use crate::communication::peers::InProcNodeCommunicator;
+use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
 use crate::core::*;
 
 pub fn notify_peers(term : u64,

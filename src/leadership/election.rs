@@ -3,7 +3,7 @@ use crossbeam_channel::{Sender, Receiver};
 use std::thread;
 
 use crate::core::*;
-use crate::communication::peers::InProcNodeCommunicator;
+use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 
 use super::peer_notifier;

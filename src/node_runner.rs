@@ -5,7 +5,7 @@ use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
-
+use crate::communication::client::{AddServerRequest, ClientRequestHandler};
 use crate::configuration::node::{NodeConfiguration};
 
 

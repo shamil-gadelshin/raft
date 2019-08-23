@@ -3,6 +3,24 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::core::*;
 use std::time::Duration;
 
+#[derive(Clone, Copy, Debug)]
+pub enum ChangeMembershipResponseStatus {
+    Ok,
+    NotLeader
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AddServerRequest {
+    pub new_server : u64
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AddServerResponse {
+    pub status : ChangeMembershipResponseStatus,
+    pub current_leader : Option<u64>
+}
+
+
 #[derive(Clone)]
 pub struct ClientRequestHandler {
     add_server_request_tx: Sender<AddServerRequest>,

@@ -3,6 +3,20 @@ use std::collections::HashMap;
 
 use crate::core::*;
 
+#[derive(Clone, Copy, Debug)]
+pub struct VoteRequest {
+    pub term : u64,
+    pub candidate_id : u64
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct VoteResponse {
+    pub term : u64,
+    pub vote_granted: bool,
+    pub peer_id: u64
+}
+
+//TODO communicator timeout handling
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {
     vote_request_channels_tx: HashMap<u64, Sender<VoteRequest>>,
@@ -66,6 +80,7 @@ impl InProcNodeCommunicator {
 
     //// *** TODO: split creation & function
     //TODO check node_id existence
+    //TODO communicator timeout handling
     pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
         print_event( format!("Destination Node {:?} Sending request {:?}",destination_node_id, request));
         self.vote_request_channels_tx[&destination_node_id].send(request).expect("cannot send vote request");
