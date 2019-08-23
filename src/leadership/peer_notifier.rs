@@ -2,7 +2,7 @@ use std::time::Duration;
 use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
-use crate::communication::*;
+use crate::communication::peers::InProcNodeCommunicator;
 use crate::core::*;
 
 pub fn notify_peers(term : u64,
@@ -51,7 +51,7 @@ pub fn notify_peers(term : u64,
 
         election_event_tx.send(event_promote_to_leader).expect("cannot promote to leader");
     } else {
-        election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term}))
+        election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term: term }))
             .expect("cannot send LeaderElectionEvent");
 
     }

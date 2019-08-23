@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
-
+use crate::configuration::cluster::{ClusterConfiguration};
 
 //TODO join client request handler
 pub fn change_membership(mutex_node: Arc<Mutex<Node>>,

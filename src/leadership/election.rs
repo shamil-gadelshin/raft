@@ -3,7 +3,8 @@ use crossbeam_channel::{Sender, Receiver};
 use std::thread;
 
 use crate::core::*;
-use crate::communication::*;
+use crate::communication::peers::InProcNodeCommunicator;
+use crate::configuration::cluster::{ClusterConfiguration};
 
 use super::peer_notifier;
 
@@ -14,7 +15,7 @@ pub enum LeaderElectionEvent {
 }
 
 pub struct ElectionNotice {
-    pub term : u64,
+    pub term: u64,
     pub candidate_id : u64
 }
 

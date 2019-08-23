@@ -6,27 +6,26 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
 
-use crate::communication::{InProcNodeCommunicator};
+use crate::configuration::cluster::{ClusterConfiguration};
+use crate::configuration::node::{NodeConfiguration};
+
+use crate::communication::peers::{InProcNodeCommunicator};
 
 use crate::leadership::election::*;
 use crate::leadership::leader_watcher ::*;
 use crate::leadership::vote_request_processor ::*;
 
-use crate::log_replication::append_entries_processor::*; //TODO change project structure
-use crate::log_replication::append_entries_sender::*;
+use crate::log::replication::append_entries_processor::*; //TODO change project structure
+use crate::log::replication::append_entries_sender::*;
 
-use crate::client_requests::*;
+use crate::communication::client::ClientRequestHandler;
 use crate::membership::*;
+use crate::log::storage::Storage;
 
-pub struct NodeConfiguration {
-    pub node_id: u64,
-    pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-    pub communicator : InProcNodeCommunicator,
-    pub client_request_handler : ClientRequestHandler
-}
+
 
 //TODO check clones number - consider borrowing &
-pub fn start_node(node_config : NodeConfiguration) {
+pub fn start_node<Storage>(node_config : NodeConfiguration<Storage>) {
     let node = Node{id : node_config.node_id, current_term: 0, status : NodeStatus::Follower, current_leader_id: None, voted_for_id : None};
     let protected_node = Arc::new(Mutex::new(node));
 
@@ -78,9 +77,9 @@ pub fn start_node(node_config : NodeConfiguration) {
 
 }
 
-fn create_change_membership_thread(protected_node : Arc<Mutex<Node>>,
+fn create_change_membership_thread<Storage>(protected_node : Arc<Mutex<Node>>,
                                    append_entries_add_server_tx : Sender<AddServerRequest>,
-                                   node_config : &NodeConfiguration) -> JoinHandle<()> {
+                                   node_config : &NodeConfiguration<Storage>) -> JoinHandle<()> {
     let cluster_config = node_config.cluster_configuration.clone();
     let client_add_server_request_rx = node_config.client_request_handler.get_add_server_request_rx();
     let client_add_server_response_tx = node_config.client_request_handler.get_add_server_response_tx();
@@ -94,10 +93,10 @@ fn create_change_membership_thread(protected_node : Arc<Mutex<Node>>,
     change_membership_thread
 }
 
-fn create_append_entries_processor_thread(protected_node : Arc<Mutex<Node>>,
+fn create_append_entries_processor_thread<Storage>(protected_node : Arc<Mutex<Node>>,
                                           reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>,
-                                          node_config : &NodeConfiguration) -> JoinHandle<()> {
-    let append_entries_request_rx = node_config.communicator.get_append_entries_request_rx(node_config.node_id);
+                                          node_config : &NodeConfiguration<Storage>) -> JoinHandle<()> {
+    let append_entries_request_rx = node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id);
     let append_entries_processor_thread = thread::spawn(move|| append_entries_processor(
         protected_node,
         append_entries_request_rx,
@@ -106,23 +105,23 @@ fn create_append_entries_processor_thread(protected_node : Arc<Mutex<Node>>,
     append_entries_processor_thread
 }
 
-fn create_append_entries_thread(protected_node : Arc<Mutex<Node>>,
+fn create_append_entries_thread<Storage>(protected_node : Arc<Mutex<Node>>,
                                 leader_election_tx : Sender<LeaderElectionEvent>,
                                 append_entries_add_server_rx : Receiver<AddServerRequest>,
-                                node_config : &NodeConfiguration) -> JoinHandle<()> {
+                                node_config : &NodeConfiguration<Storage>) -> JoinHandle<()> {
 
     let cluster_configuration = node_config.cluster_configuration.clone();
-    let communicator = node_config.communicator.clone();
+    let communicator = node_config.peer_communicator.clone();
     let append_entries_thread = thread::spawn(move|| send_append_entries(protected_node, cluster_configuration, append_entries_add_server_rx, communicator));
 
     append_entries_thread
 }
 
-fn create_request_processor_thread(protected_node : Arc<Mutex<Node>>,
+fn create_request_processor_thread<Storage>(protected_node : Arc<Mutex<Node>>,
                                    leader_election_tx : Sender<LeaderElectionEvent>,
-                                   node_config : &NodeConfiguration) -> JoinHandle<()> {
-    let communicator = node_config.communicator.clone();
-    let vote_request_channel_rx = node_config.communicator.get_vote_request_channel_rx(node_config.node_id);
+                                   node_config : &NodeConfiguration<Storage>) -> JoinHandle<()> {
+    let communicator = node_config.peer_communicator.clone();
+    let vote_request_channel_rx = node_config.peer_communicator.get_vote_request_channel_rx(node_config.node_id);
     let request_processor_thread = thread::spawn(move || vote_request_processor(leader_election_tx,
                                                                                 protected_node,
                                                                                 communicator,
@@ -141,16 +140,16 @@ fn create_check_leader_thread(protected_node : Arc<Mutex<Node>>,
     check_leader_thread
 }
 
-fn create_election_thread(protected_node : Arc<Mutex<Node>>,
-                          node_config : &NodeConfiguration,
+fn create_election_thread<Storage>(protected_node : Arc<Mutex<Node>>,
+                          node_config : &NodeConfiguration<Storage>,
                           leader_election_rx : Receiver<LeaderElectionEvent>,
                           leader_election_tx : Sender<LeaderElectionEvent>,
                           reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>
 
 ) -> JoinHandle<()> {
-    let vote_response_rx_channel = node_config.communicator.get_vote_response_channel_rx(node_config.node_id);
+    let vote_response_rx_channel = node_config.peer_communicator.get_vote_response_channel_rx(node_config.node_id);
     let cluster_config = node_config.cluster_configuration.clone();
-    let communicator = node_config.communicator.clone();
+    let communicator = node_config.peer_communicator.clone();
 
     let run_thread = thread::spawn(move|| run_leader_election_process(protected_node,
                                                                       leader_election_tx,

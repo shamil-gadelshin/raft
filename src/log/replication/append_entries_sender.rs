@@ -3,7 +3,8 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver};
 
 use crate::core::*;
-use crate::communication::*;
+use crate::communication::peers::InProcNodeCommunicator;
+use crate::configuration::cluster::{ClusterConfiguration};
 
 //TODO remove clone-values
 pub fn send_append_entries(protected_node: Arc<Mutex<Node>>,
