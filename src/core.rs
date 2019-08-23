@@ -34,13 +34,6 @@ pub enum LeaderConfirmationEvent {
 }
 
 
-
-#[derive(Clone, Copy, Debug)]
-pub struct AppendEntriesRequest {
-    pub term : u64,
-    pub leader_id : u64
-}
-
 pub fn print_event(message : String){
 
     let now: DateTime<Local> = Local::now();

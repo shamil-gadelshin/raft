@@ -3,7 +3,7 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver};
 
 use crate::core::*;
-use crate::communication::peers::InProcNodeCommunicator;
+use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::client::{AddServerRequest};
 use crate::configuration::cluster::{ClusterConfiguration};
 

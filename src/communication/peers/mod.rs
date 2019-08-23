@@ -16,6 +16,12 @@ pub struct VoteResponse {
     pub peer_id: u64
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct AppendEntriesRequest {
+    pub term : u64,
+    pub leader_id : u64
+}
+
 //TODO communicator timeout handling
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {

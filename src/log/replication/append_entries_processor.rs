@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
-
+use crate::communication::peers::AppendEntriesRequest;
 
 pub fn append_entries_processor(
                                 mutex_node: Arc<Mutex<Node>>,
