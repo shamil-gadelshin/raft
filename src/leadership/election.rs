@@ -25,8 +25,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                                    response_event_rx : Receiver<VoteResponse>,
                                    watchdog_event_tx : Sender<LeaderConfirmationEvent>,
                                    communicator : InProcNodeCommunicator,
-                                   peers : Vec<u64>,
-                                   quorum_size : u32
+                                   cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
 ) {
 
     {
@@ -51,7 +50,12 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
 
                 let node_id = node.id;
                 node.voted_for_id = Some(node_id);
-                let peers_copy = peers.clone();
+                let (peers_copy, quorum_size )= {
+                    let cluster = cluster_configuration.lock().expect("lock is poisoned");
+
+                    (cluster.get_peers(node_id), cluster.get_quorum_size())
+                };
+
                 let communicator_copy = communicator.clone();
                 let response_rx_copy = response_event_rx.clone();
 

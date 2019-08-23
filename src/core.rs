@@ -1,8 +1,9 @@
 use chrono::prelude::*;
+use std::collections::HashMap;
 
 #[derive(Debug,Copy, Clone)]
 pub struct Node {
-    pub id : u64,
+    pub id : u64, //TODO pass node_id as copy to decrease mutex lock count
     pub current_term: u64,
     pub current_leader_id: Option<u64>, //TODO delete?
     pub voted_for_id: Option<u64>,
@@ -43,6 +44,61 @@ pub struct VoteRequest {
 pub struct AppendEntriesRequest {
     pub term : u64,
     pub leader_id : u64
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ChangeMembershipResponseStatus {
+    Ok,
+    NotLeader
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AddServerRequest {
+    pub new_server : u64
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AddServerResponse {
+    pub status : ChangeMembershipResponseStatus,
+    pub current_leader : Option<u64>
+}
+
+#[derive(Clone, Debug)]
+pub struct ClusterConfiguration {
+    nodes_id_map : HashMap<u64, bool>
+}
+
+impl ClusterConfiguration {
+    pub fn get_quorum_size(&self) -> u32 {
+        self.nodes_id_map.len() as u32
+    }
+
+    pub fn get_peers(&self, node_id : u64) -> Vec<u64>{
+        let mut peer_ids = self.get_all();
+        peer_ids.retain(|&x| x != node_id);
+
+        peer_ids
+    }
+
+    pub fn new(peers : Vec<u64>) -> ClusterConfiguration {
+        let mut config = ClusterConfiguration{nodes_id_map : HashMap::new()};
+
+        for node in peers {
+            config.add_peer(node);
+        }
+
+        config
+    }
+
+    pub fn add_peer(&mut self, peer : u64) {
+        self.nodes_id_map.insert(peer, true);
+    }
+
+    pub fn get_all(&self)-> Vec<u64> {
+        let vector =  self.nodes_id_map.keys().map(|key| *key).collect();
+
+        vector
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

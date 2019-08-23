@@ -1,6 +1,6 @@
 use std::thread;
 use std::collections::HashMap;
-
+use std::sync::{Arc, Mutex};
 
 #[macro_use]
 extern crate crossbeam_channel;
@@ -14,64 +14,66 @@ mod runner;
 mod leadership;
 mod communication;
 mod log_replication;
+mod membership;
+mod client_requests;
 
+use client_requests::ClientRequestHandler;
 use communication::{InProcNodeCommunicator};
-use crate::core::{VoteRequest, VoteResponse, AppendEntriesRequest};
+use crate::core::{VoteRequest, VoteResponse, AppendEntriesRequest, ClusterConfiguration, AddServerRequest, AddServerResponse};
+use std::time::Duration;
 
 fn main() {
-    let node_ids = vec![1,2];
+    let node_ids = vec![1, 2];
+    let new_node_id = 3;
 
-    let mut vote_request_tx_channels = HashMap::new();
-    let mut vote_request_rx_channels = HashMap::new();
-    let mut vote_response_tx_channels = HashMap::new();
-    let mut vote_response_rx_channels = HashMap::new();
-    let mut append_entries_request_tx_channels = HashMap::new();
-    let mut append_entries_request_rx_channels = HashMap::new();
+    let main_cluster_configuration = ClusterConfiguration::new(node_ids);
 
+    let mut communicator = InProcNodeCommunicator::new(main_cluster_configuration.get_all());
+    communicator.add_node_communication(new_node_id);
 
-    for node_id in node_ids.clone() {
-         let (vote_request_tx, vote_request_rx): (Sender<VoteRequest>, Receiver<VoteRequest>) = crossbeam_channel::unbounded();
-         let (vote_response_tx, vote_response_rx): (Sender<VoteResponse>, Receiver<VoteResponse>) = crossbeam_channel::unbounded();
-         let (append_entries_request_tx, append_entries_request_rx): (Sender<AppendEntriesRequest>, Receiver<AppendEntriesRequest>) = crossbeam_channel::unbounded();
+    for node_id in main_cluster_configuration.get_all() {
+        let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
-        vote_request_tx_channels.insert(node_id, vote_request_tx);
-        vote_request_rx_channels.insert(node_id, vote_request_rx);
-        vote_response_tx_channels.insert(node_id, vote_response_tx);
-        vote_response_rx_channels.insert(node_id, vote_response_rx);
-        append_entries_request_tx_channels.insert(node_id, append_entries_request_tx);
-        append_entries_request_rx_channels.insert(node_id, append_entries_request_rx);
-    }
-
-    let communicator = InProcNodeCommunicator{
-        vote_request_channels_tx: vote_request_tx_channels,
-        vote_response_channels_tx: vote_response_tx_channels,
-        append_entries_request_channels_tx : append_entries_request_tx_channels
-    };
-
-    for node_id in node_ids.clone() {
-        let mut peer_ids = node_ids.clone();
-        peer_ids.retain(|&x| x != node_id);
-
-        let vote_request_rx = vote_request_rx_channels.remove(&node_id).unwrap();
-        let vote_response_rx = vote_response_rx_channels.remove(&node_id).unwrap();
-        let append_entries_rx = append_entries_request_rx_channels.remove(&node_id).unwrap();
-
-        let config = runner::NodeConfiguration{
+        let config = runner::NodeConfiguration {
             node_id,
-            peers_id_list: peer_ids,
-            quorum_size : node_ids.len() as u32,
-            vote_request_rx_channel: vote_request_rx,
-            vote_response_rx_channel: vote_response_rx,
-            append_entries_rx_channel: append_entries_rx,
-            communicator : communicator.clone()
+            cluster_configuration: protected_cluster_config.clone(),
+            communicator: communicator.clone(),
+            client_request_handler: ClientRequestHandler::new(),
         };
         thread::spawn(move || runner::start(config));
-
     }
+
+//    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(node_ids.clone())));
+//    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
+//                                     new_node_id, node_ids.len() as u32);
 
     thread::park(); //TODO -  to join
 }
 
+fn run_add_server_thread_with_delay(communicator : communication::InProcNodeCommunicator,
+                                    protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
+                                    new_node_id : u64,
+                                    node_count : u32) {
+
+    let new_server_config;
+    {
+        let mut cluster_config = protected_cluster_config.lock().expect("cluster config lock is poisoned");
+        cluster_config.add_peer(new_node_id);
+
+        // *** add new server
+        new_server_config = runner::NodeConfiguration {
+            node_id: new_node_id,
+            cluster_configuration: protected_cluster_config.clone(),
+            communicator: communicator.clone(),
+            client_request_handler : ClientRequestHandler::new()
+        };
+    }
+    let timeout = crossbeam_channel::after(Duration::new(3,0));
+    select!(
+            recv(timeout) -> _  => {},
+        );
+    thread::spawn(move || runner::start(new_server_config));
+}
 /*
 TODO:
 - logging
@@ -82,12 +84,26 @@ TODO:
 - identity - libp2p
 - generic identity?
 - tarpc
-- consider replacing mutex with cas
+- consider replacing mutex with cas for nodes
+- RW-lock for communicator
 - check channels overflow
 
 Features:
 - log replication
-.memory snapshot
-.file snapshot
+    .memory snapshot
+    .file snapshot
+    .persist server's current term and vote
 - membership changes
+    .add server
+    .change quorum size
+    .remove server(shutdown self)
+- client_requests support
+    .server api
+    .separate client_requests
+- library crate
+
+Done:
+- leader election
+- channel communication
+- modules create
 */

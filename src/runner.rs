@@ -15,14 +15,14 @@ use crate::leadership::vote_request_processor ::*;
 use crate::log_replication::append_entries_processor::*; //TODO change project structure
 use crate::log_replication::append_entries_sender::*;
 
+use crate::client_requests::*;
+use crate::membership::*;
+
 pub struct NodeConfiguration {
     pub node_id: u64,
-    pub peers_id_list : Vec<u64>,
-    pub quorum_size: u32,
-    pub vote_request_rx_channel: Receiver<VoteRequest>,
-    pub vote_response_rx_channel: Receiver<VoteResponse>,
-    pub append_entries_rx_channel: Receiver<AppendEntriesRequest>,
-    pub communicator : InProcNodeCommunicator
+    pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+    pub communicator : InProcNodeCommunicator,
+    pub client_request_handler : ClientRequestHandler
 }
 
 pub fn start(config : NodeConfiguration) {
@@ -36,9 +36,8 @@ pub fn start(config : NodeConfiguration) {
     let run_thread_reset_leadership_watchdog_tx = reset_leadership_watchdog_tx.clone();
     let run_thread_event_sender = tx.clone();
     let run_thread_communicator = config.communicator.clone();
-    let run_thread_response_rx_channel = config.vote_response_rx_channel.clone();
-    let quorum_size = config.quorum_size;
-    let run_thread_peer_id_list = config.peers_id_list.clone();
+    let run_thread_response_rx_channel = config.communicator.get_vote_response_channel_rx(config.node_id);
+    let run_thread_cluster_configuration = config.cluster_configuration.clone();
 
     let run_thread = thread::spawn(move|| run_leader_election_process(run_thread_node_mutex,
                                                                                 run_thread_event_sender,
@@ -46,8 +45,7 @@ pub fn start(config : NodeConfiguration) {
                                                                                 run_thread_response_rx_channel,
                                                                                 run_thread_reset_leadership_watchdog_tx,
                                                                                 run_thread_communicator,
-                                                                                run_thread_peer_id_list,
-                                                                                quorum_size));
+                                                                                run_thread_cluster_configuration));
 
 
     let check_leader_thread_node_mutex = mutex_node.clone();
@@ -60,7 +58,7 @@ pub fn start(config : NodeConfiguration) {
     let request_processor_thread_node_mutex = mutex_node.clone();
     let request_processor_thread_event_sender = tx.clone();
     let request_processor_thread_communicator = config.communicator.clone();
-    let request_processor_thread_rx_channel = config.vote_request_rx_channel.clone();
+    let request_processor_thread_rx_channel = config.communicator.get_vote_request_channel_rx(config.node_id);
     let request_processor_thread = thread::spawn(move|| vote_request_processor(request_processor_thread_event_sender,
                                                                                                        request_processor_thread_node_mutex,
                                                                                                        request_processor_thread_communicator,
@@ -71,18 +69,26 @@ pub fn start(config : NodeConfiguration) {
     let check_debug_node_thread = thread::spawn(move|| debug_node_status( debug_mutex_clone));
 
     let append_entries_mutex_clone = mutex_node.clone();
-    let append_entries_thread_peer_id_list = config.peers_id_list.clone();
+    let append_entries_thread_cluster_configuration = config.cluster_configuration.clone();
     let append_entries_thread_communicator = config.communicator.clone();
-    let append_entries_thread = thread::spawn(move|| send_append_entries(append_entries_mutex_clone, append_entries_thread_peer_id_list, append_entries_thread_communicator));
+    let append_entries_thread = thread::spawn(move|| send_append_entries(append_entries_mutex_clone, append_entries_thread_cluster_configuration, append_entries_thread_communicator));
 
 
-    let append_entries_procesor_mutex_clone = mutex_node.clone();
-    let append_entries_procesor_thread_reset_leadership_watchdog_tx = reset_leadership_watchdog_tx.clone();
-
+    let append_entries_processor_mutex_clone = mutex_node.clone();
+    let append_entries_processor_thread_reset_leadership_watchdog_tx = reset_leadership_watchdog_tx.clone();
+    let append_entries_request_rx = config.communicator.get_append_entries_request_rx(config.node_id);
     let append_entries_processor_thread = thread::spawn(move|| append_entries_processor(
-        append_entries_procesor_mutex_clone,
-        config.append_entries_rx_channel,
-        append_entries_procesor_thread_reset_leadership_watchdog_tx));
+        append_entries_processor_mutex_clone,
+        append_entries_request_rx,
+        append_entries_processor_thread_reset_leadership_watchdog_tx));
+
+    let change_membership_mutex_clone = mutex_node.clone();
+    let change_membership_cluster_config_clone = config.cluster_configuration.clone();
+    let add_server_rx = config.client_request_handler.get_add_server_channel_rx();
+    let change_membership_thread = thread::spawn(move|| change_membership(
+        change_membership_mutex_clone,
+        change_membership_cluster_config_clone,
+        add_server_rx));
 
     let _ = append_entries_thread.join();
     let _ = append_entries_processor_thread.join();
@@ -93,7 +99,7 @@ pub fn start(config : NodeConfiguration) {
 
 }
 
-
+//TODO remove debug
 fn debug_node_status(_: Arc<Mutex<Node>>) {
     loop {
 //        let node_copy;
