@@ -43,17 +43,16 @@ fn main() {
         thread::spawn(move || runner::start(config));
     }
 
-//    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(node_ids.clone())));
-//    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
-//                                     new_node_id, node_ids.len() as u32);
+    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
+    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
+                                     new_node_id);
 
     thread::park(); //TODO -  to join
 }
 
 fn run_add_server_thread_with_delay(communicator : communication::InProcNodeCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
-                                    new_node_id : u64,
-                                    node_count : u32) {
+                                    new_node_id : u64) {
 
     let new_server_config;
     {

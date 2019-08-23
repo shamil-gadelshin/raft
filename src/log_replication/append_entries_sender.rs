@@ -10,28 +10,29 @@ use crate::runner::NodeConfiguration;
 //TODO remove clone-values
 pub fn send_append_entries(protected_node: Arc<Mutex<Node>>,
                            cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-//                           change_server_membership_rx :  Receiver<AddServerRequest>,
+                           change_server_membership_rx :  Receiver<AddServerRequest>,
                            communicator : InProcNodeCommunicator
 ) {
     loop {
         let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
         select!(
             recv(heartbeat_timeout) -> _  => {
-                send_heart_beat(protected_node.clone(), cluster_configuration.clone(), communicator.clone())
+                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), communicator.clone())
                 },
-//            recv(watchdog_event_rx) -> _ => {
-//                let node = mutex_node.lock().expect("lock is poisoned");
-//                print_event(format!("Node {:?} Received reset watchdog ", node.id));
-//                continue
-//            },
-            //TODO : notify leadership
+            recv(change_server_membership_rx) -> req => {
+                send_change_membership(req.unwrap())
+            },
         );
 
 
     }
 }
 
-fn send_heart_beat(protected_node : Arc<Mutex<Node>>,
+fn send_change_membership(request : AddServerRequest) {
+    print_event(format!("Node {:?} Send 'Append Entries Request(change membership)'.", request));
+}
+
+fn send_heartbeat(protected_node : Arc<Mutex<Node>>,
                    cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                    communicator : InProcNodeCommunicator) {
     let (node_id, node_status, node_term)  = {

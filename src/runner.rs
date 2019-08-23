@@ -28,6 +28,7 @@ pub struct NodeConfiguration {
 pub fn start(config : NodeConfiguration) {
     let (tx, rx): (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) = crossbeam_channel::unbounded();
     let (reset_leadership_watchdog_tx, reset_leadership_watchdog_rx) : (Sender<LeaderConfirmationEvent>, Receiver<LeaderConfirmationEvent>) = crossbeam_channel::unbounded();
+    let (append_entries_add_server_tx, append_entries_add_server_rx) : (Sender<AddServerRequest>, Receiver<AddServerRequest>) = crossbeam_channel::unbounded();
 
     let node = Node{id : config.node_id, current_term: 0, status : NodeStatus::Follower, current_leader_id: None, voted_for_id : None};
     let mutex_node = Arc::new(Mutex::new(node));
@@ -71,7 +72,7 @@ pub fn start(config : NodeConfiguration) {
     let append_entries_mutex_clone = mutex_node.clone();
     let append_entries_thread_cluster_configuration = config.cluster_configuration.clone();
     let append_entries_thread_communicator = config.communicator.clone();
-    let append_entries_thread = thread::spawn(move|| send_append_entries(append_entries_mutex_clone, append_entries_thread_cluster_configuration, append_entries_thread_communicator));
+    let append_entries_thread = thread::spawn(move|| send_append_entries(append_entries_mutex_clone, append_entries_thread_cluster_configuration, append_entries_add_server_rx, append_entries_thread_communicator));
 
 
     let append_entries_processor_mutex_clone = mutex_node.clone();
@@ -84,11 +85,12 @@ pub fn start(config : NodeConfiguration) {
 
     let change_membership_mutex_clone = mutex_node.clone();
     let change_membership_cluster_config_clone = config.cluster_configuration.clone();
-    let add_server_rx = config.client_request_handler.get_add_server_channel_rx();
+    let client_add_server_rx = config.client_request_handler.get_add_server_channel_rx();
     let change_membership_thread = thread::spawn(move|| change_membership(
         change_membership_mutex_clone,
         change_membership_cluster_config_clone,
-        add_server_rx));
+        client_add_server_rx,
+        append_entries_add_server_tx));
 
     let _ = append_entries_thread.join();
     let _ = append_entries_processor_thread.join();

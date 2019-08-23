@@ -12,9 +12,10 @@ use crate::leadership::election::{LeaderElectionEvent, ElectionNotice};
 //TODO join client request handler
 pub fn change_membership(mutex_node: Arc<Mutex<Node>>,
                          cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                         add_server_channel_rx : Receiver<AddServerRequest>) {
+                         client_add_server_channel_rx : Receiver<AddServerRequest>,
+                         internal_add_server_channel_tx : Sender<AddServerRequest>) {
     loop {
-        let add_server_request_result = add_server_channel_rx.recv();
+        let add_server_request_result = client_add_server_channel_rx.recv();
         let request = add_server_request_result.unwrap(); //TODO
         let node = mutex_node.lock().expect("lock is poisoned");
 
@@ -23,5 +24,7 @@ pub fn change_membership(mutex_node: Arc<Mutex<Node>>,
         let mut cluster = cluster_configuration.lock().expect("cluster lock is poisoned");
 
         cluster.add_peer(request.new_server);
+
+        internal_add_server_channel_tx.send(request).unwrap(); //TODO error handling
     }
 }
