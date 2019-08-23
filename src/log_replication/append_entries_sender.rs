@@ -1,11 +1,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use crossbeam_channel::{Sender, Receiver};
+use crossbeam_channel::{Receiver};
 
 use crate::core::*;
 use crate::communication::*;
-use crate::runner::NodeConfiguration;
-
 
 //TODO remove clone-values
 pub fn send_append_entries(protected_node: Arc<Mutex<Node>>,

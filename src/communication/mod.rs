@@ -2,8 +2,6 @@ use crossbeam_channel::{Sender, Receiver};
 use std::collections::HashMap;
 
 use crate::core::*;
-use std::error::Error;
-use std::time::Duration;
 
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {
@@ -18,12 +16,12 @@ pub struct InProcNodeCommunicator {
 //TODO extract communicator trait
 impl InProcNodeCommunicator {
     pub fn new(nodes : Vec<u64>) -> InProcNodeCommunicator {
-        let mut vote_request_channels_tx = HashMap::new();
-        let mut vote_request_channels_rx = HashMap::new();
-        let mut vote_response_channels_tx = HashMap::new();
-        let mut vote_response_channels_rx = HashMap::new();
-        let mut append_entries_request_channels_tx = HashMap::new();
-        let mut append_entries_request_channels_rx = HashMap::new();
+        let vote_request_channels_tx = HashMap::new();
+        let vote_request_channels_rx = HashMap::new();
+        let vote_response_channels_tx = HashMap::new();
+        let vote_response_channels_rx = HashMap::new();
+        let append_entries_request_channels_tx = HashMap::new();
+        let append_entries_request_channels_rx = HashMap::new();
 
         let mut communicator = InProcNodeCommunicator{
             vote_request_channels_tx,

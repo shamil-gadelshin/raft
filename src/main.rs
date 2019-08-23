@@ -1,16 +1,13 @@
 use std::thread;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 #[macro_use]
 extern crate crossbeam_channel;
-use crossbeam_channel::{Sender, Receiver};
-
 extern crate chrono;
 
 
 mod core;
-mod runner;
+mod node_runner;
 mod leadership;
 mod communication;
 mod log_replication;
@@ -19,7 +16,7 @@ mod client_requests;
 
 use client_requests::ClientRequestHandler;
 use communication::{InProcNodeCommunicator};
-use crate::core::{VoteRequest, VoteResponse, AppendEntriesRequest, ClusterConfiguration, AddServerRequest, AddServerResponse};
+use crate::core::{ClusterConfiguration};
 use std::time::Duration;
 
 fn main() {
@@ -34,18 +31,18 @@ fn main() {
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
-        let config = runner::NodeConfiguration {
+        let config = node_runner::NodeConfiguration {
             node_id,
             cluster_configuration: protected_cluster_config.clone(),
             communicator: communicator.clone(),
             client_request_handler: ClientRequestHandler::new(),
         };
-        thread::spawn(move || runner::start(config));
+        thread::spawn(move || node_runner::start(config));
     }
 
-    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
-    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
-                                     new_node_id);
+//    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
+//    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
+//                                     new_node_id);
 
     thread::park(); //TODO -  to join
 }
@@ -60,7 +57,7 @@ fn run_add_server_thread_with_delay(communicator : communication::InProcNodeComm
         cluster_config.add_peer(new_node_id);
 
         // *** add new server
-        new_server_config = runner::NodeConfiguration {
+        new_server_config = node_runner::NodeConfiguration {
             node_id: new_node_id,
             cluster_configuration: protected_cluster_config.clone(),
             communicator: communicator.clone(),
@@ -71,7 +68,7 @@ fn run_add_server_thread_with_delay(communicator : communication::InProcNodeComm
     select!(
             recv(timeout) -> _  => {},
         );
-    thread::spawn(move || runner::start(new_server_config));
+    thread::spawn(move || node_runner::start(new_server_config));
 }
 /*
 TODO:
