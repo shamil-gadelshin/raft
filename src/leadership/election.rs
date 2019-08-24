@@ -3,7 +3,7 @@ use crossbeam_channel::{Sender, Receiver};
 use std::thread;
 
 use crate::core::*;
-use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
+use crate::communication::peers::{VoteResponse, InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 
 use super::peer_notifier;
@@ -74,7 +74,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 let mut node = mutex_node.lock().expect("lock is poisoned");
 
                 node.current_leader_id = Some(node.id);
-                //        node.voted_for_id = None;
+                //        node.voted_for_id = None; //TODO
                 node.current_term = term;
                 node.status = NodeStatus::Leader;
                 print_event(format!("Node {:?} Status changed to Leader", node.id));
