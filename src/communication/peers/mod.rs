@@ -22,6 +22,12 @@ pub struct AppendEntriesRequest {
     pub leader_id : u64
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct AppendEntriesResponse {
+    pub term : u64,
+    pub success : bool
+}
+
 //TODO communicator timeout handling
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {

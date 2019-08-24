@@ -110,7 +110,7 @@ Features:
 - log replication
     .memory snapshot
     .file snapshot
-    .persist server's current term and vote
+    .persist server's current term and vote and cluster configuration (state persistence)
 - membership changes
     .change quorum size
     .remove server(shutdown self)

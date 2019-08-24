@@ -50,6 +50,7 @@ fn send_heartbeat(protected_node : Arc<Mutex<Node>>,
 
         let append_entries_heartbeat = AppendEntriesRequest { term: node_term, leader_id: node_id };
         //TODO communicator timeout handling
+        //TODO rayon parallel-foreach
         for peer_id in peers_list_copy {
             communicator.send_append_entries_request(peer_id, append_entries_heartbeat);
         }
