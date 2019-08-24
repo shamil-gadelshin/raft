@@ -4,7 +4,7 @@ use chrono::prelude::*;
 pub struct Node {
     pub id : u64, //TODO pass node_id as copy to decrease mutex lock count
     pub current_term: u64,
-    pub current_leader_id: Option<u64>, //TODO delete?
+    pub current_leader_id: Option<u64>,
     pub voted_for_id: Option<u64>,
     pub status : NodeStatus
 }

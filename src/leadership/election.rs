@@ -66,7 +66,7 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                                                                   event_sender,
                                                                   node_id,
                                                                   communicator_copy,
-                                                                  response_rx_copy,
+             //                                                     response_rx_copy,
                                                                   peers_copy,
                                                                   quorum_size));
             },
@@ -85,7 +85,6 @@ pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
                 let mut node = mutex_node.lock().expect("lock is poisoned");
 
                 node.current_term = vr.term;
-                node.current_leader_id = Some(vr.candidate_id);
                 node.status = NodeStatus::Follower;
                 print_event(format!("Node {:?} Status changed to Follower", node.id));
 

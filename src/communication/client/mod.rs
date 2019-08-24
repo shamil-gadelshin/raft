@@ -2,6 +2,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
 use std::time::Duration;
+use crate::communication::duplex_channel::DuplexChannel;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ChangeMembershipResponseStatus {
@@ -23,33 +24,25 @@ pub struct AddServerResponse {
 
 #[derive(Clone)]
 pub struct ClientRequestHandler {
-    add_server_request_tx: Sender<AddServerRequest>,
-    add_server_request_rx: Receiver<AddServerRequest>,
-    add_server_response_tx: Sender<AddServerResponse>,
-    add_server_response_rx: Receiver<AddServerResponse>,
+    duplex_channel : DuplexChannel<AddServerRequest, AddServerResponse>
 }
 
 impl ClientRequestHandler {
     pub fn new() -> ClientRequestHandler {
-        let (add_server_request_tx, add_server_request_rx): (Sender<AddServerRequest>, Receiver<AddServerRequest>) = crossbeam_channel::bounded(0);
-        let (add_server_response_tx, add_server_response_rx): (Sender<AddServerResponse>, Receiver<AddServerResponse>) = crossbeam_channel::bounded(0);
 
         let client = ClientRequestHandler{
-            add_server_request_tx,
-            add_server_request_rx,
-            add_server_response_tx,
-            add_server_response_rx
+            duplex_channel : DuplexChannel::new()
         };
 
         client
     }
 
     pub fn get_add_server_request_rx(&self) -> Receiver<AddServerRequest> {
-        self.add_server_request_rx.clone()
+        self.duplex_channel.get_request_rx()
     }
 
     pub fn get_add_server_response_tx(&self) -> Sender<AddServerResponse> {
-        self.add_server_response_tx.clone()
+        self.duplex_channel.get_response_tx()
     }
 
     //TODO change result error type
@@ -62,7 +55,7 @@ impl ClientRequestHandler {
                 return Err("Send add_server_request timeout")
  //TODO               return Err(format!("Send add_rpc_timeout - Destination Node {:?} Sending request {:?}",destination_node_id, request))
             },
-            send(self.add_server_request_tx, request) -> res => {
+            send(self.duplex_channel.request_tx, request) -> res => {
                 if let Err(err) = res {
                     return Err("Cannot send add_server_request")
                 }
@@ -73,7 +66,7 @@ impl ClientRequestHandler {
             recv(timeout) -> _  => {
                 return Err("Receive add_server_response timeout")
             },
-            recv(self.add_server_response_rx) -> res => {
+            recv(self.duplex_channel.response_rx) -> res => {
                 if let Err(err) = res {
                     return Err("Cannot receive add_server_response")
                 }
