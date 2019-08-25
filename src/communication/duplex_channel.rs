@@ -44,35 +44,22 @@ impl <Request, Response> DuplexChannel<Request, Response> {
 
     //TODO change result error type
     pub fn send_request(&self, request: Request) -> Result<Response, &'static str> {
-//        print_event( format!("Add server request {:?}", request));
+        let timeout = Duration::from_millis(500);
 
-        let timeout = crossbeam_channel::after(Duration::new(1,0));
-        select!(
-            recv(timeout) -> _  => {
-                return Err("Send request timeout")
-            },
-            send(self.request_tx, request) -> res => {
-                if let Err(err) = res {
-                    return Err("Cannot send request")
-                }
-            },
-        );
+        let send_result = self.request_tx.send_timeout(request, timeout);
+        if let Err(err) = send_result {
+            return Err("Cannot send request. Timeout.")
+        }
 
-        select!(
-            recv(timeout) -> _  => {
-                return Err("Receive response timeout")
-            },
-            recv(self.response_rx) -> res => {
-                if let Err(err) = res {
-                    return Err("Cannot receive from response_rx")
-                }
-                if let Ok(resp) = res {
-                    let response = resp;
+        let receive_result = self.response_rx.recv_timeout(timeout);
+        if let Err(err) = receive_result {
+            return Err("Cannot receive from response_rx")
+        }
+        if let Ok(resp) = receive_result {
+            let response = resp;
 
-                    return Ok(response);
-                }
-            },
-        );
+            return Ok(response);
+        }
 
         panic!("invalid request-response sequence");
     }

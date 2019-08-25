@@ -23,6 +23,8 @@ pub struct AppendEntriesRequest {
     pub leader_id : u64
 }
 
+
+
 #[derive(Clone, Copy, Debug)]
 pub struct AppendEntriesResponse {
     pub term : u64,
@@ -33,21 +35,18 @@ pub struct AppendEntriesResponse {
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {
     votes_channels: HashMap<u64,DuplexChannel<VoteRequest, VoteResponse>>,
-    append_entries_request_channels_tx: HashMap<u64, Sender<AppendEntriesRequest>>,
-    append_entries_request_channels_rx: HashMap<u64, Receiver<AppendEntriesRequest>>,
+    append_entries_channels: HashMap<u64,DuplexChannel<AppendEntriesRequest, AppendEntriesResponse>>,
 }
 
 //TODO extract communicator trait
 impl InProcNodeCommunicator {
     pub fn new(nodes : Vec<u64>) -> InProcNodeCommunicator {
         let votes_channels = HashMap::new();
-        let append_entries_request_channels_tx = HashMap::new();
-        let append_entries_request_channels_rx = HashMap::new();
+        let append_entries_channels = HashMap::new();
 
         let mut communicator = InProcNodeCommunicator{
             votes_channels,
-            append_entries_request_channels_tx,
-            append_entries_request_channels_rx,
+            append_entries_channels,
         };
 
         for node_id in nodes {
@@ -59,11 +58,10 @@ impl InProcNodeCommunicator {
 
     pub fn add_node_communication(&mut self, node_id : u64) {
         let vote_duplex = DuplexChannel::new();
-        let (append_entries_request_tx, append_entries_request_rx): (Sender<AppendEntriesRequest>, Receiver<AppendEntriesRequest>) = crossbeam_channel::unbounded();
+        let append_entries_duplex = DuplexChannel::new();
 
         self.votes_channels.insert(node_id, vote_duplex);
-        self.append_entries_request_channels_tx.insert(node_id, append_entries_request_tx);
-        self.append_entries_request_channels_rx.insert(node_id, append_entries_request_rx);
+        self.append_entries_channels.insert(node_id, append_entries_duplex);
     }
 
     pub fn get_vote_request_channel_rx(&self, node_id : u64) -> Receiver<VoteRequest> {
@@ -75,7 +73,7 @@ impl InProcNodeCommunicator {
     }
 
     pub fn get_append_entries_request_rx(&self, node_id : u64) -> Receiver<AppendEntriesRequest> {
-        self.append_entries_request_channels_rx[&node_id].clone()
+        self.append_entries_channels[&node_id].get_request_rx()
     }
 
     //// *** TODO: split creation & function
@@ -91,7 +89,7 @@ impl InProcNodeCommunicator {
     }
     pub fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) {
         print_event( format!("Destination Node {:?} Sending request {:?}",destination_node_id, request));
-        self.append_entries_request_channels_tx[&destination_node_id].send(request).expect("cannot send vote request");
+        self.append_entries_channels[&destination_node_id].request_tx.send(request).expect("cannot send vote response");
     }
 }
 
