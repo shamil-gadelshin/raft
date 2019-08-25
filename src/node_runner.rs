@@ -10,14 +10,14 @@ use crate::communication::client::{AddServerRequest};
 use crate::configuration::node::{NodeConfiguration};
 
 
-use crate::leadership::election::*;
-use crate::leadership::leader_watcher ::*;
-use crate::leadership::vote_request_processor ::*;
+use crate::leadership::election::{LeaderElectionEvent, run_leader_election_process};
+use crate::leadership::leader_watcher::{watch_leader_status};
+use crate::leadership::vote_request_processor::{vote_request_processor};
 
-use crate::log::replication::append_entries_processor::*; //TODO change project structure
-use crate::log::replication::append_entries_sender::*;
+use crate::log::replication::append_entries_processor::{append_entries_processor}; //TODO change project structure
+use crate::log::replication::append_entries_sender::{send_append_entries};
 
-use crate::membership::*;
+use crate::membership::{change_membership};
 use crate::log::storage::LogStorage;
 
 

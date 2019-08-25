@@ -1,4 +1,4 @@
-use chrono::prelude::*;
+use chrono::prelude::{DateTime, Local};
 use std::sync::{Arc};
 
 //TODO ?
@@ -28,6 +28,8 @@ pub struct AddServerEntryDetails {
     pub new_server : u64
 }
 
+
+//TODO introduce logging system
 pub fn print_event(message : String){
 
     let now: DateTime<Local> = Local::now();

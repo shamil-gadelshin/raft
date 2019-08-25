@@ -102,7 +102,6 @@ TODO:
 - RW-lock for communicator
 - check channels overflow
 - check channels bounded-unbounded types
-- remove mod::*
 - raft vs infrastructure module(code) separation
 
 Features:
@@ -121,6 +120,12 @@ Features:
 - client_requests support
     .server api
     .separate client_requests
+- system events logging
+    .introduce logging system (remove print_event())
+    .increase log coverage
+- error handling
+    .communication timeouts
+    .investigate channels faults
 - library crate
 - readme.md
 - debug
