@@ -4,11 +4,12 @@ use crossbeam_channel::{Sender, Receiver};
 use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
 use crate::core::*;
+use crate::log::storage::LogStorage;
 
-pub fn vote_request_processor(  leader_election_event_tx : Sender<LeaderElectionEvent>,
-                                mutex_node: Arc<Mutex<Node>>,
-                                communicator : InProcNodeCommunicator,
-                                request_event_rx : Receiver<VoteRequest>,
+pub fn vote_request_processor<Log: Sync + Send + LogStorage>(leader_election_event_tx : Sender<LeaderElectionEvent>,
+                                                             mutex_node: Arc<Mutex<Node<Log>>>,
+                                                             communicator : InProcNodeCommunicator,
+                                                             request_event_rx : Receiver<VoteRequest>,
 ) {
 
     loop {

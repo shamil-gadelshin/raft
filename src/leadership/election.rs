@@ -7,6 +7,7 @@ use crate::communication::peers::{VoteResponse, InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 
 use super::peer_notifier;
+use crate::log::storage::LogStorage;
 
 pub enum LeaderElectionEvent {
     PromoteNodeToCandidate(ElectionNotice),
@@ -20,13 +21,13 @@ pub struct ElectionNotice {
 }
 
 
-pub fn run_leader_election_process(mutex_node: Arc<Mutex<Node>>,
-                                   leader_election_event_tx : Sender<LeaderElectionEvent>,
-                                   leader_election_event_rx : Receiver<LeaderElectionEvent>,
-                                   response_event_rx : Receiver<VoteResponse>,
-                                   watchdog_event_tx : Sender<LeaderConfirmationEvent>,
-                                   communicator : InProcNodeCommunicator,
-                                   cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
+                                                                  leader_election_event_tx : Sender<LeaderElectionEvent>,
+                                                                  leader_election_event_rx : Receiver<LeaderElectionEvent>,
+                                                                  response_event_rx : Receiver<VoteResponse>,
+                                                                  watchdog_event_tx : Sender<LeaderConfirmationEvent>,
+                                                                  communicator : InProcNodeCommunicator,
+                                                                  cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
 ) {
 
     {

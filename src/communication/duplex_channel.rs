@@ -1,7 +1,5 @@
 use crossbeam_channel::{Sender, Receiver};
-use std::marker::PhantomData;
 
-use crate::core::*;
 use std::time::Duration;
 
 #[derive(Clone)]

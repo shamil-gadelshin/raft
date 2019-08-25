@@ -5,13 +5,14 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::core::*;
 use crate::communication::client::{AddServerRequest,AddServerResponse, ChangeMembershipResponseStatus};
 use crate::configuration::cluster::{ClusterConfiguration};
+use crate::log::storage::LogStorage;
 
 //TODO join client request handler
-pub fn change_membership(mutex_node: Arc<Mutex<Node>>,
-                         cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                         client_add_server_request_rx : Receiver<AddServerRequest>,
-                         client_add_server_response_tx : Sender<AddServerResponse>,
-                         internal_add_server_channel_tx : Sender<AddServerRequest>) {
+pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
+                                                        cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+                                                        client_add_server_request_rx : Receiver<AddServerRequest>,
+                                                        client_add_server_response_tx : Sender<AddServerResponse>,
+                                                        internal_add_server_channel_tx : Sender<AddServerRequest>) {
     loop {
         let add_server_request_result = client_add_server_request_rx.recv();
         let request = add_server_request_result.unwrap(); //TODO

@@ -4,14 +4,14 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::core::*;
-
+use crate::core::{Node,NodeStatus, LeaderConfirmationEvent, print_event};
 use super::election::{LeaderElectionEvent, ElectionNotice};
+use crate::log::storage::LogStorage;
 
 
-pub fn watch_leader_status(mutex_node: Arc<Mutex<Node>>,
-                       leadership_event_tx : Sender<LeaderElectionEvent>,
-                       watchdog_event_rx : Receiver<LeaderConfirmationEvent>) {
+pub fn watch_leader_status<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
+                                                          leadership_event_tx : Sender<LeaderElectionEvent>,
+                                                          watchdog_event_rx : Receiver<LeaderConfirmationEvent>) {
     loop {
         let timeout = crossbeam_channel::after(random_awaiting_leader_duration_ms());
         select!(

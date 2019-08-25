@@ -14,10 +14,11 @@ mod communication;
 mod log;
 mod membership;
 mod configuration;
+mod state;
 
 use communication::client::{AddServerRequest,ClientRequestHandler};
 use communication::peers::{InProcNodeCommunicator};
-use crate::log::storage::{MemoryStorage};
+use crate::log::storage::{MemoryLogStorage};
 use crate::configuration::cluster::ClusterConfiguration;
 use crate::configuration::node::NodeConfiguration;
 
@@ -40,9 +41,8 @@ fn main() {
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_request_handler: client_request_handler.clone(),
-            storage : MemoryStorage::new(),
         };
-        thread::spawn(move || node_runner::start_node(config));
+        thread::spawn(move || node_runner::start_node(config,  MemoryLogStorage::new()));
 
         client_handlers.insert(node_id, client_request_handler);
     }
@@ -71,14 +71,13 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_request_handler : ClientRequestHandler::new(),
-            storage : MemoryStorage::new()
         };
     }
     let timeout = crossbeam_channel::after(Duration::new(3,0));
     select!(
             recv(timeout) -> _  => {},
         );
-    thread::spawn(move || node_runner::start_node(new_server_config));
+    thread::spawn(move || node_runner::start_node(new_server_config,MemoryLogStorage::new()));
 
     let request = AddServerRequest{new_server : new_node_id};
     for kv in client_handlers {
@@ -107,10 +106,15 @@ TODO:
 - raft vs infrastructure module(code) separation
 
 Features:
+- fsm support
 - log replication
     .memory snapshot
     .file snapshot
     .persist server's current term and vote and cluster configuration (state persistence)
+    .response to the client after majority of the servers responses
+    .log forcing from the leader
+        .empty (heartbeat) AppendEntries on node's current log index evaluating
+    .support max AppendEntries size parameter
 - membership changes
     .change quorum size
     .remove server(shutdown self)

@@ -2,11 +2,13 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::core::*;
-use crate::communication::peers::AppendEntriesRequest;
+use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
+use crate::log::storage::LogStorage;
 
-pub fn append_entries_processor(
-                                mutex_node: Arc<Mutex<Node>>,
+pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
+                                mutex_node: Arc<Mutex<Node<Log>>>,
                                 append_entries_request_rx : Receiver<AppendEntriesRequest>,
+                                append_entries_response_tx : Sender<AppendEntriesResponse>,
                                 reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>)
 {
 
@@ -24,6 +26,10 @@ pub fn append_entries_processor(
         //TODO check for terms & entry index
         node.current_leader_id = Some(request.leader_id);
         reset_leadership_watchdog_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderConfirmationEvent");
+
+        //TODO change to timeout
+        let resp = AppendEntriesResponse{term : node.current_term, success: true};
+        append_entries_response_tx.send(resp).expect("cannot send AppendEntriesResponse");
     }
 }
 

@@ -3,7 +3,7 @@ use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
-use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
+use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
 use crate::core::*;
 
 //TODO refactor to DuplexChannel. Watch out for election timeout
@@ -15,8 +15,6 @@ pub fn notify_peers(term : u64,
                 peers : Vec<u64>,
                 quorum_size: u32) {
     let vote_request = VoteRequest { candidate_id: node_id, term };
-    let peers_exist = !peers.is_empty();
-    let mut votes = 1;
     let peers_exist = !peers.is_empty();
 
     for peer_id in peers {
@@ -82,7 +80,7 @@ fn process_votes( node_id : u64,
             recv(terminate_thread_rx) -> _ => {
                return;
             },
-            recv(communicator.get_vote_response_channel_rx(node_id)) -> response => {
+            recv(communicator.get_vote_response_rx(node_id)) -> response => {
                 let resp = response.unwrap(); //TODO
 
                 print_event(format!("Node {:?} Receiving response {:?}",node_id,  resp));
