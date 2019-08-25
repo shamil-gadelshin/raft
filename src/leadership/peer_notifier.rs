@@ -4,7 +4,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
-use crate::core::*;
+use crate::common::*;
 
 //TODO refactor to DuplexChannel. Watch out for election timeout
 pub fn notify_peers(term : u64,

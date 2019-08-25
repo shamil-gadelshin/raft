@@ -1,6 +1,6 @@
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::core::*;
+use crate::common::*;
 use std::time::Duration;
 use crate::communication::duplex_channel::DuplexChannel;
 

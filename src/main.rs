@@ -7,7 +7,7 @@ use std::collections::HashMap;
 extern crate crossbeam_channel;
 extern crate chrono;
 
-mod core;
+mod common;
 mod node_runner;
 mod leadership;
 mod communication;
@@ -85,7 +85,7 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
 
         let resp = v.add_server(request);
 
-        core::print_event(format!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp));
+        common::print_event(format!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp));
     }
 }
 /*

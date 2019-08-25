@@ -4,7 +4,8 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::core::{Node,NodeStatus, LeaderConfirmationEvent, print_event};
+use crate::common::{LeaderConfirmationEvent, print_event};
+use crate::state::{Node, NodeStatus};
 use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::log::storage::LogStorage;
 

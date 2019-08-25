@@ -1,4 +1,4 @@
-use crate::core::{AddServerEntryDetails, DataEntryDetails};
+use crate::common::{AddServerEntryDetails, DataEntryDetails};
 
 pub trait LogStorage {
     fn append_entry(&mut self, entry : Entry);

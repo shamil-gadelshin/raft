@@ -1,7 +1,7 @@
 use crossbeam_channel::{Sender, Receiver};
 use std::collections::HashMap;
 
-use crate::core::*;
+use crate::common::*;
 use crate::communication::duplex_channel::DuplexChannel;
 
 #[derive(Clone, Copy, Debug)]

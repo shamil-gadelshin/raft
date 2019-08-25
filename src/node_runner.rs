@@ -4,7 +4,8 @@ use std::thread::{sleep, JoinHandle};
 use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::core::*;
+use crate::common::{LeaderConfirmationEvent};
+use crate::state::{Node, NodeStatus};
 use crate::communication::client::{AddServerRequest};
 use crate::configuration::node::{NodeConfiguration};
 

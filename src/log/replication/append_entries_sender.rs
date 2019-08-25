@@ -2,7 +2,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use crossbeam_channel::{Receiver};
 
-use crate::core::{Node, NodeStatus, print_event};
+use crate::common::{print_event};
+use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::client::{AddServerRequest};
 use crate::configuration::cluster::{ClusterConfiguration};

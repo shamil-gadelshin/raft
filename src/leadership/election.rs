@@ -2,7 +2,8 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 use std::thread;
 
-use crate::core::*;
+use crate::common::{print_event, LeaderConfirmationEvent};
+use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{VoteResponse, InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 
@@ -59,7 +60,6 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                 };
 
                 let communicator_copy = communicator.clone();
-                let response_rx_copy = response_event_rx.clone();
 
                 //TODO              optional abort channel for notifier
 
@@ -67,7 +67,6 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                                                                   event_sender,
                                                                   node_id,
                                                                   communicator_copy,
-             //                                                     response_rx_copy,
                                                                   peers_copy,
                                                                   quorum_size));
             },
