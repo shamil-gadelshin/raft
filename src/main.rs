@@ -89,23 +89,19 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
     }
 }
 /*
-TODO:
-- logging
-- crossbeam?rayon threading
-- futures?
-- tests
-- speed & memory profiling
-- identity - libp2p
-- generic identity?
-- tarpc
-- consider replacing mutex with cas for nodes
-- RW-lock for communicator
-- check channels overflow
-- check channels bounded-unbounded types
-- raft vs infrastructure module(code) separation
-
-Features:
+TODO: Features:
+- investigate
+   .futures
+   .check channels bounded-unbounded types
+   .check channels overflows
 - fsm support
+- identity
+    .generic
+    .libp2p
+- communication
+    .libp2p
+    .tarpc
+    .grpc
 - log replication
     .memory snapshot
     .file snapshot
@@ -126,11 +122,23 @@ Features:
 - error handling
     .communication timeouts
     .investigate channels faults
-- library crate
-- readme.md
+- project structure
+    .library crate
+    .raft vs infrastructure module(code) separation
 - debug
+    .tests
     .cases
     .conditional compilation
+- user-friendliness
+    .readme.md
+    .documentation
+    .license
+- optimization
+    .rayon on nodes requests
+    .speed & memory profiling
+    .consider replacing mutex with cas (or RW-lock) for nodes
+    .RW-lock for communicator
+
 
 Done:
 - leader election
