@@ -45,7 +45,8 @@ impl ClientRequestHandler {
         self.duplex_channel.get_response_tx()
     }
 
-    //TODO change result error type
+    //TODO consider & change result error type
+    //TODO refactor to the send_request
     pub fn add_server(&self, request: AddServerRequest) -> Result<AddServerResponse, &'static str> {
         print_event( format!("Add server request {:?}", request));
 
@@ -53,10 +54,9 @@ impl ClientRequestHandler {
         select!(
             recv(timeout) -> _  => {
                 return Err("Send add_server_request timeout")
- //TODO               return Err(format!("Send add_rpc_timeout - Destination Node {:?} Sending request {:?}",destination_node_id, request))
             },
             send(self.duplex_channel.request_tx, request) -> res => {
-                if let Err(err) = res {
+                if let Err(_) = res {
                     return Err("Cannot send add_server_request")
                 }
             },
@@ -67,7 +67,7 @@ impl ClientRequestHandler {
                 return Err("Receive add_server_response timeout")
             },
             recv(self.duplex_channel.response_rx) -> res => {
-                if let Err(err) = res {
+                if let Err(_) = res {
                     return Err("Cannot receive add_server_response")
                 }
                 if let Ok(resp) = res {

@@ -28,10 +28,7 @@ impl <Request, Response> DuplexChannel<Request, Response> {
     pub fn get_request_rx(&self) -> Receiver<Request> {
         self.request_rx.clone()
     }
-
-    pub fn get_request_tx(&self) -> Sender<Request> {
-        self.request_tx.clone()
-    }
+    pub fn get_request_tx(&self) -> Sender<Request> { self.request_tx.clone() }
 
     pub fn get_response_tx(&self) -> Sender<Response> {
         self.response_tx.clone()
@@ -40,17 +37,17 @@ impl <Request, Response> DuplexChannel<Request, Response> {
         self.response_rx.clone()
     }
 
-    //TODO change result error type
+    //TODO consider & change result error type
     pub fn send_request(&self, request: Request) -> Result<Response, &'static str> {
         let timeout = Duration::from_millis(500);
 
         let send_result = self.request_tx.send_timeout(request, timeout);
-        if let Err(err) = send_result {
+        if let Err(_) = send_result {
             return Err("Cannot send request. Timeout.")
         }
 
         let receive_result = self.response_rx.recv_timeout(timeout);
-        if let Err(err) = receive_result {
+        if let Err(_) = receive_result {
             return Err("Cannot receive from response_rx")
         }
         if let Ok(resp) = receive_result {

@@ -57,7 +57,10 @@ fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node
         //TODO communicator timeout handling
         //TODO rayon parallel-foreach
         for peer_id in peers_list_copy {
-            communicator.send_append_entries_request(peer_id, append_entries_heartbeat_template.clone());
+            let resp = communicator.send_append_entries_request(peer_id, append_entries_heartbeat_template.clone());
+            if let Err(err) = resp {
+                print_event(format!("Failed : Node {:?} Send 'Append Entries Request(empty)' {:?}", node_id, err));
+            }
         }
     }
 }
@@ -70,7 +73,7 @@ fn create_empty_append_entry_request<Log: Sync + Send + LogStorage>(protected_no
         leader_id: node.id,
         prev_log_term : node.get_last_entry_term(),
         prev_log_index : node.get_last_entry_index(),
-        leader_commit : 0, //TODO fsm
+        leader_commit : 0, //TODO support fsm
         entries : Vec::new()
     };
 

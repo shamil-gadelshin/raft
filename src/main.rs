@@ -51,7 +51,7 @@ fn main() {
     run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
                                      client_handlers,
                                      new_node_id);
-    //TODO -  to join to node thread
+    //TODO -  change to 'join to the node thread'
     thread::sleep(Duration::from_secs(86000 * 1000));
 }
 
@@ -88,20 +88,29 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
         common::print_event(format!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp));
     }
 }
+
+
 /*
 TODO: Features:
 - investigate
    .futures
    .check channels bounded-unbounded types
    .check channels overflows
+   .election trait?
+   .extract communicator trait
+   .project timeouts
 - fsm support
 - identity
     .generic
     .libp2p
 - communication
+    .client_requests support
+        .server api
+        .separate client_requests
     .libp2p
     .tarpc
     .grpc
+    .change client and node response patterns (after committing to the log)
 - log replication
     .memory snapshot
     .file snapshot
@@ -113,18 +122,23 @@ TODO: Features:
 - membership changes
     .change quorum size
     .remove server(shutdown self)
-- client_requests support
-    .server api
-    .separate client_requests
 - system events logging
     .introduce logging system (remove print_event())
     .increase log coverage
 - error handling
+    .error style
     .communication timeouts
     .investigate channels faults
 - project structure
     .library crate
+    .separate client?
+    .exe-project
     .raft vs infrastructure module(code) separation
+- release
+    .consensus
+    .configuration
+        .cmd params
+        .file (toml?)
 - debug
     .tests
     .cases
@@ -138,6 +152,10 @@ TODO: Features:
     .speed & memory profiling
     .consider replacing mutex with cas (or RW-lock) for nodes
     .RW-lock for communicator
+    .optional abort channel for peers notifier (election) (abort_election_event_rx in notify_peers fn)
+
+Future Features:
+- transfer leadership
 
 
 Done:

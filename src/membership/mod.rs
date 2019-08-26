@@ -8,15 +8,13 @@ use crate::communication::client::{AddServerRequest,AddServerResponse, ChangeMem
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::log::storage::LogStorage;
 
-//TODO join client request handler
 pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
                                                         cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                                                         client_add_server_request_rx : Receiver<AddServerRequest>,
                                                         client_add_server_response_tx : Sender<AddServerResponse>,
                                                         internal_add_server_channel_tx : Sender<AddServerRequest>) {
     loop {
-        let add_server_request_result = client_add_server_request_rx.recv();
-        let request = add_server_request_result.unwrap(); //TODO
+        let request = client_add_server_request_rx.recv().expect("cannot get request from client_add_server_request_rx");
 
         let (node_id, node_status, current_leader_id) = {
             let node = mutex_node.lock().expect("lock is poisoned");
@@ -35,12 +33,12 @@ pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<No
 
             cluster.add_peer(request.new_server);
 
-            internal_add_server_channel_tx.send(request).unwrap(); //TODO error handling
+            internal_add_server_channel_tx.send(request).expect("cannot sed request to internal_add_server_channel_tx");
 
         } else {
             let add_server_response = AddServerResponse{status: ChangeMembershipResponseStatus::NotLeader, current_leader:current_leader_id};
 
-            client_add_server_response_tx.send(add_server_response).expect("cannot send client_add_server_response");
+            client_add_server_response_tx.send(add_server_response).expect("cannot send response client_add_server");
         }
     }
 }

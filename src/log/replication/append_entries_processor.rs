@@ -14,8 +14,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
 {
 
     loop {
-        let request_result = append_entries_request_rx.recv();
-        let request = request_result.unwrap(); //TODO
+        let request = append_entries_request_rx.recv().expect("cannot get request from append_entries_request_rx");
         let mut node = mutex_node.lock().expect("lock is poisoned");
 
         print_event(format!("Node {:?} Received 'Append Entries Request' {:?}", node.id, request));

@@ -61,7 +61,7 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
 
                 let communicator_copy = communicator.clone();
 
-                //TODO              optional abort channel for notifier
+
 
                 thread::spawn(move || peer_notifier::notify_peers(vr.term,
                                                                   event_sender,
@@ -74,7 +74,7 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                 let mut node = mutex_node.lock().expect("lock is poisoned");
 
                 node.current_leader_id = Some(node.id);
-                //        node.voted_for_id = None; //TODO
+                //        node.voted_for_id = None; //TODO fill voted_for_id with data
                 node.current_term = term;
                 node.status = NodeStatus::Leader;
                 print_event(format!("Node {:?} Status changed to Leader", node.id));

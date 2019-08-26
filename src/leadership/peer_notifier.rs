@@ -6,12 +6,11 @@ use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
 use crate::common::{print_event};
 
-//TODO refactor to DuplexChannel. Watch out for election timeout
+//TODO refactor to DuplexChannel.send_request. Watch out for election timeout
 pub fn notify_peers(term : u64,
                 election_event_tx : Sender<LeaderElectionEvent>,
                 node_id : u64,
                 communicator : InProcNodeCommunicator,
-                //     abort_election_event_rx : Receiver<LeaderElectedEvent>, TODO ?
                 peers : Vec<u64>,
                 quorum_size: u32) {
     let vote_request = VoteRequest { candidate_id: node_id, term };
@@ -32,7 +31,7 @@ pub fn notify_peers(term : u64,
             select!(
             recv(timeout) -> _ => {
                 print_event(format!("Leader election timed out for NodeId =  {:?} ", node_id));
-                terminate_thread_tx.send(true);
+                terminate_thread_tx.send(true).expect("Cannot send to terminate_thread_tx");
                 break;
             },
             recv(quorum_gathered_rx) -> _ => {
@@ -43,23 +42,11 @@ pub fn notify_peers(term : u64,
 
                 return;
             },
-//            recv(abort_election_event_rx) -> _ => {
-//                println!("Leader election received for {:?} ", node_id);
-//                return;
-//            },
-//            recv(communicator.get_vote_response_channel_rx(node_id)) -> response => {
-//                let resp = response.unwrap(); //TODO
-//
-//                print_event(format!("Node {:?} Receiving response {:?}",node_id,  resp));
-//                if (resp.term == term) && (resp.vote_granted) {
-//                    votes += 1;
-//                }
-//            }
         );
         }
     }
 
-    election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term: term }))
+    election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term }))
             .expect("cannot send LeaderElectionEvent");
 
 }
@@ -81,7 +68,7 @@ fn process_votes( node_id : u64,
                return;
             },
             recv(communicator.get_vote_response_rx(node_id)) -> response => {
-                let resp = response.unwrap(); //TODO
+                let resp = response.expect("Cannot receive from communicator.get_vote_response_rx(node_id)");
 
                 print_event(format!("Node {:?} Receiving response {:?}",node_id,  resp));
                 if (resp.term == term) && (resp.vote_granted) {
@@ -89,7 +76,7 @@ fn process_votes( node_id : u64,
                 }
 
                 if votes >= quorum_size {
-                    quorum_gathered_tx.send(true);
+                    quorum_gathered_tx.send(true).expect("Cannot send to quorum_gathered_tx");
                     return;
                 }
              }

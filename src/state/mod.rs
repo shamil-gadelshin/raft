@@ -10,6 +10,7 @@ pub struct Node<Log: LogStorage + Sized + Sync> {
     pub log : Log,
 }
 
+
 impl <Log: Sized + Sync + LogStorage> Node<Log> {
     pub fn get_last_entry_index(&self) -> u64{
         self.log.get_last_entry_index()

@@ -22,7 +22,6 @@ pub fn watch_leader_status<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<
                 print_event(format!("Node {:?} Received reset watchdog ", node.id));
                 continue
             },
-            //TODO : notify leadership
         );
 
         let node = mutex_node.lock().expect("lock is poisoned");

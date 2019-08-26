@@ -12,7 +12,7 @@ pub struct MemoryLogStorage {
 }
 
 impl LogStorage for MemoryLogStorage {
-    //TODO check duplicates (success)
+    //TODO check for duplicates
     fn append_entry(&mut self, entry : Entry) {
         self.entries.push(entry);
     }
@@ -23,7 +23,7 @@ impl LogStorage for MemoryLogStorage {
             return entry.index;
         }
 
-        0
+        0 //Raft documentation demands zero as initial value
     }
     fn get_last_entry_term(&self) -> u64{
         let last = self.entries.last();
@@ -31,7 +31,7 @@ impl LogStorage for MemoryLogStorage {
             return entry.term;
         }
 
-        0
+        0 //Raft documentation demands zero as initial value
     }
 }
 

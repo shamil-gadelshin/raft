@@ -40,14 +40,13 @@ pub struct AppendEntriesResponse {
     pub success : bool
 }
 
-//TODO communicator timeout handling
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {
     votes_channels: HashMap<u64,DuplexChannel<VoteRequest, VoteResponse>>,
     append_entries_channels: HashMap<u64,DuplexChannel<AppendEntriesRequest, AppendEntriesResponse>>,
 }
 
-//TODO extract communicator trait
+
 impl InProcNodeCommunicator {
     pub fn new(nodes : Vec<u64>) -> InProcNodeCommunicator {
         let votes_channels = HashMap::new();
@@ -88,9 +87,8 @@ impl InProcNodeCommunicator {
         self.append_entries_channels[&node_id].get_response_tx()
     }
 
-    //// *** TODO: split creation & function
     //TODO check node_id existence
-    //TODO communicator timeout handling
+    //TODO handle communicator timeouts
     pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
         print_event( format!("Destination Node {:?} Sending request {:?}",destination_node_id, request));
         self.votes_channels[&destination_node_id].request_tx.send(request).expect("cannot send vote request");

@@ -14,7 +14,7 @@ use crate::leadership::election::{LeaderElectionEvent, run_leader_election_proce
 use crate::leadership::leader_watcher::{watch_leader_status};
 use crate::leadership::vote_request_processor::{vote_request_processor};
 
-use crate::log::replication::append_entries_processor::{append_entries_processor}; //TODO change project structure
+use crate::log::replication::append_entries_processor::{append_entries_processor};
 use crate::log::replication::append_entries_sender::{send_append_entries};
 
 use crate::membership::{change_membership};
@@ -53,10 +53,10 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
                                                                         &node_config
     );
 
-    /* debug //TODO
+    /* debug  */
     let debug_mutex_clone = protected_node.clone();
-    let check_debug_node_thread = thread::spawn(move|| debug_node_status( debug_mutex_clone));
-    */
+    let _ = thread::spawn(move|| debug_node_status( debug_mutex_clone));
+
 
     let append_entries_thread = create_append_entries_thread(protected_node.clone(),
                                                              append_entries_add_server_rx,
@@ -73,7 +73,6 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
     let _ = change_membership_thread.join();
     let _ = append_entries_thread.join();
     let _ = append_entries_processor_thread.join();
-//    let _ = check_debug_node_thread.join(); //TODO
     let _ = vote_request_processor_thread.join();
     let _ = check_leader_thread.join();
     let _ = election_thread.join();
@@ -166,10 +165,8 @@ fn create_election_thread<Log: Sync + Send + LogStorage + 'static>(protected_nod
     run_thread
 }
 
-
-
-//TODO remove debug
 fn debug_node_status<Log: Sync + LogStorage + 'static>(_: Arc<Mutex<Node<Log>>>) {
+    sleep(Duration::from_secs(1000));
     loop {
 //        let node_copy;
 //        {
