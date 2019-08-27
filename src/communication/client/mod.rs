@@ -1,6 +1,5 @@
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{print_event};
 use std::time::Duration;
 use crate::communication::duplex_channel::DuplexChannel;
 
@@ -48,7 +47,7 @@ impl ClientRequestHandler {
     //TODO consider & change result error type
     //TODO refactor to the send_request
     pub fn add_server(&self, request: AddServerRequest) -> Result<AddServerResponse, &'static str> {
-        print_event( format!("Add server request {:?}", request));
+        info!("Add server request {:?}", request);
 
         let timeout = crossbeam_channel::after(Duration::new(1,0));
         select!(

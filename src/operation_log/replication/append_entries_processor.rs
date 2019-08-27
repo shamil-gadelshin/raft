@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{print_event, LeaderConfirmationEvent};
+use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
-use crate::log::storage::LogStorage;
+use crate::operation_log::storage::LogStorage;
 
 pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
                                 mutex_node: Arc<Mutex<Node<Log>>>,
@@ -14,10 +14,10 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
 {
 
     loop {
-        let request = append_entries_request_rx.recv().expect("cannot get request from append_entries_request_rx");
-        let mut node = mutex_node.lock().expect("lock is poisoned");
+        let request = append_entries_request_rx.recv().expect("can get request from append_entries_request_rx");
+        let mut node = mutex_node.lock().expect("node lock is not poisoned");
 
-        print_event(format!("Node {:?} Received 'Append Entries Request' {:?}", node.id, request));
+        info!("Node {:?} Received 'Append Entries Request' {:?}", node.id, request);
 
         if let NodeStatus::Leader = node.status {
             continue;
@@ -25,11 +25,11 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
 
         //TODO check for terms & entry index
         node.current_leader_id = Some(request.leader_id);
-        reset_leadership_watchdog_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderConfirmationEvent");
+        reset_leadership_watchdog_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");
 
         //TODO change to timeout
         let resp = AppendEntriesResponse{term : node.current_term, success: true};
-        append_entries_response_tx.send(resp).expect("cannot send AppendEntriesResponse");
+        append_entries_response_tx.send(resp).expect("can send AppendEntriesResponse");
     }
 }
 

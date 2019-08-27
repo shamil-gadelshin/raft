@@ -2,11 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{print_event};
 use crate::state::{Node, NodeStatus};
 use crate::communication::client::{AddServerRequest,AddServerResponse, ChangeMembershipResponseStatus};
 use crate::configuration::cluster::{ClusterConfiguration};
-use crate::log::storage::LogStorage;
+use crate::operation_log::storage::LogStorage;
 
 pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
                                                         cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
@@ -17,7 +16,7 @@ pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<No
         let request = client_add_server_request_rx.recv().expect("cannot get request from client_add_server_request_rx");
 
         let (node_id, node_status, current_leader_id) = {
-            let node = mutex_node.lock().expect("lock is poisoned");
+            let node = mutex_node.lock().expect("node lock is poisoned");
 
             (node.id, node.status, node.current_leader_id)
         };
@@ -25,20 +24,20 @@ pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<No
         if let NodeStatus::Leader = node_status{
             let add_server_response = AddServerResponse{status: ChangeMembershipResponseStatus::Ok, current_leader:current_leader_id};
 
-            client_add_server_response_tx.send(add_server_response).expect("cannot send client_add_server_response");
+            client_add_server_response_tx.send(add_server_response).expect("can send client_add_server_response");
 
-            print_event(format!("Node {:?} Received 'Add Server Request (Node {:?})' {:?}", node_id, request.new_server, request));
+            info!("Node {:?} Received 'Add Server Request (Node {:?})' {:?}", node_id, request.new_server, request);
 
-            let mut cluster = cluster_configuration.lock().expect("cluster lock is poisoned");
+            let mut cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
 
             cluster.add_peer(request.new_server);
 
-            internal_add_server_channel_tx.send(request).expect("cannot sed request to internal_add_server_channel_tx");
+            internal_add_server_channel_tx.send(request).expect("can send request to internal_add_server_channel_tx");
 
         } else {
             let add_server_response = AddServerResponse{status: ChangeMembershipResponseStatus::NotLeader, current_leader:current_leader_id};
 
-            client_add_server_response_tx.send(add_server_response).expect("cannot send response client_add_server");
+            client_add_server_response_tx.send(add_server_response).expect("can send response client_add_server");
         }
     }
 }

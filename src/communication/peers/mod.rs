@@ -1,7 +1,7 @@
 use crossbeam_channel::{Sender, Receiver};
 use std::collections::HashMap;
 
-use crate::common::{AddServerEntryDetails, DataEntryDetails, print_event};
+use crate::common::{AddServerEntryDetails, DataEntryDetails};
 use crate::communication::duplex_channel::DuplexChannel;
 
 #[derive(Clone, Copy, Debug)]
@@ -90,15 +90,15 @@ impl InProcNodeCommunicator {
     //TODO check node_id existence
     //TODO handle communicator timeouts
     pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
-        print_event( format!("Destination Node {:?} Sending request {:?}",destination_node_id, request));
-        self.votes_channels[&destination_node_id].request_tx.send(request).expect("cannot send vote request");
+        trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
+        self.votes_channels[&destination_node_id].request_tx.send(request).expect("can send vote request");
     }
     pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) {
-        print_event( format!("Destination Node {:?} Sending response {:?}", destination_node_id, response));
-        self.votes_channels[&destination_node_id].response_tx.send(response).expect("cannot send vote response");
+        trace!("Destination Node {:?} Sending response {:?}", destination_node_id, response);
+        self.votes_channels[&destination_node_id].response_tx.send(response).expect("can send vote response");
     }
     pub fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, &'static str>  {
-        print_event( format!("Destination Node {:?} Sending request {:?}",destination_node_id, request));
+        trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
         self.append_entries_channels[&destination_node_id].send_request(request)
     }
 }

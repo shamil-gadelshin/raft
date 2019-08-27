@@ -2,12 +2,11 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use crossbeam_channel::{Receiver};
 
-use crate::common::{print_event};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::client::{AddServerRequest};
 use crate::configuration::cluster::{ClusterConfiguration};
-use crate::log::storage::LogStorage;
+use crate::operation_log::storage::LogStorage;
 
 //TODO remove clone-values
 pub fn send_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
@@ -31,42 +30,42 @@ pub fn send_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mu
 }
 
 fn send_change_membership(request : AddServerRequest) {
-    print_event(format!("Node {:?} Send 'Append Entries Request(change membership)'.", request));
+    info!("Node {:?} Send 'Append Entries Request(change membership)'.", request);
 }
 
 fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node<Log>>>,
                                                  cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                                                  communicator : InProcNodeCommunicator) {
     let (node_id, node_status)  = {
-        let node = protected_node.lock().expect("node lock is poisoned");
+        let node = protected_node.lock().expect("node lock is not poisoned");
 
         (node.id, node.status)
     };
 
     if let NodeStatus::Leader = node_status {
         let peers_list_copy =  {
-            let cluster = cluster_configuration.lock().expect("cluster lock is poisoned");
+            let cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
 
             cluster.get_peers(node_id)
         };
 
         let append_entries_heartbeat_template = create_empty_append_entry_request(protected_node);
 
-        print_event(format!("Node {:?} Send 'Append Entries Request(empty)'.", node_id));
+        trace!("Node {:?} Send 'Append Entries Request(empty)'.", node_id);
 
         //TODO communicator timeout handling
         //TODO rayon parallel-foreach
         for peer_id in peers_list_copy {
             let resp = communicator.send_append_entries_request(peer_id, append_entries_heartbeat_template.clone());
             if let Err(err) = resp {
-                print_event(format!("Failed : Node {:?} Send 'Append Entries Request(empty)' {:?}", node_id, err));
+                error!("Failed : Node {:?} Send 'Append Entries Request(empty)' {:?}", node_id, err);
             }
         }
     }
 }
 
 fn create_empty_append_entry_request<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node<Log>>>) -> AppendEntriesRequest {
-    let node = protected_node.lock().expect("node lock is poisoned");
+    let node = protected_node.lock().expect("node lock is not poisoned");
 
     let append_entries_heartbeat = AppendEntriesRequest {
         term: node.current_term,

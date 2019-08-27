@@ -1,4 +1,4 @@
-use crate::log::storage::LogStorage;
+use crate::operation_log::storage::LogStorage;
 
 #[derive(Debug, Clone)]
 pub struct Node<Log: LogStorage + Sized + Sync> {

@@ -13,12 +13,11 @@ use crate::configuration::node::{NodeConfiguration};
 use crate::leadership::election::{LeaderElectionEvent, run_leader_election_process};
 use crate::leadership::leader_watcher::{watch_leader_status};
 use crate::leadership::vote_request_processor::{vote_request_processor};
-
-use crate::log::replication::append_entries_processor::{append_entries_processor};
-use crate::log::replication::append_entries_sender::{send_append_entries};
-
+use crate::operation_log::replication::append_entries_processor::{append_entries_processor};
+use crate::operation_log::replication::append_entries_sender::{send_append_entries};
+use crate::operation_log::storage::LogStorage;
 use crate::membership::{change_membership};
-use crate::log::storage::LogStorage;
+
 
 
 //TODO check clones number - consider borrowing &
@@ -170,7 +169,7 @@ fn debug_node_status<Log: Sync + LogStorage + 'static>(_: Arc<Mutex<Node<Log>>>)
     loop {
 //        let node_copy;
 //        {
-//            let node = mutex_node.lock().expect("lock is poisoned");
+//            let node = mutex_node.lock().expect("node ock is not poisoned");
 //            node_copy = node.clone();
 //        }
 //        print_event(format!("Node {:?}. {:?}", node_copy.id, node_copy));

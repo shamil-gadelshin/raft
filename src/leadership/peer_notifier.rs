@@ -4,7 +4,6 @@ use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
-use crate::common::{print_event};
 
 //TODO refactor to DuplexChannel.send_request. Watch out for election timeout
 pub fn notify_peers(term : u64,
@@ -30,15 +29,15 @@ pub fn notify_peers(term : u64,
         loop {
             select!(
             recv(timeout) -> _ => {
-                print_event(format!("Leader election timed out for NodeId =  {:?} ", node_id));
-                terminate_thread_tx.send(true).expect("Cannot send to terminate_thread_tx");
+                info!("Leader election timed out for NodeId =  {:?} ", node_id);
+                terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
                 break;
             },
             recv(quorum_gathered_rx) -> _ => {
-                print_event(format!("Leader election - quorum gathered for NodeId = {:?} ", node_id));
+                info!("Leader election - quorum gathered for NodeId = {:?} ", node_id);
 
                 let event_promote_to_leader = LeaderElectionEvent::PromoteNodeToLeader(term);
-                election_event_tx.send(event_promote_to_leader).expect("cannot promote to leader");
+                election_event_tx.send(event_promote_to_leader).expect("can promote to leader");
 
                 return;
             },
@@ -47,7 +46,7 @@ pub fn notify_peers(term : u64,
     }
 
     election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term }))
-            .expect("cannot send LeaderElectionEvent");
+            .expect("can send LeaderElectionEvent");
 
 }
 
@@ -68,15 +67,15 @@ fn process_votes( node_id : u64,
                return;
             },
             recv(communicator.get_vote_response_rx(node_id)) -> response => {
-                let resp = response.expect("Cannot receive from communicator.get_vote_response_rx(node_id)");
+                let resp = response.expect("can receive from communicator.get_vote_response_rx(node_id)");
 
-                print_event(format!("Node {:?} Receiving response {:?}",node_id,  resp));
+                info!("Node {:?} Receiving response {:?}",node_id,  resp);
                 if (resp.term == term) && (resp.vote_granted) {
                     votes += 1;
                 }
 
                 if votes >= quorum_size {
-                    quorum_gathered_tx.send(true).expect("Cannot send to quorum_gathered_tx");
+                    quorum_gathered_tx.send(true).expect("can send to quorum_gathered_tx");
                     return;
                 }
              }

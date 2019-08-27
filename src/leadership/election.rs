@@ -2,13 +2,13 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 use std::thread;
 
-use crate::common::{print_event, LeaderConfirmationEvent};
+use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{VoteResponse, InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 
 use super::peer_notifier;
-use crate::log::storage::LogStorage;
+use crate::operation_log::storage::LogStorage;
 
 pub enum LeaderElectionEvent {
     PromoteNodeToCandidate(ElectionNotice),
@@ -32,29 +32,29 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
 ) {
 
     {
-        let node = mutex_node.lock().expect("lock is poisoned");
+        let node = mutex_node.lock().expect("node lock is not poisoned");
 
-        print_event(format!("Node {:?} started", node.id ));
+        info!("Node {:?} started", node.id );
     }// mutex lock release
 
     loop {
         let event_result = leader_election_event_rx.recv();
 
-        let event = event_result.expect("receiving from closed channel");
+        let event = event_result.expect("can receive from channel");
 
         match event {
             LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
-                let mut node = mutex_node.lock().expect("lock is poisoned");
+                let mut node = mutex_node.lock().expect("node lock is not poisoned");
 
                 node.status = NodeStatus::Candidate;
-                print_event(format!("Node {:?} Status changed to Candidate", node.id));
+                info!("Node {:?} Status changed to Candidate", node.id);
                 node.current_leader_id = None;
                 let event_sender = leader_election_event_tx.clone();
 
                 let node_id = node.id;
                 node.voted_for_id = Some(node_id);
                 let (peers_copy, quorum_size )= {
-                    let cluster = cluster_configuration.lock().expect("lock is poisoned");
+                    let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
 
                     (cluster.get_peers(node_id), cluster.get_quorum_size())
                 };
@@ -71,24 +71,24 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                                                                   quorum_size));
             },
             LeaderElectionEvent::PromoteNodeToLeader(term) => {
-                let mut node = mutex_node.lock().expect("lock is poisoned");
+                let mut node = mutex_node.lock().expect("node lock is not poisoned");
 
                 node.current_leader_id = Some(node.id);
                 //        node.voted_for_id = None; //TODO fill voted_for_id with data
                 node.current_term = term;
                 node.status = NodeStatus::Leader;
-                print_event(format!("Node {:?} Status changed to Leader", node.id));
+                info!("Node {:?} Status changed to Leader", node.id);
 
-                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderElectedEvent");
+                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderElectedEvent");
             },
             LeaderElectionEvent::ResetNodeToFollower(vr) => {
-                let mut node = mutex_node.lock().expect("lock is poisoned");
+                let mut node = mutex_node.lock().expect("node lock is poisoned");
 
                 node.current_term = vr.term;
                 node.status = NodeStatus::Follower;
-                print_event(format!("Node {:?} Status changed to Follower", node.id));
+                info!("Node {:?} Status changed to Follower", node.id);
 
-                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("cannot send LeaderConfirmationEvent");
+                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");
             },
         }
     }

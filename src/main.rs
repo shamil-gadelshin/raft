@@ -1,7 +1,7 @@
-use std::thread;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use std::collections::HashMap;
+#![warn(missing_docs, unsafe_code)]
+
+#[macro_use] extern crate log;
+extern crate env_logger;
 
 #[macro_use]
 extern crate crossbeam_channel;
@@ -11,18 +11,35 @@ mod common;
 mod node_runner;
 mod leadership;
 mod communication;
-mod log;
+mod operation_log;
 mod membership;
 mod configuration;
 mod state;
 
 use communication::client::{AddServerRequest,ClientRequestHandler};
 use communication::peers::{InProcNodeCommunicator};
-use crate::log::storage::{MemoryLogStorage};
+use crate::operation_log::storage::{MemoryLogStorage};
 use crate::configuration::cluster::ClusterConfiguration;
 use crate::configuration::node::NodeConfiguration;
 
+use chrono::prelude::{DateTime, Local};
+
+use std::thread;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::collections::HashMap;
+use std::io::Write;
+use log::Record;
+use env_logger::fmt::Formatter;
+
 fn main() {
+    env_logger::builder()
+        .format(|buf, record| {
+            let now: DateTime<Local> = Local::now();
+            writeln!(buf, "{:5}: {} - {}", record.level(),now.format("%H:%M:%S.%3f").to_string(), record.args())
+        })
+        .init();
+
     let node_ids = vec![1, 2];
     let new_node_id = 3;
 
@@ -85,10 +102,9 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
 
         let resp = v.add_server(request);
 
-        common::print_event(format!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp));
+        info!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp);
     }
 }
-
 
 /*
 TODO: Features:
@@ -110,21 +126,21 @@ TODO: Features:
     .libp2p
     .tarpc
     .grpc
-    .change client and node response patterns (after committing to the log)
-- log replication
+    .change client and node response patterns (after committing to the operation_log)
+- operation_log replication
     .memory snapshot
     .file snapshot
     .persist server's current term and vote and cluster configuration (state persistence)
     .response to the client after majority of the servers responses
-    .log forcing from the leader
-        .empty (heartbeat) AppendEntries on node's current log index evaluating
+    .operation_log forcing from the leader
+        .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter
 - membership changes
     .change quorum size
     .remove server(shutdown self)
 - system events logging
     .introduce logging system (remove print_event())
-    .increase log coverage
+    .increase operation_log coverage
 - error handling
     .error style
     .communication timeouts
@@ -134,6 +150,8 @@ TODO: Features:
     .separate client?
     .exe-project
     .raft vs infrastructure module(code) separation
+    .dev-dependencies
+        .env-logger
 - release
     .consensus
     .configuration
@@ -147,12 +165,14 @@ TODO: Features:
     .readme.md
     .documentation
     .license
+    .Rust API Guidelines
 - optimization
     .rayon on nodes requests
     .speed & memory profiling
     .consider replacing mutex with cas (or RW-lock) for nodes
     .RW-lock for communicator
     .optional abort channel for peers notifier (election) (abort_election_event_rx in notify_peers fn)
+    .migrate Mutex to parking_lot implementation
 
 Future Features:
 - transfer leadership
