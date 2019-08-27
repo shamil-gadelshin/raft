@@ -18,6 +18,11 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
     pub fn get_last_entry_term(&self) -> u64{
         self.log.get_last_entry_term()
     }
+
+    //TODO support the fsm
+    pub fn get_last_applied_index(&self) -> u64{
+        self.log.get_last_entry_index()
+    }
 }
 
 

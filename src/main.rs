@@ -1,5 +1,3 @@
-#![warn(missing_docs, unsafe_code)]
-
 #[macro_use] extern crate log;
 extern crate env_logger;
 
@@ -29,8 +27,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::collections::HashMap;
 use std::io::Write;
-use log::Record;
-use env_logger::fmt::Formatter;
 
 fn main() {
     env_logger::builder()
@@ -108,13 +104,17 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
 
 /*
 TODO: Features:
+- stability
+    .crossbeam recv, send - parse result
+    .check channels bounded-unbounded types
+    .check channels overflows
+    .project timeouts
+    .investigate channels faults
 - investigate
+   .'static in the 'Log : LogStorage + Sync + Send+ 'static'
    .futures
-   .check channels bounded-unbounded types
-   .check channels overflows
    .election trait?
    .extract communicator trait
-   .project timeouts
 - fsm support
 - identity
     .generic
@@ -139,12 +139,10 @@ TODO: Features:
     .change quorum size
     .remove server(shutdown self)
 - system events logging
-    .introduce logging system (remove print_event())
-    .increase operation_log coverage
+    .increase log coverage
 - error handling
     .error style
     .communication timeouts
-    .investigate channels faults
 - project structure
     .library crate
     .separate client?
@@ -152,6 +150,9 @@ TODO: Features:
     .raft vs infrastructure module(code) separation
     .dev-dependencies
         .env-logger
+- code style
+    .investigate & remove use crate::
+    .introduce aliases (Arc<Mutex<Node<Log>>>)
 - release
     .consensus
     .configuration
@@ -160,10 +161,14 @@ TODO: Features:
 - debug
     .tests
     .cases
+        .cases description in file
+        .election
+            .invalid term
     .conditional compilation
 - user-friendliness
     .readme.md
     .documentation
+        .add the top of the main file: #![warn(missing_docs, unsafe_code)]
     .license
     .Rust API Guidelines
 - optimization
@@ -176,6 +181,8 @@ TODO: Features:
 
 Future Features:
 - transfer leadership
+- log compaction
+
 
 
 Done:
@@ -184,4 +191,6 @@ Done:
 - modules create
 - membership changes
     .add server
+- system events logging
+    .introduce logging system (remove print_event())
 */

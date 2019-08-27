@@ -1,4 +1,3 @@
-use chrono::prelude::{DateTime, Local};
 use std::sync::{Arc};
 
 pub enum LeaderConfirmationEvent {
@@ -13,10 +12,4 @@ pub struct DataEntryDetails {
 #[derive(Clone, Debug)]
 pub struct AddServerEntryDetails {
     pub new_server : u64
-}
-
-pub fn print_event(message : String){
-    let now: DateTime<Local> = Local::now();
-
-    println!("{:?} {:?}",now.format("%H:%M:%S.%3f").to_string(),message );
 }
