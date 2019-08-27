@@ -18,7 +18,7 @@ pub enum LeaderElectionEvent {
 
 pub struct ElectionNotice {
     pub term: u64,
-    pub candidate_id : u64
+    pub candidate_id : u64 //TODO introduce options Candidate, Leader
 }
 
 

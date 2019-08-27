@@ -1,6 +1,8 @@
 use crate::operation_log::storage::LogStorage;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
+//TODO persist state
 pub struct Node<Log: LogStorage + Sized + Sync> {
     pub id : u64, //TODO pass node_id as copy to decrease mutex lock count
     pub current_term: u64,
@@ -8,6 +10,8 @@ pub struct Node<Log: LogStorage + Sized + Sync> {
     pub voted_for_id: Option<u64>,
     pub status : NodeStatus,
     pub log : Log,
+    pub next_index : HashMap<u64, u64>,
+    pub match_index : HashMap<u64, u64>,
 }
 
 

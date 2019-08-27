@@ -154,6 +154,8 @@ TODO: Features:
 - code style
     .investigate & remove use crate::
     .introduce aliases (Arc<Mutex<Node<Log>>>)
+    .enforce code line length limit
+    .rustfmt
 - release
     .consensus
     .configuration
@@ -164,7 +166,10 @@ TODO: Features:
     .cases
         .cases description in file
         .election
-            .invalid term
+            .invalid term (stale)
+            .newer term - convert to follower
+                .leader
+                .candidate
     .conditional compilation
 - user-friendliness
     .readme.md

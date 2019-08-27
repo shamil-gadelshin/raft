@@ -17,7 +17,7 @@ use crate::operation_log::replication::append_entries_processor::{append_entries
 use crate::operation_log::replication::append_entries_sender::{send_append_entries};
 use crate::operation_log::storage::LogStorage;
 use crate::membership::{change_membership};
-
+use std::collections::HashMap;
 
 
 //TODO check clones number - consider borrowing &
@@ -27,7 +27,9 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
         status : NodeStatus::Follower,
         current_leader_id: None,
         voted_for_id : None,
-        log : log_storage
+        log : log_storage,
+        next_index : HashMap::new(),
+        match_index : HashMap::new(),
     };
 
     let protected_node = Arc::new(Mutex::new(node));
@@ -66,6 +68,7 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
 
     let append_entries_processor_thread = create_append_entries_processor_thread(protected_node.clone(),
                                                                                  reset_leadership_watchdog_tx.clone(),
+                                                                                 leader_election_tx.clone(),
                                                                                  &node_config);
 
     let change_membership_thread = create_change_membership_thread(protected_node.clone(),
@@ -101,11 +104,13 @@ fn create_change_membership_thread<Log : LogStorage + Sync + Send+ 'static>(prot
 
 fn create_append_entries_processor_thread<Log: Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
                                                                                    reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>,
+                                                                                   leader_election_tx : Sender<LeaderElectionEvent>,
                                                                                    node_config : &NodeConfiguration) -> JoinHandle<()> {
     let append_entries_request_rx = node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id);
     let append_entries_response_tx = node_config.peer_communicator.get_append_entries_response_tx(node_config.node_id);
     let append_entries_processor_thread = thread::spawn(move|| append_entries_processor(
         protected_node,
+        leader_election_tx,
         append_entries_request_rx,
         append_entries_response_tx,
         reset_leadership_watchdog_tx));
