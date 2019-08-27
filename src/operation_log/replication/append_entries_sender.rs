@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use crossbeam_channel::{Receiver};
 
+
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::client::{AddServerRequest};
@@ -12,6 +13,7 @@ use crate::operation_log::storage::LogStorage;
 pub fn send_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
                                                           cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                                                           change_server_membership_rx :  Receiver<AddServerRequest>,
+                                                          leader_initial_heartbeat_rx : Receiver<bool>,
                                                           communicator : InProcNodeCommunicator
 ) {
     loop {
@@ -20,12 +22,14 @@ pub fn send_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mu
             recv(heartbeat_timeout) -> _  => {
                 send_heartbeat(protected_node.clone(), cluster_configuration.clone(), communicator.clone())
                 },
+            recv(leader_initial_heartbeat_rx) -> _  => {
+                trace!("Sending initial heartbeat...");
+                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), communicator.clone())
+                },
             recv(change_server_membership_rx) -> req => {
                 send_change_membership(req.unwrap())
             },
         );
-
-
     }
 }
 

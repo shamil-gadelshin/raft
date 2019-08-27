@@ -35,11 +35,13 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
     let (leader_election_tx, leader_election_rx): (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) = crossbeam_channel::unbounded();
     let (reset_leadership_watchdog_tx, reset_leadership_watchdog_rx) : (Sender<LeaderConfirmationEvent>, Receiver<LeaderConfirmationEvent>) = crossbeam_channel::unbounded();
     let (append_entries_add_server_tx, append_entries_add_server_rx) : (Sender<AddServerRequest>, Receiver<AddServerRequest>) = crossbeam_channel::unbounded();
+    let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx) : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
 
     let election_thread = create_election_thread(protected_node.clone(),
                                             &node_config,
                                             leader_election_rx.clone(),
                                             leader_election_tx.clone(),
+                                                 leader_initial_heartbeat_tx,
                                             reset_leadership_watchdog_tx.clone(),
     );
 
@@ -59,6 +61,7 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
 
     let append_entries_thread = create_append_entries_thread(protected_node.clone(),
                                                              append_entries_add_server_rx,
+                                                             leader_initial_heartbeat_rx,
                                                              &node_config);
 
     let append_entries_processor_thread = create_append_entries_processor_thread(protected_node.clone(),
@@ -69,13 +72,15 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
                                                                    append_entries_add_server_tx,
                                                                    &node_config);
 
+
+    info!("Node {:?} started", node_config.node_id);
+
     let _ = change_membership_thread.join();
     let _ = append_entries_thread.join();
     let _ = append_entries_processor_thread.join();
     let _ = vote_request_processor_thread.join();
     let _ = check_leader_thread.join();
     let _ = election_thread.join();
-
 }
 
 fn create_change_membership_thread<Log : LogStorage + Sync + Send+ 'static>(protected_node : Arc<Mutex<Node<Log>>>,
@@ -110,11 +115,16 @@ fn create_append_entries_processor_thread<Log: Sync + Send + LogStorage + 'stati
 
 fn create_append_entries_thread<Log : Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
                                                                           append_entries_add_server_rx : Receiver<AddServerRequest>,
+                                                                          leader_initial_heartbeat_rx : Receiver<bool>,
                                                                           node_config : &NodeConfiguration) -> JoinHandle<()> {
 
     let cluster_configuration = node_config.cluster_configuration.clone();
     let communicator = node_config.peer_communicator.clone();
-    let append_entries_thread = thread::spawn(move|| send_append_entries(protected_node, cluster_configuration, append_entries_add_server_rx, communicator));
+    let append_entries_thread = thread::spawn(move|| send_append_entries(protected_node,
+                                                                         cluster_configuration,
+                                                                         append_entries_add_server_rx,
+                                                                         leader_initial_heartbeat_rx,
+                                                                         communicator));
 
     append_entries_thread
 }
@@ -146,6 +156,7 @@ fn create_election_thread<Log: Sync + Send + LogStorage + 'static>(protected_nod
                                                                    node_config : &NodeConfiguration,
                                                                    leader_election_rx : Receiver<LeaderElectionEvent>,
                                                                    leader_election_tx : Sender<LeaderElectionEvent>,
+                                                                   leader_initial_heartbeat_tx : Sender<bool>,
                                                                    reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>
 
 ) -> JoinHandle<()> {
@@ -157,6 +168,7 @@ fn create_election_thread<Log: Sync + Send + LogStorage + 'static>(protected_nod
                                                                       leader_election_tx,
                                                                       leader_election_rx,
                                                                       vote_response_rx_channel,
+                                                                      leader_initial_heartbeat_tx,
                                                                       reset_leadership_watchdog_tx,
                                                                       communicator,
                                                                       cluster_config));

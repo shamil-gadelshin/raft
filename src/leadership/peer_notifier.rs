@@ -8,6 +8,7 @@ use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
 //TODO refactor to DuplexChannel.send_request. Watch out for election timeout
 pub fn notify_peers(term : u64,
                 election_event_tx : Sender<LeaderElectionEvent>,
+ //               abort_election_rx : Receiver<bool>,
                 node_id : u64,
                 communicator : InProcNodeCommunicator,
                 peers : Vec<u64>,
@@ -28,39 +29,41 @@ pub fn notify_peers(term : u64,
         thread::spawn(move || process_votes(node_id, communicator, quorum_gathered_tx, terminate_thread_rx, term, quorum_size));
         loop {
             select!(
-            recv(timeout) -> _ => {
-                info!("Leader election timed out for NodeId =  {:?} ", node_id);
-                terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
-                break;
-            },
-            recv(quorum_gathered_rx) -> _ => {
-                info!("Leader election - quorum gathered for NodeId = {:?} ", node_id);
+                recv(timeout) -> _ => {
+                    info!("Leader election timed out for NodeId =  {:?} ", node_id);
+                    terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
+                    break;
+                },
+//                recv(abort_election_rx) -> _ => {
+//                    info!("Election aborted for NodeId =  {:?} ", node_id);
+//                    terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
+//                    break;
+//                },
+                recv(quorum_gathered_rx) -> _ => {
+                    info!("Leader election - quorum gathered for NodeId = {:?} ", node_id);
 
-                let event_promote_to_leader = LeaderElectionEvent::PromoteNodeToLeader(term);
-                election_event_tx.send(event_promote_to_leader).expect("can promote to leader");
+                    let event_promote_to_leader = LeaderElectionEvent::PromoteNodeToLeader(term);
+                    election_event_tx.send(event_promote_to_leader).expect("can promote to leader");
 
-                return;
-            },
-        );
+                    return;
+                },
+            );
         }
     }
 
     election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term }))
-            .expect("can send LeaderElectionEvent");
-
+        .expect("can send LeaderElectionEvent");
 }
 
 
 fn process_votes( node_id : u64,
                   communicator : InProcNodeCommunicator,
-               //   peers : Vec<u64>,
                   quorum_gathered_tx: Sender<bool>,
                   terminate_thread_rx: Receiver<bool>,
                   term : u64,
                   quorum_size: u32) {
     let mut votes = 1;
 
-//    thread::sleep(Duration::from_millis(2000));
     loop {
         select!(
             recv(terminate_thread_rx) -> _ => {
@@ -69,7 +72,7 @@ fn process_votes( node_id : u64,
             recv(communicator.get_vote_response_rx(node_id)) -> response => {
                 let resp = response.expect("can receive from communicator.get_vote_response_rx(node_id)");
 
-                info!("Node {:?} Receiving response {:?}",node_id,  resp);
+                trace!("Node {:?} Receiving response {:?}",node_id,  resp);
                 if (resp.term == term) && (resp.vote_granted) {
                     votes += 1;
                 }
