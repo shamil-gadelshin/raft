@@ -34,8 +34,9 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
     loop {
         let event_result = leader_election_event_rx.recv();
 
-        let event = event_result.expect("can receive from channel");
-//        let (abort_election_tx, abort_election_rx) : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
+        let event = event_result.expect("can receive election event from channel");
+
+   //     clean_abort_election_channel(&abort_election_rx);
 
         match event {
             LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
@@ -54,10 +55,9 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                 };
 
                 let communicator_copy = communicator.clone();
-                let event_sender = leader_election_event_tx.clone();
+                let election_event_tx_copy = leader_election_event_tx.clone();
                 thread::spawn(move || peer_notifier::notify_peers(vr.term,
-                                                                  event_sender,
-   //                                                               abort_election_rx,
+                                                                  election_event_tx_copy,
                                                                   node_id,
                                                                   communicator_copy,
                                                                   peers_copy,
@@ -82,7 +82,6 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                 info!("Node {:?} Status changed to Follower", node.id);
 
                 watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");
-//                abort_election_tx.send(true).expect("can send abort election notice");
             },
         }
     }

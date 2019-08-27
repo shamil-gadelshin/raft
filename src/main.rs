@@ -147,6 +147,7 @@ TODO: Features:
     .library crate
     .separate client?
     .exe-project
+        .remove node_id from log
     .raft vs infrastructure module(code) separation
     .dev-dependencies
         .env-logger

@@ -8,7 +8,6 @@ use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
 //TODO refactor to DuplexChannel.send_request. Watch out for election timeout
 pub fn notify_peers(term : u64,
                 election_event_tx : Sender<LeaderElectionEvent>,
- //               abort_election_rx : Receiver<bool>,
                 node_id : u64,
                 communicator : InProcNodeCommunicator,
                 peers : Vec<u64>,
@@ -34,11 +33,6 @@ pub fn notify_peers(term : u64,
                     terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
                     break;
                 },
-//                recv(abort_election_rx) -> _ => {
-//                    info!("Election aborted for NodeId =  {:?} ", node_id);
-//                    terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
-//                    break;
-//                },
                 recv(quorum_gathered_rx) -> _ => {
                     info!("Leader election - quorum gathered for NodeId = {:?} ", node_id);
 
