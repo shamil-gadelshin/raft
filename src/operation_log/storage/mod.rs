@@ -1,19 +1,22 @@
 use crate::common::{AddServerEntryDetails, DataEntryDetails};
 
 pub trait LogStorage {
-    fn append_entry(&mut self, entry : Entry);
+    fn append_entry(&mut self, term : u64, entry_type : EntryType);
     fn get_last_entry_index(&self) -> u64;
     fn get_last_entry_term(&self) -> u64;
 }
 
 #[derive(Clone, Debug)]
 pub struct MemoryLogStorage {
+    last_index: u64,
     entries : Vec<Entry>
 }
 
 impl LogStorage for MemoryLogStorage {
     //TODO check for duplicates
-    fn append_entry(&mut self, entry : Entry) {
+    fn append_entry(&mut self, term : u64, entry_type : EntryType) {
+        self.last_index+=1;
+        let entry = Entry{index : self.last_index, term, entry_type};
         self.entries.push(entry);
     }
 
@@ -37,7 +40,7 @@ impl LogStorage for MemoryLogStorage {
 
 impl MemoryLogStorage {
     pub fn new() -> MemoryLogStorage {
-        MemoryLogStorage {entries : Vec::new()}
+        MemoryLogStorage {last_index:0, entries : Vec::new()}
     }
 }
 

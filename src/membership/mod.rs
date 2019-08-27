@@ -24,8 +24,6 @@ pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<No
         if let NodeStatus::Leader = node_status{
             let add_server_response = AddServerResponse{status: ChangeMembershipResponseStatus::Ok, current_leader:current_leader_id};
 
-            client_add_server_response_tx.send(add_server_response).expect("can send client_add_server_response");
-
             info!("Node {:?} Received 'Add Server Request (Node {:?})' {:?}", node_id, request.new_server, request);
 
             let mut cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
@@ -33,6 +31,8 @@ pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<No
             cluster.add_peer(request.new_server);
 
             internal_add_server_channel_tx.send(request).expect("can send request to internal_add_server_channel_tx");
+
+            client_add_server_response_tx.send(add_server_response).expect("can send client_add_server_response");
 
         } else {
             let add_server_response = AddServerResponse{status: ChangeMembershipResponseStatus::NotLeader, current_leader:current_leader_id};

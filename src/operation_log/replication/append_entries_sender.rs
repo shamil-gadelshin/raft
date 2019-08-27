@@ -27,7 +27,7 @@ pub fn send_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mu
                 send_heartbeat(protected_node.clone(), cluster_configuration.clone(), communicator.clone())
                 },
             recv(change_server_membership_rx) -> req => {
-                send_change_membership(req.unwrap())
+                send_change_membership(req.unwrap()) //TODO change unwrap to expect & handle the errors
             },
         );
     }

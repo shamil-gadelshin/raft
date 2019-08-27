@@ -19,7 +19,6 @@ pub struct VoteResponse {
 
 #[derive(Clone, Debug)]
 pub enum  AppendEntry {
-    Heartbeat,
     AddServer(AddServerEntryDetails),
     Data(DataEntryDetails)
 }
