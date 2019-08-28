@@ -22,62 +22,32 @@ pub struct AddServerResponse {
 
 
 #[derive(Clone)]
-pub struct ClientRequestHandler {
-    duplex_channel : DuplexChannel<AddServerRequest, AddServerResponse>
+pub struct InProcClientCommunicator {
+    add_server_duplex_channel: DuplexChannel<AddServerRequest, AddServerResponse>
 }
 
-impl ClientRequestHandler {
-    pub fn new() -> ClientRequestHandler {
+impl InProcClientCommunicator {
+    pub fn new() -> InProcClientCommunicator {
 
-        let client = ClientRequestHandler{
-            duplex_channel : DuplexChannel::new()
+        let client = InProcClientCommunicator {
+            add_server_duplex_channel: DuplexChannel::new()
         };
 
         client
     }
 
     pub fn get_add_server_request_rx(&self) -> Receiver<AddServerRequest> {
-        self.duplex_channel.get_request_rx()
+        self.add_server_duplex_channel.get_request_rx()
     }
 
     pub fn get_add_server_response_tx(&self) -> Sender<AddServerResponse> {
-        self.duplex_channel.get_response_tx()
+        self.add_server_duplex_channel.get_response_tx()
     }
 
     //TODO consider & change result error type
-    //TODO refactor to the send_request
     pub fn add_server(&self, request: AddServerRequest) -> Result<AddServerResponse, &'static str> {
-        info!("Add server request {:?}", request);
-
-        let timeout = crossbeam_channel::after(Duration::new(1,0));
-        select!(
-            recv(timeout) -> _  => {
-                return Err("Send add_server_request timeout")
-            },
-            send(self.duplex_channel.request_tx, request) -> res => {
-                if let Err(_) = res {
-                    return Err("Cannot send add_server_request")
-                }
-            },
-        );
-
-        select!(
-            recv(timeout) -> _  => {
-                return Err("Receive add_server_response timeout")
-            },
-            recv(self.duplex_channel.response_rx) -> res => {
-                if let Err(_) = res {
-                    return Err("Cannot receive add_server_response")
-                }
-                if let Ok(resp) = res {
-                    let add_server_response = resp;
-
-                    return Ok(add_server_response);
-                }
-            },
-        );
-
-        panic!("invalid add_server request-response sequence");
-    }
+        trace!("Add server request {:?}", request);
+        return self.add_server_duplex_channel.send_request(request);
+     }
 }
 
