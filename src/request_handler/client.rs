@@ -5,8 +5,8 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::state::{Node, NodeStatus};
 use crate::communication::client::{AddServerRequest, AddServerResponse, ChangeMembershipResponseStatus, InProcClientCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
-use crate::operation_log::storage::{LogStorage, EntryContent};
-use crate::common::{DataEntryContent, AddServerEntryContent};
+use crate::operation_log::storage::{LogStorage};
+use crate::common::{DataEntryContent, AddServerEntryContent, EntryContent};
 
 pub fn process_client_requests<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
 														client_communicator : InProcClientCommunicator) {

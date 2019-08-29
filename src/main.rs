@@ -55,7 +55,7 @@ fn main() {
             node_id,
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
-            client_request_handler: client_request_handler.clone(),
+            client_communicator: client_request_handler.clone(),
         };
         thread::spawn(move || node_runner::start_node(config,  MemoryLogStorage::new()));
 
@@ -74,19 +74,19 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
                                     client_handlers : HashMap<u64, InProcClientCommunicator>,
                                     new_node_id : u64) {
-return;
+//return;
 
     let new_server_config;
     {
         let mut cluster_config = protected_cluster_config.lock().expect("cluster config lock is poisoned");
-        cluster_config.add_peer(new_node_id);
+//        cluster_config.add_peer(new_node_id);
 
         // *** add new server
         new_server_config = NodeConfiguration {
             node_id: new_node_id,
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
-            client_request_handler : InProcClientCommunicator::new(),
+            client_communicator: InProcClientCommunicator::new(),
         };
     }
     let timeout = crossbeam_channel::after(Duration::new(3,0));
@@ -119,7 +119,6 @@ TODO: Features:
    .election trait?
    .extract communicator trait
    .rebuild raft election as fsm
-- fsm support
 - identity
     .generic
     .libp2p
@@ -131,9 +130,13 @@ TODO: Features:
     .tarpc
     .grpc
     .change client and node response patterns (after committing to the operation_log)
+- fsm
+    .persistent
+        .load on start
+
 - operation_log replication
-    .memory snapshot
     .file snapshot
+        .load on start
     .persist server's current term and vote and cluster configuration (state persistence)
     .response to the client after majority of the servers responses
     .operation_log forcing from the leader
@@ -197,6 +200,7 @@ Future Features:
 
 
 Done:
+- fsm support
 - leader election
 - channel communication
 - modules create
@@ -204,4 +208,8 @@ Done:
     .add server
 - system events logging
     .introduce logging system (remove print_event())
+        .response to the client after majority of the servers responses
+- operation_log
+    .memory snapshot
+    .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
 */

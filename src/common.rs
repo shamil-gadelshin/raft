@@ -15,3 +15,16 @@ pub struct DataEntryContent {
 pub struct AddServerEntryContent {
     pub new_server : u64
 }
+
+#[derive(Clone, Debug)]
+pub struct LogEntry {
+    pub index: u64,
+    pub term: u64,
+    pub entry_content: EntryContent
+}
+
+#[derive(Clone, Debug)]
+pub enum EntryContent {
+    AddServer(AddServerEntryContent),
+    Data(DataEntryContent),
+}

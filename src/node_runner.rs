@@ -2,14 +2,14 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::thread::{sleep, JoinHandle};
 use std::thread;
+use std::collections::HashMap;
+
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::client::{AddServerRequest};
 use crate::configuration::node::{NodeConfiguration};
-
-
 use crate::leadership::election::{LeaderElectionEvent, run_leader_election_process};
 use crate::leadership::leader_watcher::{watch_leader_status};
 use crate::leadership::vote_request_processor::{vote_request_processor};
@@ -17,7 +17,8 @@ use crate::operation_log::replication::append_entries_processor::{append_entries
 use crate::operation_log::replication::heartbeat_append_entries_sender::{send_heartbeat_append_entries};
 use crate::operation_log::storage::LogStorage;
 use crate::cluster_membership::{change_membership};
-use std::collections::HashMap;
+use crate::fsm::{Fsm};
+use crate::request_handler::client::process_client_requests;
 
 
 //TODO check clones number - consider borrowing &
@@ -28,6 +29,9 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
         current_leader_id: None,
         voted_for_id : None,
         log : log_storage,
+        fsm : Fsm::new(node_config.cluster_configuration.clone()),
+        communicator: node_config.peer_communicator.clone(),
+        cluster_configuration: node_config.cluster_configuration.clone(),
         next_index : HashMap::new(),
         match_index : HashMap::new(),
     };
@@ -69,15 +73,12 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
                                                                                  leader_election_tx.clone(),
                                                                                  &node_config);
 
-//    let change_membership_thread = create_change_membership_thread(protected_node.clone(),
-//                                                                   append_entries_add_server_tx,
-//                                                                   &node_config);
-
-    //TODO clean change_membership_thread
+    let client_request_handler_thread = create_client_request_handler_thread(protected_node.clone(),
+                                                                   &node_config);
 
     info!("Node {:?} started", node_config.node_id);
 
-//    let _ = change_membership_thread.join();
+    let _ = client_request_handler_thread.join();
     let _ = append_entries_thread.join();
     let _ = append_entries_processor_thread.join();
     let _ = vote_request_processor_thread.join();
@@ -85,12 +86,24 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
     let _ = election_thread.join();
 }
 
+fn create_client_request_handler_thread<Log : LogStorage + Sync + Send+ 'static>(protected_node : Arc<Mutex<Node<Log>>>,
+                                                                            node_config : &NodeConfiguration) -> JoinHandle<()> {
+    let cluster_config = node_config.cluster_configuration.clone();
+    let client_communicator = node_config.client_communicator.clone();
+    let client_request_handler_thread = thread::spawn(move|| process_client_requests(
+        protected_node,
+        client_communicator));
+
+    client_request_handler_thread
+}
+
+//TODO remove
 fn create_change_membership_thread<Log : LogStorage + Sync + Send+ 'static>(protected_node : Arc<Mutex<Node<Log>>>,
                                                                             append_entries_add_server_tx : Sender<AddServerRequest>,
                                                                             node_config : &NodeConfiguration) -> JoinHandle<()> {
     let cluster_config = node_config.cluster_configuration.clone();
-    let client_add_server_request_rx = node_config.client_request_handler.get_add_server_request_rx();
-    let client_add_server_response_tx = node_config.client_request_handler.get_add_server_response_tx();
+    let client_add_server_request_rx = node_config.client_communicator.get_add_server_request_rx();
+    let client_add_server_response_tx = node_config.client_communicator.get_add_server_response_tx();
     let change_membership_thread = thread::spawn(move|| change_membership(
         protected_node,
         cluster_config,

@@ -7,6 +7,7 @@ use crate::communication::client::{AddServerRequest,AddServerResponse, ChangeMem
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::storage::LogStorage;
 
+//TODO remove
 pub fn change_membership<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
                                                         cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                                                         client_add_server_request_rx : Receiver<AddServerRequest>,

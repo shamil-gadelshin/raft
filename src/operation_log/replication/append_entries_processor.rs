@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{LeaderConfirmationEvent, AddServerEntryContent};
+use crate::common::{LeaderConfirmationEvent, AddServerEntryContent,DataEntryContent, LogEntry, EntryContent};
 use crate::state::{Node, NodeStatus};
-use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse, AppendEntry};
-use crate::operation_log::storage::{LogStorage, EntryContent};
+use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
+use crate::operation_log::storage::{LogStorage};
 use crate::leadership::election::{LeaderElectionEvent, ElectionNotice};
 
 pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
@@ -50,16 +50,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
 
         //add to operation log
         for entry in request.entries{
-            let log_entry_type = match entry {
-                AppendEntry::AddServer(add_server_entry) => {
-                    EntryContent::AddServer(add_server_entry)
-                },
-                AppendEntry::Data(data) => {
-                    EntryContent::Data(data)
-                }
-            };
-
-            node.log.append_entry(request.term, log_entry_type);
+            node.append_entry_to_log(entry);
         }
         //TODO check entry index
 

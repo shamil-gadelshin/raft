@@ -1,7 +1,8 @@
-use crate::common::{AddServerEntryContent, DataEntryContent};
+use crate::common::{AddServerEntryContent, DataEntryContent, LogEntry, EntryContent};
 
 pub trait LogStorage {
-    fn append_entry(&mut self, term : u64, entry_content : EntryContent); //TODO error handling
+    fn append_content(&mut self, term : u64, entry_content : EntryContent)-> LogEntry; //TODO error handling
+    fn append_entry(&mut self, entry: LogEntry); //TODO error handling
     fn get_last_entry_index(&self) -> u64;
     fn get_last_entry_term(&self) -> u64;
 }
@@ -9,17 +10,21 @@ pub trait LogStorage {
 #[derive(Clone, Debug)]
 pub struct MemoryLogStorage {
     last_index: u64,
-    entries : Vec<Entry>
+    entries : Vec<LogEntry>
 }
 
 impl LogStorage for MemoryLogStorage {
     //TODO check for duplicates
-    fn append_entry(&mut self, term : u64, entry_content : EntryContent) {
+    fn append_entry(&mut self, entry: LogEntry) {
         self.last_index+=1;
-        let entry = Entry{index : self.last_index, term, entry_content };
         self.entries.push(entry);
     }
+    fn append_content(&mut self,  term : u64, entry_content : EntryContent) -> LogEntry {
+        let entry = LogEntry { index: self.last_index, term, entry_content };
+        self.append_entry(entry.clone());
 
+        entry
+    }
     fn get_last_entry_index(&self) -> u64{
         let last = self.entries.last();
         if let Some(entry) = last {
@@ -28,7 +33,7 @@ impl LogStorage for MemoryLogStorage {
 
         0 //Raft documentation demands zero as initial value
     }
-    fn get_last_entry_term(&self) -> u64{
+    fn get_last_entry_term(&self) -> u64 {
         let last = self.entries.last();
         if let Some(entry) = last {
             return entry.term;
@@ -44,17 +49,5 @@ impl MemoryLogStorage {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Entry {
-    pub index: u64,
-    pub term: u64,
-    pub entry_content: EntryContent
-}
-
-#[derive(Clone, Debug)]
-pub enum EntryContent {
-    AddServer(AddServerEntryContent),
-    Data(DataEntryContent),
-}
 
 

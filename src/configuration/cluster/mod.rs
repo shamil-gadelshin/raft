@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
+//TODO save changes to cluster configuration
 pub struct ClusterConfiguration{
     nodes_id_map : HashMap<u64, bool>,
 }

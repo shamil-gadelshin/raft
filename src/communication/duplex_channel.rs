@@ -3,7 +3,7 @@ use crossbeam_channel::{Sender, Receiver};
 use std::time::Duration;
 
 //TODO add name for logging purpose
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DuplexChannel<Request, Response> {
     pub request_tx: Sender<Request>,
     pub request_rx: Receiver<Request>,

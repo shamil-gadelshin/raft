@@ -6,6 +6,7 @@ use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
 
 //TODO refactor to DuplexChannel.send_request. Watch out for election timeout
+//TODO refactor to generic peer_notifier
 pub fn notify_peers(term : u64,
                 election_event_tx : Sender<LeaderElectionEvent>,
                 node_id : u64,
