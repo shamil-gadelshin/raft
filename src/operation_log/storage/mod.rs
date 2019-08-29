@@ -1,7 +1,7 @@
-use crate::common::{AddServerEntryDetails, DataEntryDetails};
+use crate::common::{AddServerEntryContent, DataEntryContent};
 
 pub trait LogStorage {
-    fn append_entry(&mut self, term : u64, entry_type : EntryType);
+    fn append_entry(&mut self, term : u64, entry_content : EntryContent); //TODO error handling
     fn get_last_entry_index(&self) -> u64;
     fn get_last_entry_term(&self) -> u64;
 }
@@ -14,9 +14,9 @@ pub struct MemoryLogStorage {
 
 impl LogStorage for MemoryLogStorage {
     //TODO check for duplicates
-    fn append_entry(&mut self, term : u64, entry_type : EntryType) {
+    fn append_entry(&mut self, term : u64, entry_content : EntryContent) {
         self.last_index+=1;
-        let entry = Entry{index : self.last_index, term, entry_type};
+        let entry = Entry{index : self.last_index, term, entry_content };
         self.entries.push(entry);
     }
 
@@ -48,13 +48,13 @@ impl MemoryLogStorage {
 pub struct Entry {
     pub index: u64,
     pub term: u64,
-    pub entry_type : EntryType
+    pub entry_content: EntryContent
 }
 
 #[derive(Clone, Debug)]
-pub enum EntryType {
-    AddServer(AddServerEntryDetails),
-    Data(DataEntryDetails),
+pub enum EntryContent {
+    AddServer(AddServerEntryContent),
+    Data(DataEntryContent),
 }
 
 

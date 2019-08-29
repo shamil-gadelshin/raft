@@ -1,4 +1,4 @@
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::storage::{LogStorage, EntryContent};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -15,6 +15,14 @@ pub struct Node<Log: LogStorage + Sized + Sync> {
 }
 
 
+#[derive(Copy, Clone, Debug)]
+pub enum NodeStatus {
+    Follower,
+    Candidate,
+    Leader
+}
+
+
 impl <Log: Sized + Sync + LogStorage> Node<Log> {
     pub fn get_last_entry_index(&self) -> u64{
         self.log.get_last_entry_index()
@@ -27,12 +35,12 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
     pub fn get_last_applied_index(&self) -> u64{
         self.log.get_last_entry_index()
     }
-}
 
+    //TODO check result
+    pub fn append_content_to_log(&mut self, content : EntryContent ) -> bool {
+        //TODO gather quorum
+        self.log.append_entry(self.current_term, content);
 
-#[derive(Copy, Clone, Debug)]
-pub enum NodeStatus {
-    Follower,
-    Candidate,
-    Leader
+        true
+    }
 }

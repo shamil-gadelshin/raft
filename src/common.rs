@@ -6,12 +6,12 @@ pub enum LeaderConfirmationEvent {
 
 //TODO separate log & append entry implementations
 #[derive(Clone, Debug)]
-pub struct DataEntryDetails {
+pub struct DataEntryContent {
     pub bytes : Arc<[u8]>//TODO optimize with Rc
 }
 
 //TODO separate log & append entry implementations
 #[derive(Clone, Debug)]
-pub struct AddServerEntryDetails {
+pub struct AddServerEntryContent {
     pub new_server : u64
 }

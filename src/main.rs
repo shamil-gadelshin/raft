@@ -10,11 +10,13 @@ mod node_runner;
 mod leadership;
 mod communication;
 mod operation_log;
-mod membership;
+mod cluster_membership;
 mod configuration;
 mod state;
+mod fsm;
+mod request_handler;
 
-use communication::client::{AddServerRequest,ClientRequestHandler};
+use communication::client::{AddServerRequest, InProcClientCommunicator};
 use communication::peers::{InProcNodeCommunicator};
 use crate::operation_log::storage::{MemoryLogStorage};
 use crate::configuration::cluster::ClusterConfiguration;
@@ -44,11 +46,11 @@ fn main() {
     let mut communicator = InProcNodeCommunicator::new(main_cluster_configuration.get_all());
     communicator.add_node_communication(new_node_id);
 
-    let mut client_handlers : HashMap<u64, ClientRequestHandler> = HashMap::new();
+    let mut client_handlers : HashMap<u64, InProcClientCommunicator> = HashMap::new();
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
-        let client_request_handler = ClientRequestHandler::new();
+        let client_request_handler = InProcClientCommunicator::new();
         let config = NodeConfiguration {
             node_id,
             cluster_configuration: protected_cluster_config.clone(),
@@ -70,8 +72,9 @@ fn main() {
 
 fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
-                                    client_handlers : HashMap<u64, ClientRequestHandler>,
+                                    client_handlers : HashMap<u64, InProcClientCommunicator>,
                                     new_node_id : u64) {
+return;
 
     let new_server_config;
     {
@@ -83,7 +86,7 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
             node_id: new_node_id,
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
-            client_request_handler : ClientRequestHandler::new(),
+            client_request_handler : InProcClientCommunicator::new(),
         };
     }
     let timeout = crossbeam_channel::after(Duration::new(3,0));
@@ -115,6 +118,7 @@ TODO: Features:
    .futures
    .election trait?
    .extract communicator trait
+   .rebuild raft election as fsm
 - fsm support
 - identity
     .generic
@@ -134,11 +138,12 @@ TODO: Features:
     .response to the client after majority of the servers responses
     .operation_log forcing from the leader
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
-    .support max AppendEntries size parameter
-- membership changes
+    .support max AppendEntries size parameter & max AppendEntries number
+- cluster membership changes
     .change quorum size
     .remove server(shutdown self)
 - system events logging
+    .remove requests from log messages
     .increase log coverage
 - error handling
     .error style
@@ -195,7 +200,7 @@ Done:
 - leader election
 - channel communication
 - modules create
-- membership changes
+- cluster_membership changes
     .add server
 - system events logging
     .introduce logging system (remove print_event())

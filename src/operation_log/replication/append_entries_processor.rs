@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{LeaderConfirmationEvent, AddServerEntryDetails};
+use crate::common::{LeaderConfirmationEvent, AddServerEntryContent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse, AppendEntry};
-use crate::operation_log::storage::{LogStorage, EntryType};
+use crate::operation_log::storage::{LogStorage, EntryContent};
 use crate::leadership::election::{LeaderElectionEvent, ElectionNotice};
 
 pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
@@ -52,10 +52,10 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
         for entry in request.entries{
             let log_entry_type = match entry {
                 AppendEntry::AddServer(add_server_entry) => {
-                    EntryType::AddServer(add_server_entry)
+                    EntryContent::AddServer(add_server_entry)
                 },
                 AppendEntry::Data(data) => {
-                    EntryType::Data(data)
+                    EntryContent::Data(data)
                 }
             };
 

@@ -14,9 +14,9 @@ use crate::leadership::election::{LeaderElectionEvent, run_leader_election_proce
 use crate::leadership::leader_watcher::{watch_leader_status};
 use crate::leadership::vote_request_processor::{vote_request_processor};
 use crate::operation_log::replication::append_entries_processor::{append_entries_processor};
-use crate::operation_log::replication::append_entries_sender::{send_append_entries};
+use crate::operation_log::replication::heartbeat_append_entries_sender::{send_heartbeat_append_entries};
 use crate::operation_log::storage::LogStorage;
-use crate::membership::{change_membership};
+use crate::cluster_membership::{change_membership};
 use std::collections::HashMap;
 
 
@@ -36,7 +36,6 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
 
     let (leader_election_tx, leader_election_rx): (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) = crossbeam_channel::unbounded();
     let (reset_leadership_watchdog_tx, reset_leadership_watchdog_rx) : (Sender<LeaderConfirmationEvent>, Receiver<LeaderConfirmationEvent>) = crossbeam_channel::unbounded();
-    let (append_entries_add_server_tx, append_entries_add_server_rx) : (Sender<AddServerRequest>, Receiver<AddServerRequest>) = crossbeam_channel::unbounded();
     let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx) : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
 
     let election_thread = create_election_thread(protected_node.clone(),
@@ -61,24 +60,24 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
     let _ = thread::spawn(move|| debug_node_status( debug_mutex_clone));
 
 
-    let append_entries_thread = create_append_entries_thread(protected_node.clone(),
-                                                             append_entries_add_server_rx,
-                                                             leader_initial_heartbeat_rx,
-                                                             &node_config);
+    let append_entries_thread = create_send_heartbeat_append_entries_thread(protected_node.clone(),
+                                                                            leader_initial_heartbeat_rx,
+                                                                            &node_config);
 
     let append_entries_processor_thread = create_append_entries_processor_thread(protected_node.clone(),
                                                                                  reset_leadership_watchdog_tx.clone(),
                                                                                  leader_election_tx.clone(),
                                                                                  &node_config);
 
-    let change_membership_thread = create_change_membership_thread(protected_node.clone(),
-                                                                   append_entries_add_server_tx,
-                                                                   &node_config);
+//    let change_membership_thread = create_change_membership_thread(protected_node.clone(),
+//                                                                   append_entries_add_server_tx,
+//                                                                   &node_config);
 
+    //TODO clean change_membership_thread
 
     info!("Node {:?} started", node_config.node_id);
 
-    let _ = change_membership_thread.join();
+//    let _ = change_membership_thread.join();
     let _ = append_entries_thread.join();
     let _ = append_entries_processor_thread.join();
     let _ = vote_request_processor_thread.join();
@@ -118,20 +117,18 @@ fn create_append_entries_processor_thread<Log: Sync + Send + LogStorage + 'stati
     append_entries_processor_thread
 }
 
-fn create_append_entries_thread<Log : Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
-                                                                          append_entries_add_server_rx : Receiver<AddServerRequest>,
-                                                                          leader_initial_heartbeat_rx : Receiver<bool>,
-                                                                          node_config : &NodeConfiguration) -> JoinHandle<()> {
+fn create_send_heartbeat_append_entries_thread<Log : Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
+                                                                                         leader_initial_heartbeat_rx : Receiver<bool>,
+                                                                                         node_config : &NodeConfiguration) -> JoinHandle<()> {
 
     let cluster_configuration = node_config.cluster_configuration.clone();
     let communicator = node_config.peer_communicator.clone();
-    let append_entries_thread = thread::spawn(move|| send_append_entries(protected_node,
-                                                                         cluster_configuration,
-                                                                         append_entries_add_server_rx,
-                                                                         leader_initial_heartbeat_rx,
-                                                                         communicator));
+    let heartbeat_append_entries_thread = thread::spawn(move|| send_heartbeat_append_entries(protected_node,
+                                                                                   cluster_configuration,
+                                                                                   leader_initial_heartbeat_rx,
+                                                                                   communicator));
 
-    append_entries_thread
+    heartbeat_append_entries_thread
 }
 
 fn create_vote_request_processor_thread<Log: Sync + Send  + LogStorage + 'static >(protected_node : Arc<Mutex<Node<Log>>>,

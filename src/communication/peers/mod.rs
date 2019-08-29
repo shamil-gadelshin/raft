@@ -1,8 +1,9 @@
 use crossbeam_channel::{Sender, Receiver};
 use std::collections::HashMap;
 
-use crate::common::{AddServerEntryDetails, DataEntryDetails};
+use crate::common::{AddServerEntryContent, DataEntryContent};
 use crate::communication::duplex_channel::DuplexChannel;
+use crate::communication::QuorumResponse;
 
 #[derive(Clone, Copy, Debug)]
 pub struct VoteRequest {
@@ -19,8 +20,8 @@ pub struct VoteResponse {
 
 #[derive(Clone, Debug)]
 pub enum  AppendEntry {
-    AddServer(AddServerEntryDetails),
-    Data(DataEntryDetails)
+    AddServer(AddServerEntryContent),
+    Data(DataEntryContent)
 }
 
 #[derive(Clone, Debug)]
@@ -39,10 +40,16 @@ pub struct AppendEntriesResponse {
     pub success : bool
 }
 
+impl QuorumResponse for AppendEntriesResponse {
+    fn get_result(&self) -> bool {
+        self.success
+    }
+}
+
 #[derive(Clone)]
 pub struct InProcNodeCommunicator {
     votes_channels: HashMap<u64,DuplexChannel<VoteRequest, VoteResponse>>,
-    append_entries_channels: HashMap<u64,DuplexChannel<AppendEntriesRequest, AppendEntriesResponse>>,
+    pub append_entries_channels: HashMap<u64,DuplexChannel<AppendEntriesRequest, AppendEntriesResponse>>,
 }
 
 

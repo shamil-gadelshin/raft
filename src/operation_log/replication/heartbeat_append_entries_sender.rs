@@ -5,41 +5,35 @@ use crossbeam_channel::{Receiver};
 
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
+use crate::communication::peer_notifier::notify_peers;
 use crate::communication::client::{AddServerRequest};
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::storage::LogStorage;
 
 //TODO remove clone-values
-pub fn send_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
-                                                          cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                                                          change_server_membership_rx :  Receiver<AddServerRequest>,
-                                                          leader_initial_heartbeat_rx : Receiver<bool>,
-                                                          communicator : InProcNodeCommunicator
+//TODO park-unpark the thread
+pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
+                                                                    cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+                                                                    leader_initial_heartbeat_rx : Receiver<bool>,
+                                                                    communicator : InProcNodeCommunicator
 ) {
     loop {
         let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
         select!(
             recv(heartbeat_timeout) -> _  => {
-                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), communicator.clone())
+                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), &communicator)
                 },
             recv(leader_initial_heartbeat_rx) -> _  => {
                 trace!("Sending initial heartbeat...");
-                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), communicator.clone())
+                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), &communicator)
                 },
-            recv(change_server_membership_rx) -> req => {
-                send_change_membership(req.unwrap()) //TODO change unwrap to expect & handle the errors
-            },
         );
     }
 }
 
-fn send_change_membership(request : AddServerRequest) {
-    info!("Node {:?} Send 'Append Entries Request(change membership)'.", request);
-}
-
 fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node<Log>>>,
                                                  cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                                                 communicator : InProcNodeCommunicator) {
+                                                 communicator : &InProcNodeCommunicator) {
     let (node_id, node_status)  = {
         let node = protected_node.lock().expect("node lock is not poisoned");
 
@@ -53,18 +47,12 @@ fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node
             cluster.get_peers(node_id)
         };
 
-        let append_entries_heartbeat_template = create_empty_append_entry_request(protected_node);
+        let append_entries_heartbeat = create_empty_append_entry_request(protected_node);
 
-        trace!("Node {:?} Send 'Append Entries Request(empty)'.", node_id);
+        trace!("Node {:?} Send 'empty Append Entries Request(heartbeat)'.", node_id);
 
-        //TODO communicator timeout handling
-        //TODO rayon parallel-foreach
-        for peer_id in peers_list_copy {
-            let resp = communicator.send_append_entries_request(peer_id, append_entries_heartbeat_template.clone());
-            if let Err(err) = resp {
-                error!("Failed : Node {:?} Send 'Append Entries Request(empty)' {:?}", node_id, err);
-            }
-        }
+        let requester = |dest_node_id: u64, req: AppendEntriesRequest| communicator.send_append_entries_request(dest_node_id, req);
+        let result = notify_peers(append_entries_heartbeat, node_id,peers_list_copy, None, requester);
     }
 }
 
