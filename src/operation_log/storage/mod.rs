@@ -1,4 +1,4 @@
-use crate::common::{AddServerEntryContent, DataEntryContent, LogEntry, EntryContent};
+use crate::common::{LogEntry, EntryContent};
 
 pub trait LogStorage {
     fn append_content(&mut self, term : u64, entry_content : EntryContent)-> LogEntry; //TODO error handling

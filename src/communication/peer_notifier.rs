@@ -1,14 +1,7 @@
-use std::time::Duration;
 use std::result::Result;
-use std::ops::{Fn, Add};
-use std::thread;
+use std::ops::{Fn};
 use std::string::*;
-use std::str::*;
 
-use crossbeam_channel::{Sender, Receiver};
-
-use crate::leadership::election::{LeaderElectionEvent, ElectionNotice};
-use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
 use super::QuorumResponse;
 
 //TODO add proper error handling
@@ -42,6 +35,7 @@ where Requester: Fn(u64, Req) ->Result<Resp, &'static str>,
                         }
 
                         if votes >= quorum_size {
+                            trace!("Node {:?} gathered quorum for request", node_id);
                             return Ok(());
                         }
                     },

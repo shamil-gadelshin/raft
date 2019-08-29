@@ -10,7 +10,6 @@ mod node_runner;
 mod leadership;
 mod communication;
 mod operation_log;
-mod cluster_membership;
 mod configuration;
 mod state;
 mod fsm;
@@ -78,9 +77,6 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
 
     let new_server_config;
     {
-        let mut cluster_config = protected_cluster_config.lock().expect("cluster config lock is poisoned");
-//        cluster_config.add_peer(new_node_id);
-
         // *** add new server
         new_server_config = NodeConfiguration {
             node_id: new_node_id,

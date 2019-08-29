@@ -8,7 +8,6 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
-use crate::communication::client::{AddServerRequest};
 use crate::configuration::node::{NodeConfiguration};
 use crate::leadership::election::{LeaderElectionEvent, run_leader_election_process};
 use crate::leadership::leader_watcher::{watch_leader_status};
@@ -16,7 +15,6 @@ use crate::leadership::vote_request_processor::{vote_request_processor};
 use crate::operation_log::replication::append_entries_processor::{append_entries_processor};
 use crate::operation_log::replication::heartbeat_append_entries_sender::{send_heartbeat_append_entries};
 use crate::operation_log::storage::LogStorage;
-use crate::cluster_membership::{change_membership};
 use crate::fsm::{Fsm};
 use crate::request_handler::client::process_client_requests;
 
@@ -88,7 +86,6 @@ pub fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
 
 fn create_client_request_handler_thread<Log : LogStorage + Sync + Send+ 'static>(protected_node : Arc<Mutex<Node<Log>>>,
                                                                             node_config : &NodeConfiguration) -> JoinHandle<()> {
-    let cluster_config = node_config.cluster_configuration.clone();
     let client_communicator = node_config.client_communicator.clone();
     let client_request_handler_thread = thread::spawn(move|| process_client_requests(
         protected_node,
@@ -97,22 +94,6 @@ fn create_client_request_handler_thread<Log : LogStorage + Sync + Send+ 'static>
     client_request_handler_thread
 }
 
-//TODO remove
-fn create_change_membership_thread<Log : LogStorage + Sync + Send+ 'static>(protected_node : Arc<Mutex<Node<Log>>>,
-                                                                            append_entries_add_server_tx : Sender<AddServerRequest>,
-                                                                            node_config : &NodeConfiguration) -> JoinHandle<()> {
-    let cluster_config = node_config.cluster_configuration.clone();
-    let client_add_server_request_rx = node_config.client_communicator.get_add_server_request_rx();
-    let client_add_server_response_tx = node_config.client_communicator.get_add_server_response_tx();
-    let change_membership_thread = thread::spawn(move|| change_membership(
-        protected_node,
-        cluster_config,
-        client_add_server_request_rx,
-        client_add_server_response_tx,
-        append_entries_add_server_tx));
-
-    change_membership_thread
-}
 
 fn create_append_entries_processor_thread<Log: Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
                                                                                    reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>,

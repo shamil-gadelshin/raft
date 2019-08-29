@@ -1,12 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use crossbeam_channel::{Sender, Receiver};
-
 use crate::state::{Node, NodeStatus};
-use crate::communication::client::{AddServerRequest, AddServerResponse, ChangeMembershipResponseStatus, InProcClientCommunicator};
-use crate::configuration::cluster::{ClusterConfiguration};
+use crate::communication::client::{AddServerResponse, ChangeMembershipResponseStatus, InProcClientCommunicator};
 use crate::operation_log::storage::{LogStorage};
-use crate::common::{DataEntryContent, AddServerEntryContent, EntryContent};
+use crate::common::{AddServerEntryContent, EntryContent};
 
 pub fn process_client_requests<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
 														client_communicator : InProcClientCommunicator) {
@@ -21,7 +18,7 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mu
 
 		info!("Node {:?} Received 'Add Server Request (Node {:?})' {:?}", node_id, request.new_server, request);
 
-		let mut add_server_response = match node_status{
+		let add_server_response = match node_status{
 			NodeStatus::Leader => {
 				let entry_content = EntryContent::AddServer(AddServerEntryContent{new_server:request.new_server});
 

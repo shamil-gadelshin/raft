@@ -6,7 +6,6 @@ use crossbeam_channel::{Receiver};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::peer_notifier::notify_peers;
-use crate::communication::client::{AddServerRequest};
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::storage::LogStorage;
 
@@ -64,7 +63,7 @@ fn create_empty_append_entry_request<Log: Sync + Send + LogStorage>(protected_no
         leader_id: node.id,
         prev_log_term : node.get_last_entry_term(),
         prev_log_index : node.get_last_entry_index(),
-        leader_commit : 0, //TODO support fsm
+        leader_commit : node.fsm.get_last_applied_entry_index(),
         entries : Vec::new()
     };
 

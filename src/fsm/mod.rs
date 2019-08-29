@@ -1,6 +1,5 @@
 use crate::configuration::cluster::ClusterConfiguration;
 use std::sync::{Mutex, Arc};
-use crate::operation_log::storage::LogStorage;
 use crate::common::{LogEntry, DataEntryContent, EntryContent};
 
 //TODO crate fsm trait
@@ -28,6 +27,7 @@ impl Fsm{
 				self.data.push(data_content);
 			}
 		}
+		trace!("Fsm applied entry");
 		self.last_applied_index = entry.index;
 	}
 
@@ -37,7 +37,7 @@ impl Fsm{
 		cluster.add_peer(new_server_id);
 	}
 
-	pub fn get_last_entry_index(&self) -> u64{
+	pub fn get_last_applied_entry_index(&self) -> u64{
 		self.last_applied_index
 	}
 }

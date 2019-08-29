@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{LeaderConfirmationEvent, AddServerEntryContent,DataEntryContent, LogEntry, EntryContent};
+use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
 use crate::operation_log::storage::{LogStorage};

@@ -49,11 +49,12 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
 
     pub fn append_entry_to_log(&mut self, entry : LogEntry ){
         self.log.append_entry(entry.clone());
+
+        //TODO async
         self.fsm.apply_entry(entry);
     }
 
 
-    //TODO remove entry.clone() !!
     //TODO check result
     pub fn append_content_to_log(&mut self, content : EntryContent ) -> Result<(), &'static str> {
         let entry = self.log.append_content(self.current_term, content);
@@ -64,6 +65,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
         }
 
         //TODO gather quorum
+        //TODO async
         self.fsm.apply_entry(entry);
 
         Ok(())
@@ -71,11 +73,11 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
 
     fn send_append_entries(&self, entry : LogEntry) -> Result<(), &'static str>{
         if let NodeStatus::Leader = self.status {
-            let peers_list_copy =  {
+            let (peers_list_copy, quorum_size) =  {
                 let cluster = self.cluster_configuration.lock()
                     .expect("cluster lock is not poisoned");
 
-                cluster.get_peers(self.id)
+                (cluster.get_peers(self.id), cluster.get_quorum_size())
             };
 
             let entries = vec![entry];
@@ -85,7 +87,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
                 leader_id: self.id,
                 prev_log_term : self.get_last_entry_term(),
                 prev_log_index : self.get_last_entry_index(),
-                leader_commit : 0, //TODO support fsm
+                leader_commit : self.fsm.get_last_applied_entry_index(),
                 entries
             };
 
@@ -93,7 +95,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
 
             let requester = |dest_node_id: u64, req: AppendEntriesRequest| self.communicator.send_append_entries_request(dest_node_id, req);
 
-            return notify_peers(append_entries_request, self.id,peers_list_copy, None, requester);
+            return notify_peers(append_entries_request, self.id,peers_list_copy, Some(quorum_size), requester);
         }
         Err("Not a leader")
     }
