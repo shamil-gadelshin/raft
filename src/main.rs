@@ -29,17 +29,12 @@ use communication::peers::{InProcNodeCommunicator};
 use operation_log::storage::{MemoryLogStorage};
 use configuration::cluster::ClusterConfiguration;
 use configuration::node::NodeConfiguration;
-
-
+use std::thread;
+use crate::communication::client::NewDataRequest;
 
 
 fn main() {
-    env_logger::builder()
-        .format(|buf, record| {
-            let now: DateTime<Local> = Local::now();
-            writeln!(buf, "{:5}: {} - {}", record.level(),now.format("%H:%M:%S.%3f").to_string(), record.args())
-        })
-        .init();
+    init_logger();
 
     let node_ids = vec![1, 2];
     let new_node_id = 3;
@@ -79,15 +74,26 @@ fn main() {
 	}
 }
 
+fn init_logger() {
+    env_logger::builder()
+        .format(|buf, record| {
+            let now: DateTime<Local> = Local::now();
+            writeln!(buf, "{:5}: {} - {}", record.level(), now.format("%H:%M:%S.%3f").to_string(), record.args())
+        })
+        .init();
+}
+
 fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
                                     client_handlers : HashMap<u64, InProcClientCommunicator>,
                                     new_node_id : u64) -> JoinHandle<()>{
 //return;
 
+
+    thread::sleep(Duration::from_secs(3));
+
     let new_server_config;
     {
-        // *** add new server
         new_server_config = NodeConfiguration {
             node_id: new_node_id,
             cluster_configuration: protected_cluster_config.clone(),
@@ -95,19 +101,28 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
             client_communicator: InProcClientCommunicator::new(),
         };
     }
-    let timeout = crossbeam_channel::after(Duration::new(3,0));
-    select!(
-            recv(timeout) -> _  => {},
-        );
+
     let thread_handle = workers::node_main_process::run_thread(new_server_config, MemoryLogStorage::new());
 
-    let request = AddServerRequest{new_server : new_node_id};
+    let add_server_request = AddServerRequest{new_server : new_node_id};
+    for kv in client_handlers.clone() {
+        let (k,v) = kv;
+
+        let resp = v.add_server(add_server_request);
+
+        info!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp);
+    }
+
+    thread::sleep(Duration::from_secs(2));
+
+    let bytes = "first data".as_bytes();
+    let new_data_request = NewDataRequest{data : Arc::new(bytes)};
     for kv in client_handlers {
         let (k,v) = kv;
 
-        let resp = v.add_server(request);
+        let resp = v.new_data(new_data_request.clone());
 
-        info!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp);
+        info!("New Data request sent for NodeId = {:?}. Response = {:?}", k, resp);
     }
 
 	thread_handle
@@ -146,6 +161,7 @@ Details:
    .futures
    .election trait?
    .extract communicator trait
+   .worker thread structure: all peer-request thread, client-thread?
    .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - identity
     .generic

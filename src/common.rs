@@ -7,7 +7,7 @@ pub enum LeaderConfirmationEvent {
 //TODO separate log & append entry implementations
 #[derive(Clone, Debug)]
 pub struct DataEntryContent {
-    pub bytes : Arc<[u8]>//TODO optimize with Rc
+    pub data : Arc<&'static [u8]>
 }
 
 //TODO separate log & append entry implementations
