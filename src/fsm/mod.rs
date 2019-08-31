@@ -1,13 +1,16 @@
+pub mod updater;
+
 use crate::configuration::cluster::ClusterConfiguration;
 use std::sync::{Mutex, Arc};
 use crate::common::{LogEntry, DataEntryContent, EntryContent};
+use crossbeam_channel::Sender;
 
 //TODO crate fsm trait
 #[derive(Debug, Clone)]
 pub struct Fsm {
 	cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
 	data : Vec<DataEntryContent>,
-	last_applied_index: u64,
+	last_applied_index: usize,
 }
 
 impl Fsm{
@@ -15,7 +18,7 @@ impl Fsm{
 		Fsm{
 			cluster_configuration,
 			data : Vec::new(),
-			last_applied_index: 0
+			last_applied_index: 0,
 		}
 	}
 	pub fn apply_entry(&mut self, entry: LogEntry) {
@@ -37,7 +40,7 @@ impl Fsm{
 		cluster.add_peer(new_server_id);
 	}
 
-	pub fn get_last_applied_entry_index(&self) -> u64{
+	pub fn get_last_applied_entry_index(&self) -> usize{
 		self.last_applied_index
 	}
 }

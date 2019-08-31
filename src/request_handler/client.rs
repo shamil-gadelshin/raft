@@ -11,7 +11,7 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mu
 		let request = client_communicator.get_add_server_request_rx().recv().expect("cannot get request from client_add_server_request_rx");
 
 		let (node_id, node_status, current_leader_id) = {
-			let node = mutex_node.lock().expect("node lock is poisoned");
+			let node = mutex_node.lock().expect("node lock is not poisoned");
 
 			(node.id, node.status, node.current_leader_id)
 		};
@@ -22,7 +22,7 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mu
 			NodeStatus::Leader => {
 				let entry_content = EntryContent::AddServer(AddServerEntryContent{new_server:request.new_server});
 
-				let mut node = mutex_node.lock().expect("node lock is poisoned");
+				let mut node = mutex_node.lock().expect("node lock is not poisoned");
 				node.append_content_to_log(entry_content);
 
 				AddServerResponse{status: ChangeMembershipResponseStatus::Ok, current_leader:current_leader_id}

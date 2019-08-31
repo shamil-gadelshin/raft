@@ -3,13 +3,14 @@ use crate::common::{LogEntry, EntryContent};
 pub trait LogStorage {
     fn append_content(&mut self, term : u64, entry_content : EntryContent)-> LogEntry; //TODO error handling
     fn append_entry(&mut self, entry: LogEntry); //TODO error handling
-    fn get_last_entry_index(&self) -> u64;
+    fn get_last_entry_index(&self) -> usize;
     fn get_last_entry_term(&self) -> u64;
+    fn get_entry(&self, index : usize) -> Option<LogEntry>;
 }
 
 #[derive(Clone, Debug)]
 pub struct MemoryLogStorage {
-    last_index: u64,
+    last_index: usize,
     entries : Vec<LogEntry>
 }
 
@@ -25,7 +26,7 @@ impl LogStorage for MemoryLogStorage {
 
         entry
     }
-    fn get_last_entry_index(&self) -> u64{
+    fn get_last_entry_index(&self) -> usize{
         let last = self.entries.last();
         if let Some(entry) = last {
             return entry.index;
@@ -40,6 +41,13 @@ impl LogStorage for MemoryLogStorage {
         }
 
         0 //Raft documentation demands zero as initial value
+    }
+
+    fn get_entry(&self, index: usize) -> Option<LogEntry> {
+        if index >= self.entries.len() {
+            return None;
+        }
+        Some(self.entries[index].clone())
     }
 }
 

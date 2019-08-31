@@ -33,25 +33,29 @@ pub enum NodeStatus {
     Leader
 }
 
+pub enum AppendEntriesRequestType {
+    Heartbeat,
+    NewEntry(LogEntry),
+    UpdateNode(u64)
+}
+
 impl <Log: Sized + Sync + LogStorage> Node<Log> {
-    pub fn get_last_entry_index(&self) -> u64{
+    pub fn get_last_entry_index(&self) -> usize{
         self.log.get_last_entry_index()
     }
     pub fn get_last_entry_term(&self) -> u64{
         self.log.get_last_entry_term()
     }
 
-    //TODO support the fsm
-    pub fn get_last_applied_index(&self) -> u64{
-        self.log.get_last_entry_index()
+    pub fn get_last_applied_index(&self) -> usize{
+        self.fsm.get_last_applied_entry_index()
     }
-
 
     pub fn append_entry_to_log(&mut self, entry : LogEntry ){
         self.log.append_entry(entry.clone());
 
-        //TODO async
         self.fsm.apply_entry(entry);
+        //fsm.check_updates();
     }
 
 
@@ -64,11 +68,40 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
             return send_result;
         }
 
-        //TODO gather quorum
-        //TODO async
+        //fsm.check_updates();
         self.fsm.apply_entry(entry);
 
         Ok(())
+    }
+
+    pub fn create_append_entry_request(&self, request_type : AppendEntriesRequestType) -> AppendEntriesRequest {
+        let entries = self.get_log_entries(request_type);
+        let append_entry_request = AppendEntriesRequest {
+            term: self.current_term,
+            leader_id: self.id,
+            prev_log_term: self.get_last_entry_term(),
+            prev_log_index: self.get_last_entry_index() as u64,
+            leader_commit: self.fsm.get_last_applied_entry_index() as u64,
+            entries
+        };
+
+        append_entry_request
+    }
+
+    fn get_log_entries(&self, request_type : AppendEntriesRequestType) -> Vec<LogEntry> {
+        match request_type{
+            AppendEntriesRequestType::Heartbeat => {
+                Vec::new() //empty AppendEntriesRequest - heartbeat
+            },
+            AppendEntriesRequestType::NewEntry(entry) => {
+                let entries = vec![entry];
+                entries
+            },
+            AppendEntriesRequestType::UpdateNode(id) => {
+                let entries = Vec::new();
+                entries
+            }
+        }
     }
 
     fn send_append_entries(&self, entry : LogEntry) -> Result<(), &'static str>{
@@ -80,16 +113,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
                 (cluster.get_peers(self.id), cluster.get_quorum_size())
             };
 
-            let entries = vec![entry];
-
-            let append_entries_request =  AppendEntriesRequest {
-                term: self.current_term,
-                leader_id: self.id,
-                prev_log_term : self.get_last_entry_term(),
-                prev_log_index : self.get_last_entry_index(),
-                leader_commit : self.fsm.get_last_applied_entry_index(),
-                entries
-            };
+            let append_entries_request =  self.create_append_entry_request(AppendEntriesRequestType::NewEntry(entry));
 
             trace!("Node {:?} Send 'empty Append Entries Request(heartbeat)'.", self.id);
 

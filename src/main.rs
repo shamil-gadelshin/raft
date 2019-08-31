@@ -6,7 +6,6 @@ extern crate crossbeam_channel;
 extern crate chrono;
 
 mod common;
-mod node_runner;
 mod leadership;
 mod communication;
 mod operation_log;
@@ -14,6 +13,7 @@ mod configuration;
 mod state;
 mod fsm;
 mod request_handler;
+mod workers;
 
 use communication::client::{AddServerRequest, InProcClientCommunicator};
 use communication::peers::{InProcNodeCommunicator};
@@ -28,6 +28,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::collections::HashMap;
 use std::io::Write;
+use std::thread::JoinHandle;
 
 fn main() {
     env_logger::builder()
@@ -46,6 +47,7 @@ fn main() {
     communicator.add_node_communication(new_node_id);
 
     let mut client_handlers : HashMap<u64, InProcClientCommunicator> = HashMap::new();
+	let mut node_threads = Vec::new();
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
@@ -56,23 +58,28 @@ fn main() {
             peer_communicator: communicator.clone(),
             client_communicator: client_request_handler.clone(),
         };
-        thread::spawn(move || node_runner::start_node(config,  MemoryLogStorage::new()));
+        let thread_handle = workers::node_main_process::run_thread(config, MemoryLogStorage::new());
+		node_threads.push(thread_handle);
 
         client_handlers.insert(node_id, client_request_handler);
     }
 
     let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
-    run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
+    let thread_handle = run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
                                      client_handlers,
                                      new_node_id);
-    //TODO -  change to 'join to the node thread'
-    thread::sleep(Duration::from_secs(86000 * 1000));
+
+	node_threads.push(thread_handle);
+
+	for node_thread in node_threads {
+		node_thread.join();
+	}
 }
 
 fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
                                     client_handlers : HashMap<u64, InProcClientCommunicator>,
-                                    new_node_id : u64) {
+                                    new_node_id : u64) -> JoinHandle<()>{
 //return;
 
     let new_server_config;
@@ -89,7 +96,7 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
     select!(
             recv(timeout) -> _  => {},
         );
-    thread::spawn(move || node_runner::start_node(new_server_config,MemoryLogStorage::new()));
+    let thread_handle = workers::node_main_process::run_thread(new_server_config, MemoryLogStorage::new());
 
     let request = AddServerRequest{new_server : new_node_id};
     for kv in client_handlers {
@@ -99,6 +106,8 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
 
         info!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp);
     }
+
+	thread_handle
 }
 
 /*
@@ -114,7 +123,7 @@ TODO: Features:
    .futures
    .election trait?
    .extract communicator trait
-   .rebuild raft election as fsm
+   .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - identity
     .generic
     .libp2p

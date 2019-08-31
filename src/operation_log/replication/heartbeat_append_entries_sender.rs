@@ -3,7 +3,7 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver};
 
 
-use crate::state::{Node, NodeStatus};
+use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::peer_notifier::notify_peers;
 use crate::configuration::cluster::{ClusterConfiguration};
@@ -46,7 +46,11 @@ fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node
             cluster.get_peers(node_id)
         };
 
-        let append_entries_heartbeat = create_empty_append_entry_request(protected_node);
+        let append_entries_heartbeat= {
+            let node = protected_node.lock().expect("node lock is not poisoned");
+
+            node.create_append_entry_request(AppendEntriesRequestType::Heartbeat)
+        };;
 
         trace!("Node {:?} Send 'empty Append Entries Request(heartbeat)'.", node_id);
 
@@ -62,8 +66,8 @@ fn create_empty_append_entry_request<Log: Sync + Send + LogStorage>(protected_no
         term: node.current_term,
         leader_id: node.id,
         prev_log_term : node.get_last_entry_term(),
-        prev_log_index : node.get_last_entry_index(),
-        leader_commit : node.fsm.get_last_applied_entry_index(),
+        prev_log_index : node.get_last_entry_index() as u64,
+        leader_commit : node.fsm.get_last_applied_entry_index() as u64,
         entries : Vec::new()
     };
 
