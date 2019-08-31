@@ -3,7 +3,6 @@ pub mod updater;
 use crate::configuration::cluster::ClusterConfiguration;
 use std::sync::{Mutex, Arc};
 use crate::common::{LogEntry, DataEntryContent, EntryContent};
-use crossbeam_channel::Sender;
 
 //TODO crate fsm trait
 #[derive(Debug, Clone)]

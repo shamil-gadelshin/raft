@@ -59,21 +59,6 @@ fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node
     }
 }
 
-fn create_empty_append_entry_request<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node<Log>>>) -> AppendEntriesRequest {
-    let node = protected_node.lock().expect("node lock is not poisoned");
-
-    let append_entries_heartbeat = AppendEntriesRequest {
-        term: node.current_term,
-        leader_id: node.id,
-        prev_log_term : node.get_last_entry_term(),
-        prev_log_index : node.get_last_entry_index() as u64,
-        leader_commit : node.fsm.get_last_applied_entry_index() as u64,
-        entries : Vec::new()
-    };
-
-    append_entries_heartbeat
-}
-
 fn leader_heartbeat_duration_ms() -> Duration{
     Duration::from_millis(1000)
 }

@@ -15,20 +15,23 @@ mod fsm;
 mod request_handler;
 mod workers;
 
-use communication::client::{AddServerRequest, InProcClientCommunicator};
-use communication::peers::{InProcNodeCommunicator};
-use crate::operation_log::storage::{MemoryLogStorage};
-use crate::configuration::cluster::ClusterConfiguration;
-use crate::configuration::node::NodeConfiguration;
 
-use chrono::prelude::{DateTime, Local};
-
-use std::thread;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::collections::HashMap;
 use std::io::Write;
 use std::thread::JoinHandle;
+
+use chrono::prelude::{DateTime, Local};
+
+use communication::client::{AddServerRequest, InProcClientCommunicator};
+use communication::peers::{InProcNodeCommunicator};
+use operation_log::storage::{MemoryLogStorage};
+use configuration::cluster::ClusterConfiguration;
+use configuration::node::NodeConfiguration;
+
+
+
 
 fn main() {
     env_logger::builder()
@@ -112,6 +115,26 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
 
 /*
 TODO: Features:
+
+Main algorithm:
+- fsm
+    .persistent
+        .load on start
+- operation_log replication
+    .file snapshot
+        .load on start
+    .persist server's current term and vote and cluster configuration (state persistence)
+    .response to the client after majority of the servers responses
+    .operation_log forcing from the leader
+        .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
+    .support max AppendEntries size parameter & max AppendEntries number
+- cluster membership changes
+    .change quorum size
+    .remove server(shutdown self)
+- client RPC
+    .sessions - for duplicate request handling
+    .read query
+Details:
 - stability
     .crossbeam recv, send - parse result
     .check channels bounded-unbounded types
@@ -135,21 +158,6 @@ TODO: Features:
     .tarpc
     .grpc
     .change client and node response patterns (after committing to the operation_log)
-- fsm
-    .persistent
-        .load on start
-
-- operation_log replication
-    .file snapshot
-        .load on start
-    .persist server's current term and vote and cluster configuration (state persistence)
-    .response to the client after majority of the servers responses
-    .operation_log forcing from the leader
-        .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
-    .support max AppendEntries size parameter & max AppendEntries number
-- cluster membership changes
-    .change quorum size
-    .remove server(shutdown self)
 - system events logging
     .remove requests from log messages
     .increase log coverage

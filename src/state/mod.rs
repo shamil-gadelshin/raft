@@ -55,7 +55,6 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
         self.log.append_entry(entry.clone());
 
         self.fsm.apply_entry(entry);
-        //fsm.check_updates();
     }
 
 
@@ -68,7 +67,6 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
             return send_result;
         }
 
-        //fsm.check_updates();
         self.fsm.apply_entry(entry);
 
         Ok(())

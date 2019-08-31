@@ -4,7 +4,6 @@ use std::thread;
 
 use crossbeam_channel::Receiver;
 
-use crate::state::Node;
 use crate::operation_log::storage::LogStorage;
 use crate::fsm::updater::update_fsm;
 use crate::fsm::Fsm;
