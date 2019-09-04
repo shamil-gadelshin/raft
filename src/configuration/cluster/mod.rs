@@ -8,7 +8,13 @@ pub struct ClusterConfiguration{
 
 impl ClusterConfiguration {
     pub fn get_quorum_size(&self) -> u32 {
-        self.nodes_id_map.len() as u32
+        let node_count = self.nodes_id_map.len() as u32;
+
+        if node_count > 2 {
+            node_count - 1
+        } else {
+            1
+        }
     }
 
     pub fn get_peers(&self, node_id : u64) -> Vec<u64>{
@@ -29,6 +35,7 @@ impl ClusterConfiguration {
     }
 
     pub fn add_peer(&mut self, peer : u64) {
+        //TODO warn duplicate
         self.nodes_id_map.insert(peer, true);
     }
 

@@ -135,6 +135,8 @@ Main algorithm:
 - fsm
     .persistent
         .load on start
+- election
+    .check log on votes
 - operation_log replication
     .file snapshot
         .load on start
@@ -143,6 +145,7 @@ Main algorithm:
     .operation_log forcing from the leader
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
+    .not commit entry if quorum fails (clear entry?)
 - cluster membership changes
     .change quorum size
     .remove server(shutdown self)
@@ -207,6 +210,7 @@ Details:
             .newer term - convert to follower
                 .leader
                 .candidate
+            .incorrect leader sends heartbeats
     .conditional compilation
 - user-friendliness
     .readme.md

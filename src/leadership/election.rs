@@ -22,7 +22,7 @@ pub struct ElectionNotice {
 }
 
 
-pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
+pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
                                                                   leader_election_event_tx : Sender<LeaderElectionEvent>,
                                                                   leader_election_event_rx : Receiver<LeaderElectionEvent>,
                                                                   response_event_rx : Receiver<VoteResponse>,
@@ -36,11 +36,9 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
 
         let event = event_result.expect("can receive election event from channel");
 
-   //     clean_abort_election_channel(&abort_election_rx);
-
         match event {
             LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
-                let mut node = mutex_node.lock().expect("node lock is not poisoned");
+                let mut node = protected_node.lock().expect("node lock is not poisoned");
 
                 let node_id = node.id;
                 node.voted_for_id = Some(node_id);
@@ -48,11 +46,11 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                 node.status = NodeStatus::Candidate;
                 info!("Node {:?} Status changed to Candidate", node.id);
 
-                let (peers_copy, quorum_size )= {
-                    let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
+                let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
 
-                    (cluster.get_peers(node_id), cluster.get_quorum_size())
-                };
+                let (peers_copy, quorum_size )=
+                    (cluster.get_peers(node_id), cluster.get_quorum_size());
+
 
                 let communicator_copy = communicator.clone();
                 let election_event_tx_copy = leader_election_event_tx.clone();
@@ -64,7 +62,7 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                                                                   quorum_size));
             },
             LeaderElectionEvent::PromoteNodeToLeader(term) => {
-                let mut node = mutex_node.lock().expect("node lock is not poisoned");
+                let mut node = protected_node.lock().expect("node lock is not poisoned");
 
                 node.current_leader_id = Some(node.id);
                 node.current_term = term;
@@ -75,7 +73,9 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(mutex_node: Ar
                 leader_initial_heartbeat_tx.send(true).expect("can send leader initial heartbeat");
             },
             LeaderElectionEvent::ResetNodeToFollower(vr) => {
-                let mut node = mutex_node.lock().expect("node lock is poisoned");
+                trace!("changed to follower");
+                let mut node = protected_node.lock().expect("node lock is poisoned");
+                trace!("changed to follower2");
 
                 node.current_term = vr.term;
                 node.status = NodeStatus::Follower;

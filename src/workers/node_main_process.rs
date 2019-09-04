@@ -20,6 +20,9 @@ pub fn run_thread<Log: Sync + Send + LogStorage + 'static>(node_config : NodeCon
 //TODO check clones number - consider borrowing &
 fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfiguration, log_storage : Log) {
 
+    add_this_node_to_cluster(&node_config);
+
+    let (replicate_log_to_peer_tx, replicate_log_to_peer_rx) : (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
     let fsm = Fsm::new(node_config.cluster_configuration.clone());
     let node = Node{id : node_config.node_id,
         current_term: 0,
@@ -32,6 +35,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
         cluster_configuration: node_config.cluster_configuration.clone(),
         next_index : HashMap::new(),
         match_index : HashMap::new(),
+        replicate_log_to_peer_tx: replicate_log_to_peer_tx.clone()
     };
 
     let protected_node = Arc::new(Mutex::new(node));
@@ -39,6 +43,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
     let (leader_election_tx, leader_election_rx): (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) = crossbeam_channel::unbounded();
     let (reset_leadership_watchdog_tx, reset_leadership_watchdog_rx) : (Sender<LeaderConfirmationEvent>, Receiver<LeaderConfirmationEvent>) = crossbeam_channel::unbounded();
     let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx) : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
+    let (replicate_log_to_peer_rx, replicate_log_to_peer_tx) : (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
 
     let election_thread = workers::election_manager::run_thread(protected_node.clone(),
                                                                 &node_config,
@@ -70,6 +75,10 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
 
     let client_request_handler_thread = workers::client_request_handler::run_thread(protected_node.clone(),
                                                                                     &node_config);
+    let peer_log_replicator_thread = workers::peer_log_replicator::run_thread(protected_node.clone(),
+                                                                              replicate_log_to_peer_tx,
+                                                                              replicate_log_to_peer_rx,
+                                                                                    &node_config);
 
     info!("Node {:?} started", node_config.node_id);
 
@@ -81,7 +90,12 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
     let _ = election_thread.join();
 }
 
+fn add_this_node_to_cluster(node_config: &NodeConfiguration) {
+    let cluster_configuration = node_config.cluster_configuration.clone();
+    let mut cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
 
+    cluster.add_peer(node_config.node_id);
+}
 
 
 

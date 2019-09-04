@@ -1,9 +1,10 @@
-use crossbeam_channel::{Sender, Receiver};
+use crossbeam_channel::{Sender, Receiver, SendTimeoutError};
 use std::collections::HashMap;
 
 use crate::common::{LogEntry};
 use crate::communication::duplex_channel::DuplexChannel;
 use crate::communication::QuorumResponse;
+use std::time::Duration;
 
 #[derive(Clone, Copy, Debug)]
 pub struct VoteRequest {
@@ -91,11 +92,11 @@ impl InProcNodeCommunicator {
     //TODO handle communicator timeouts
     pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
         trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
-        self.votes_channels[&destination_node_id].request_tx.send(request).expect("can send vote request");
+        self.votes_channels[&destination_node_id].request_tx.send_timeout(request, Duration::from_secs(3)).expect("can send vote request");
     }
-    pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) {
+    pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) -> Result<(), SendTimeoutError<VoteResponse>>{
         trace!("Destination Node {:?} Sending response {:?}", destination_node_id, response);
-        self.votes_channels[&destination_node_id].response_tx.send(response).expect("can send vote response");
+        self.votes_channels[&destination_node_id].response_tx.send_timeout(response, Duration::from_millis(500))
     }
     pub fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, &'static str>  {
         trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);

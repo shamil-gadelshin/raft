@@ -57,7 +57,7 @@ impl <Request, Response> DuplexChannel<Request, Response> {
             return Ok(response);
         }
 
-        panic!("invalid request-response sequence");
+        unreachable!("invalid request-response sequence");
     }
 }
 

@@ -10,7 +10,7 @@ use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::storage::LogStorage;
 
 
-pub fn watch_leader_status<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<Node<Log>>>,
+pub fn watch_leader_status<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
                                                           leadership_event_tx : Sender<LeaderElectionEvent>,
                                                           watchdog_event_rx : Receiver<LeaderConfirmationEvent>) {
     loop {
@@ -18,13 +18,13 @@ pub fn watch_leader_status<Log: Sync + Send + LogStorage>(mutex_node: Arc<Mutex<
         select!(
             recv(timeout) -> _  => {},
             recv(watchdog_event_rx) -> _ => {
-                let node = mutex_node.lock().expect("node lock is not poisoned");
+                let node = protected_node.lock().expect("node lock is not poisoned");
                 trace!("Node {:?} Received reset watchdog ", node.id);
                 continue
             },
         );
 
-        let node = mutex_node.lock().expect("node lock is not poisoned");
+        let node = protected_node.lock().expect("node lock is not poisoned");
 
         if let NodeStatus::Follower = node.status {
             info!("Node {:?} Leader awaiting time elapsed. Starting new election.", node.id);

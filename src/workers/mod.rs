@@ -7,3 +7,4 @@ pub mod leader_heartbeat_sender;
 pub mod append_entries_processor;
 pub mod client_request_handler;
 pub mod debug_node_watcher;
+pub mod peer_log_replicator;

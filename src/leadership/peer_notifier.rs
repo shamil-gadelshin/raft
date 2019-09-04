@@ -27,27 +27,22 @@ pub fn notify_peers(term : u64,
         let (terminate_thread_tx, terminate_thread_rx): (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
 
         thread::spawn(move || process_votes(node_id, communicator, quorum_gathered_tx, terminate_thread_rx, term, quorum_size));
-        loop {
-            select!(
-                recv(timeout) -> _ => {
-                    info!("Leader election timed out for NodeId =  {:?} ", node_id);
-                    terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
-                    break;
-                },
-                recv(quorum_gathered_rx) -> _ => {
-                    info!("Leader election - quorum gathered for NodeId = {:?} ", node_id);
+        select!(
+            recv(timeout) -> _ => {
+                info!("Leader election timed out for NodeId =  {:?} ", node_id);
+                terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
 
-                    let event_promote_to_leader = LeaderElectionEvent::PromoteNodeToLeader(term);
-                    election_event_tx.send(event_promote_to_leader).expect("can promote to leader");
+                election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term }))
+                    .expect("can send LeaderElectionEvent");
+            },
+            recv(quorum_gathered_rx) -> _ => {
+                info!("Leader election - quorum ({:?}) gathered for NodeId = {:?} ",quorum_size, node_id);
 
-                    return;
-                },
-            );
-        }
+                let event_promote_to_leader = LeaderElectionEvent::PromoteNodeToLeader(term);
+                election_event_tx.send(event_promote_to_leader).expect("can promote to leader");
+            },
+        );
     }
-
-    election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term }))
-        .expect("can send LeaderElectionEvent");
 }
 
 
