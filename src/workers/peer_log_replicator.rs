@@ -1,0 +1,26 @@
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::JoinHandle;
+
+use crossbeam_channel::{Sender, Receiver};
+
+use crate::operation_log::storage::LogStorage;
+use crate::state::Node;
+use crate::configuration::node::NodeConfiguration;
+use crate::communication::peers::InProcNodeCommunicator;
+use crate::operation_log::replication::peer_log_replicator::replicate_log_to_peer;
+
+pub fn run_thread<Log>(protected_node: Arc<Mutex<Node<Log>>>,
+					   replicate_log_to_peer_rx: Receiver<u64>,
+					   replicate_log_to_peer_tx: Sender<u64>,
+					   node_config : &NodeConfiguration) -> JoinHandle<()>
+	where Log: Sync + Send + LogStorage + 'static {
+	let communicator = node_config.peer_communicator.clone();
+	let peer_log_replicator_thread = thread::spawn(move|| replicate_log_to_peer(
+		protected_node,
+		replicate_log_to_peer_rx,
+		replicate_log_to_peer_tx,
+		communicator));
+
+	peer_log_replicator_thread
+}
