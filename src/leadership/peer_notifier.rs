@@ -7,7 +7,9 @@ use crate::communication::peers::{VoteRequest, InProcNodeCommunicator};
 
 //TODO refactor to DuplexChannel.send_request. Watch out for election timeout
 //TODO refactor to generic peer_notifier
-pub fn notify_peers(term : u64,
+pub fn notify_peers(
+                    current_term : u64,
+                    next_term : u64,
                     election_event_tx : Sender<LeaderElectionEvent>,
                     node_id : u64,
                     communicator : InProcNodeCommunicator,
@@ -15,7 +17,7 @@ pub fn notify_peers(term : u64,
                     quorum_size: u32,
                     last_entry_index : u64,
                     last_entry_term : u64) {
-    let vote_request = VoteRequest { candidate_id: node_id, term, last_log_index: last_entry_index, last_log_term: last_entry_term };
+    let vote_request = VoteRequest { candidate_id: node_id, term:next_term, last_log_index: last_entry_index, last_log_term: last_entry_term };
     let peers_exist = !peers.is_empty();
 
     for peer_id in peers {
@@ -28,19 +30,19 @@ pub fn notify_peers(term : u64,
         let (quorum_gathered_tx, quorum_gathered_rx): (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
         let (terminate_thread_tx, terminate_thread_rx): (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
 
-        thread::spawn(move || process_votes(node_id, communicator, quorum_gathered_tx, terminate_thread_rx, term, quorum_size));
+        thread::spawn(move || process_votes(node_id, communicator, quorum_gathered_tx, terminate_thread_rx, next_term, quorum_size));
         select!(
             recv(timeout) -> _ => {
                 info!("Leader election timed out for NodeId =  {:?} ", node_id);
                 terminate_thread_tx.send(true).expect("can send to terminate_thread_tx");
 
-                election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term }))
+                election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(ElectionNotice{candidate_id : node_id, term: current_term }))
                     .expect("can send LeaderElectionEvent");
             },
             recv(quorum_gathered_rx) -> _ => {
                 info!("Leader election - quorum ({:?}) gathered for NodeId = {:?} ",quorum_size, node_id);
 
-                let event_promote_to_leader = LeaderElectionEvent::PromoteNodeToLeader(term);
+                let event_promote_to_leader = LeaderElectionEvent::PromoteNodeToLeader(next_term);
                 election_event_tx.send(event_promote_to_leader).expect("can promote to leader");
             },
         );

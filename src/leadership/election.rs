@@ -46,7 +46,7 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(protected_node
 
                 let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
 
-                let (peers_copy, quorum_size )=
+                let (peers_copy, quorum_size) =
                     (cluster.get_peers(node_id), cluster.get_quorum_size());
 
 
@@ -54,14 +54,17 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(protected_node
                 let election_event_tx_copy = leader_election_event_tx.clone();
                 let last_entry_index = node.log.get_last_entry_index() as u64;
                 let last_entry_term = node.log.get_last_entry_term();
-                thread::spawn(move || peer_notifier::notify_peers(vr.term,
-                                                                  election_event_tx_copy,
-                                                                  node_id,
-                                                                  communicator_copy,
-                                                                  peers_copy,
-                                                                  quorum_size,
-                                                                  last_entry_index,
-                                                                  last_entry_term));
+                let actual_current_term = node.get_current_term() - 1; //TODO refactor
+                thread::spawn(move || peer_notifier::notify_peers(
+                    actual_current_term,
+                    vr.term,
+                    election_event_tx_copy,
+                    node_id,
+                    communicator_copy,
+                    peers_copy,
+                    quorum_size,
+                    last_entry_index,
+                    last_entry_term));
             },
             LeaderElectionEvent::PromoteNodeToLeader(term) => {
                 let mut node = protected_node.lock().expect("node lock is not poisoned");

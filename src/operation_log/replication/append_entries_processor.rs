@@ -31,8 +31,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
             continue
         }
 
-        let previous_entry_exist = request.prev_log_term == 0 || request.prev_log_index ==0 ||
-                node.check_log_for_previous_entry(request.prev_log_term, request.prev_log_index as usize);
+        let previous_entry_exist = node.check_log_for_previous_entry(request.prev_log_term, request.prev_log_index as usize);
 
         if !previous_entry_exist {
             trace!("Node {:?} no previous entry 'Append Entries Request'. Prev term: {:?},Prev index: {:?}", node.id, request.prev_log_term, request.prev_log_index);

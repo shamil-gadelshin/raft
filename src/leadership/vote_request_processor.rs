@@ -27,11 +27,13 @@ pub fn vote_request_processor<Log: Sync + Send + LogStorage>(leader_election_eve
                 && node.voted_for_id.expect("vote_id_result") == request.candidate_id;
 
             if node.get_current_term() < request.term || is_same_term_and_candidate {
-                vote_granted = true;
-                response_current_term = request.term;
+                if node.check_log_for_last_entry(request.last_log_term, request.last_log_index as usize) {
+                    vote_granted = true;
+                    response_current_term = request.term;
 
-                let follower_event = ElectionNotice { term: request.term, candidate_id: request.candidate_id };
-                leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(follower_event)).expect("can send LeaderElectionEvent");
+                    let follower_event = ElectionNotice { term: request.term, candidate_id: request.candidate_id };
+                    leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(follower_event)).expect("can send LeaderElectionEvent");
+                }
             }
         }
         let vote_response = VoteResponse { vote_granted, peer_id: node.id, term: response_current_term };

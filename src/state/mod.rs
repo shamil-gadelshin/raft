@@ -13,7 +13,6 @@ use crate::operation_log::storage::{LogStorage};
 use crate::errors;
 
 
-
 #[derive(Debug, Clone)]
 //TODO persist state
 //TODO decompose GOD object
@@ -80,20 +79,43 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
         }
     }
 
+    pub fn get_next_term(&self) -> u64 {
+        self.current_term + 1
+    }
+
     pub fn set_current_term(&mut self, new_term: u64) {
+        trace!("Node {} Current term: {}", self.id, self.current_term);
         self.current_term = new_term;
     }
     pub fn get_last_applied_index(&self) -> usize{
         self.fsm.get_last_applied_entry_index()
     }
 
+    ///Gets entry by index & compares terms.
+    /// Special case index=0, term=0 returns true
     pub fn check_log_for_previous_entry(&self, prev_log_term: u64, prev_log_index: usize) -> bool {
+        if prev_log_term == 0  && prev_log_index == 0 {
+            return true
+        }
         let entry_result = self.log.get_entry(prev_log_index);
 
         if let Some(entry) = entry_result{
             return entry.term == prev_log_term;
         }
 
+        false
+    }
+    pub fn check_log_for_last_entry(&self, log_term: u64, log_index: usize) -> bool {
+        if self.log.get_last_entry_term() > log_term {
+            return false
+        }
+        if self.log.get_last_entry_term() < log_term {
+            return true
+        }
+
+        if self.log.get_last_entry_index() >= log_index {
+            return true
+        }
         false
     }
 
@@ -106,7 +128,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
 
     //TODO check result
     pub fn append_content_to_log(&mut self, content : EntryContent ) -> Result<(), Box<Error>> {
-        let entry = self.log.append_content(self.current_term, content);
+        let entry = self.log.append_content(self.get_current_term(), content);
         let send_result = self.send_append_entries(entry.clone());
 
         if !send_result.is_ok() {
@@ -147,7 +169,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
         trace!("Node {:?} - Prev_log_term = {:?}, prev_log_index = {:?}", self.id,  prev_log_term, prev_log_index);
 
         let append_entry_request = AppendEntriesRequest {
-            term: self.current_term,
+            term: self.get_current_term(),
             leader_id: self.id,
             prev_log_term,
             prev_log_index: prev_log_index as u64,
