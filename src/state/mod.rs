@@ -20,18 +20,19 @@ use crate::errors;
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
 pub struct Node<Log: LogStorage + Sized + Sync> {
     pub id : u64, //TODO pass node_id as copy to decrease mutex lock count
-    pub current_term: u64,
+    current_term: u64,
     pub current_leader_id: Option<u64>,
     pub voted_for_id: Option<u64>,
     pub status : NodeStatus,
     pub next_index : HashMap<u64, u64>,
     pub match_index : HashMap<u64, u64>, //TODO support match_index
     pub log : Log,
-    pub fsm : Fsm,
+    fsm : Fsm,
     pub communicator : InProcNodeCommunicator,
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     pub replicate_log_to_peer_tx: Sender<u64> //TODO split god object
 }
+
 
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -48,6 +49,40 @@ pub enum AppendEntriesRequestType {
 }
 
 impl <Log: Sized + Sync + LogStorage> Node<Log> {
+    pub fn new(  id : u64,
+     voted_for_id: Option<u64>,
+     status : NodeStatus,
+     log : Log,
+     fsm : Fsm,
+     communicator : InProcNodeCommunicator,
+     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,replicate_log_to_peer_tx: Sender<u64> ) ->  Node<Log> {
+        Node {
+            id,
+            current_term : 0,
+            current_leader_id : None,
+            voted_for_id,
+            status,
+            next_index: HashMap::new(),
+            match_index: HashMap::new(),
+            log,
+            fsm,
+            communicator,
+            cluster_configuration,
+            replicate_log_to_peer_tx
+        }
+    }
+
+    pub fn get_current_term(&self) -> u64 {
+        if self.status == NodeStatus::Candidate{
+            self.current_term + 1
+        } else {
+            self.current_term
+        }
+    }
+
+    pub fn set_current_term(&mut self, new_term: u64) {
+        self.current_term = new_term;
+    }
     pub fn get_last_applied_index(&self) -> usize{
         self.fsm.get_last_applied_entry_index()
     }

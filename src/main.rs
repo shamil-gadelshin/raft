@@ -185,7 +185,6 @@ Details:
     .remove requests from log messages
     .increase log coverage
 - error handling
-    .error style
     .communication timeouts
 - project structure
     .library crate
@@ -249,4 +248,6 @@ Done:
 - operation_log
     .memory snapshot
     .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
+- error handling
+    .error style
 */

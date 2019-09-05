@@ -5,6 +5,7 @@ pub trait LogStorage {
     fn append_entry(&mut self, entry: LogEntry); //TODO error handling
     fn get_entry(&self, index : usize) -> Option<LogEntry>;
     fn get_last_entry_index(&self) -> usize;
+    fn get_last_entry_term(&self) -> u64;
 }
 
 #[derive(Clone, Debug)]
@@ -37,6 +38,14 @@ impl LogStorage for MemoryLogStorage {
         let last = self.entries.last();
         if let Some(entry) = last {
             return entry.index;
+        }
+
+        0 //Raft documentation demands zero as initial value
+    }
+    fn get_last_entry_term(&self) -> u64{
+        let last = self.entries.last();
+        if let Some(entry) = last {
+            return entry.term;
         }
 
         0 //Raft documentation demands zero as initial value

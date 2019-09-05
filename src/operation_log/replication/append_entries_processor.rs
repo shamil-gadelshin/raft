@@ -22,11 +22,11 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
 
         trace!("Node {:?} Received 'Append Entries Request' {:?}", node.id, request);
 
-        if request.term < node.current_term {
+        if request.term < node.get_current_term() {
             trace!("Node {:?} Stale 'Append Entries Request'. Old term: {:?}", node.id, request);
 
             //TODO change to timeout
-            let resp = AppendEntriesResponse{term : node.current_term, success: false};
+            let resp = AppendEntriesResponse{term : node.get_current_term(), success: false};
             append_entries_response_tx.send(resp).expect("can send AppendEntriesResponse");
             continue
         }
@@ -38,7 +38,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
             trace!("Node {:?} no previous entry 'Append Entries Request'. Prev term: {:?},Prev index: {:?}", node.id, request.prev_log_term, request.prev_log_index);
 
             //TODO change to timeout
-            let resp = AppendEntriesResponse{term : node.current_term, success: false};
+            let resp = AppendEntriesResponse{term : node.get_current_term(), success: false};
             append_entries_response_tx.send(resp).expect("can send AppendEntriesResponse");
             continue
         }
@@ -46,7 +46,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
         //fix node status
         match node.status {
             NodeStatus::Leader | NodeStatus::Candidate => {
-                if request.term > node.current_term {
+                if request.term > node.get_current_term() {
                     let election_notice = ElectionNotice { candidate_id: request.leader_id, term: request.term };
                     leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(election_notice))
                         .expect("can send LeaderElectionEvent");
@@ -67,7 +67,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
         }
 
         //TODO change to timeout
-        let resp = AppendEntriesResponse{term : node.current_term, success: true};
+        let resp = AppendEntriesResponse{term : node.get_current_term(), success: true};
         let send_result = append_entries_response_tx.send_timeout(resp, Duration::from_secs(1));
         trace!("Node {:?} AppendEntriesResponse: {:?}", node.id, send_result);
     }

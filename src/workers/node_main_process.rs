@@ -24,19 +24,15 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx) : (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
     let fsm = Fsm::new(node_config.cluster_configuration.clone());
-    let node = Node{id : node_config.node_id,
-        current_term: 0,
-        status : NodeStatus::Follower,
-        current_leader_id: None,
-        voted_for_id : None,
-        log : log_storage,
-        fsm : fsm.clone(),
-        communicator: node_config.peer_communicator.clone(),
-        cluster_configuration: node_config.cluster_configuration.clone(),
-        next_index : HashMap::new(),
-        match_index : HashMap::new(),
-        replicate_log_to_peer_tx: replicate_log_to_peer_tx.clone()
-    };
+    let node = Node::new(node_config.node_id,
+    None,
+    NodeStatus::Follower,
+    log_storage,
+    fsm.clone(),
+    node_config.peer_communicator.clone(),
+    node_config.cluster_configuration.clone(),
+    replicate_log_to_peer_tx.clone()
+    );
 
     let protected_node = Arc::new(Mutex::new(node));
 

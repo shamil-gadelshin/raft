@@ -6,7 +6,6 @@ use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
-
 use super::peer_notifier;
 use crate::operation_log::storage::LogStorage;
 
@@ -53,18 +52,23 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(protected_node
 
                 let communicator_copy = communicator.clone();
                 let election_event_tx_copy = leader_election_event_tx.clone();
+                let last_entry_index = node.log.get_last_entry_index() as u64;
+                let last_entry_term = node.log.get_last_entry_term();
                 thread::spawn(move || peer_notifier::notify_peers(vr.term,
                                                                   election_event_tx_copy,
                                                                   node_id,
                                                                   communicator_copy,
                                                                   peers_copy,
-                                                                  quorum_size));
+                                                                  quorum_size,
+                                                                  last_entry_index,
+                                                                  last_entry_term));
             },
             LeaderElectionEvent::PromoteNodeToLeader(term) => {
                 let mut node = protected_node.lock().expect("node lock is not poisoned");
 
                 node.current_leader_id = Some(node.id);
-                node.current_term = term;
+                node.set_current_term(term);
+                node.voted_for_id = None;
                 node.status = NodeStatus::Leader;
                 info!("Node {:?} Status changed to Leader", node.id);
 
@@ -74,8 +78,9 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(protected_node
             LeaderElectionEvent::ResetNodeToFollower(vr) => {
                 let mut node = protected_node.lock().expect("node lock is poisoned");
 
-                node.current_term = vr.term;
+                node.set_current_term(vr.term);
                 node.status = NodeStatus::Follower;
+                node.voted_for_id = None;
                 info!("Node {:?} Status changed to Follower", node.id);
 
                 watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");

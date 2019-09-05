@@ -13,7 +13,8 @@ impl ClusterConfiguration {
         if node_count > 2 {
             node_count - 1
         } else {
-            1
+           // 1
+            node_count
         }
     }
 

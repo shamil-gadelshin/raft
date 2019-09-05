@@ -11,7 +11,9 @@ use std::error::Error;
 #[derive(Clone, Copy, Debug)]
 pub struct VoteRequest {
     pub term : u64,
-    pub candidate_id : u64
+    pub candidate_id : u64,
+    pub last_log_term : u64,
+    pub last_log_index : u64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -93,10 +95,9 @@ impl InProcNodeCommunicator {
     }
 
     //TODO check node_id existence
-    //TODO handle communicator timeouts
-    pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
+    pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<(), SendTimeoutError<VoteRequest>> {
         trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
-        self.votes_channels[&destination_node_id].request_tx.send_timeout(request, self.timeout).expect("can send vote request");
+        self.votes_channels[&destination_node_id].request_tx.send_timeout(request, self.timeout)
     }
     pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) -> Result<(), SendTimeoutError<VoteResponse>>{
         trace!("Destination Node {:?} Sending response {:?}", destination_node_id, response);
