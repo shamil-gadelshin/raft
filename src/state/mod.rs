@@ -1,13 +1,18 @@
-use crate::operation_log::storage::{LogStorage};
+use std::error::Error;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+
+use crossbeam_channel::{Sender};
+
 use crate::configuration::cluster::ClusterConfiguration;
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::common::{LogEntry,EntryContent};
 use crate::communication::peer_notifier::notify_peers;
 use crate::fsm::Fsm;
-use crossbeam_channel::{Sender};
-use std::mem::transmute_copy;
+use crate::operation_log::storage::{LogStorage};
+use crate::errors;
+
+
 
 #[derive(Debug, Clone)]
 //TODO persist state
@@ -65,7 +70,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
 
 
     //TODO check result
-    pub fn append_content_to_log(&mut self, content : EntryContent ) -> Result<(), &'static str> {
+    pub fn append_content_to_log(&mut self, content : EntryContent ) -> Result<(), Box<Error>> {
         let entry = self.log.append_content(self.current_term, content);
         let send_result = self.send_append_entries(entry.clone());
 
@@ -136,7 +141,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
         }
     }
 
-    fn send_append_entries(&self, entry : LogEntry) -> Result<(), &'static str>{
+    fn send_append_entries(&self, entry : LogEntry) -> Result<(), Box<Error>>{
         if let NodeStatus::Leader = self.status {
             let (peers_list_copy, quorum_size) =  {
                 let cluster = self.cluster_configuration.lock()
@@ -152,17 +157,19 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
             let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();
             let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
                 let resp_result = self.communicator.send_append_entries_request(dest_node_id, req);
-                let resp = resp_result.clone().expect("can get append_entries response"); //TODO check timeout
+                let resp = resp_result.expect("can get append_entries response"); //TODO check timeout
 
                 if !resp.success {
                     replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
-                };
-                resp_result
+
+                }
+
+                Ok(resp)
             };
 
             return notify_peers(append_entries_request, self.id,peers_list_copy, Some(quorum_size), requester);
         }
-        Err("Not a leader")
+        errors::new_err("Not a leader".to_string(), None)
     }
 }
 

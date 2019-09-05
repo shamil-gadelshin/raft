@@ -1,10 +1,13 @@
-use crossbeam_channel::{Sender, Receiver, SendTimeoutError};
 use std::collections::HashMap;
+use std::time::Duration;
+
+use crossbeam_channel::{Sender, Receiver, SendTimeoutError};
 
 use crate::common::{LogEntry};
 use crate::communication::duplex_channel::DuplexChannel;
 use crate::communication::QuorumResponse;
-use std::time::Duration;
+use crate::errors;
+use std::error::Error;
 
 #[derive(Clone, Copy, Debug)]
 pub struct VoteRequest {
@@ -43,17 +46,19 @@ impl QuorumResponse for AppendEntriesResponse {
 
 #[derive(Clone,Debug)]
 pub struct InProcNodeCommunicator {
+    timeout: Duration,
     votes_channels: HashMap<u64,DuplexChannel<VoteRequest, VoteResponse>>,
     append_entries_channels: HashMap<u64,DuplexChannel<AppendEntriesRequest, AppendEntriesResponse>>,
 }
 
 
 impl InProcNodeCommunicator {
-    pub fn new(nodes : Vec<u64>) -> InProcNodeCommunicator {
+    pub fn new(nodes : Vec<u64>, timeout : Duration) -> InProcNodeCommunicator {
         let votes_channels = HashMap::new();
         let append_entries_channels = HashMap::new();
 
         let mut communicator = InProcNodeCommunicator{
+            timeout,
             votes_channels,
             append_entries_channels,
         };
@@ -66,8 +71,8 @@ impl InProcNodeCommunicator {
     }
 
     pub fn add_node_communication(&mut self, node_id : u64) {
-        let vote_duplex = DuplexChannel::new();
-        let append_entries_duplex = DuplexChannel::new();
+        let vote_duplex = DuplexChannel::new(format!("Vote channel NodeId={}", node_id), self.timeout);
+        let append_entries_duplex = DuplexChannel::new(format!("AppendEntries channel NodeId={}", node_id), self.timeout);
 
         self.votes_channels.insert(node_id, vote_duplex);
         self.append_entries_channels.insert(node_id, append_entries_duplex);
@@ -92,13 +97,13 @@ impl InProcNodeCommunicator {
     //TODO handle communicator timeouts
     pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest) {
         trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
-        self.votes_channels[&destination_node_id].request_tx.send_timeout(request, Duration::from_secs(3)).expect("can send vote request");
+        self.votes_channels[&destination_node_id].request_tx.send_timeout(request, self.timeout).expect("can send vote request");
     }
     pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) -> Result<(), SendTimeoutError<VoteResponse>>{
         trace!("Destination Node {:?} Sending response {:?}", destination_node_id, response);
-        self.votes_channels[&destination_node_id].response_tx.send_timeout(response, Duration::from_millis(500))
+        self.votes_channels[&destination_node_id].response_tx.send_timeout(response, self.timeout)
     }
-    pub fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, &'static str>  {
+    pub fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
         trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
         self.append_entries_channels[&destination_node_id].send_request(request)
     }

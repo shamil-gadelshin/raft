@@ -1,9 +1,8 @@
 #[macro_use] extern crate log;
 extern crate env_logger;
 
-#[macro_use]
-extern crate crossbeam_channel;
 extern crate chrono;
+#[macro_use] extern crate crossbeam_channel;
 
 mod common;
 mod leadership;
@@ -14,6 +13,7 @@ mod state;
 mod fsm;
 mod request_handler;
 mod workers;
+mod errors;
 
 
 use std::sync::{Arc, Mutex};
@@ -38,10 +38,10 @@ fn main() {
 
     let node_ids = vec![1, 2];
     let new_node_id = 3;
-
+    let communication_timeout = Duration::from_millis(500);
     let main_cluster_configuration = ClusterConfiguration::new(node_ids);
 
-    let mut communicator = InProcNodeCommunicator::new(main_cluster_configuration.get_all());
+    let mut communicator = InProcNodeCommunicator::new(main_cluster_configuration.get_all(), communication_timeout);
     communicator.add_node_communication(new_node_id);
 
     let mut client_handlers : HashMap<u64, InProcClientCommunicator> = HashMap::new();
@@ -49,7 +49,7 @@ fn main() {
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
-        let client_request_handler = InProcClientCommunicator::new();
+        let client_request_handler = InProcClientCommunicator::new(node_id, communication_timeout);
         let config = NodeConfiguration {
             node_id,
             cluster_configuration: protected_cluster_config.clone(),
@@ -70,7 +70,10 @@ fn main() {
 	node_threads.push(thread_handle);
 
 	for node_thread in node_threads {
-		node_thread.join();
+		let thread = node_thread.join();
+        if thread.is_err(){
+            panic!("worker panicked!")
+        }
 	}
 }
 
@@ -89,6 +92,7 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
                                     new_node_id : u64) -> JoinHandle<()>{
 //return;
 
+    let communication_timeout = Duration::from_millis(500);
 
     thread::sleep(Duration::from_secs(3));
 
@@ -98,7 +102,7 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
             node_id: new_node_id,
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
-            client_communicator: InProcClientCommunicator::new(),
+            client_communicator: InProcClientCommunicator::new(new_node_id,communication_timeout),
         };
     }
 

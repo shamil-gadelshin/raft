@@ -2,21 +2,30 @@ use crossbeam_channel::{Sender, Receiver};
 
 use std::time::Duration;
 
+use crate::errors::{RuftError};
+use crate::errors;
+use std::error::Error;
+
 //TODO add name for logging purpose
 #[derive(Clone, Debug)]
 pub struct DuplexChannel<Request, Response> {
+    name : String,
+    timeout_duration: Duration,
     pub request_tx: Sender<Request>,
     pub request_rx: Receiver<Request>,
     pub response_tx: Sender<Response>,
     pub response_rx: Receiver<Response>,
 }
 
-impl <Request, Response> DuplexChannel<Request, Response> {
-    pub fn new() -> DuplexChannel<Request, Response> {
+impl <Request, Response> DuplexChannel<Request, Response>
+where Request: Send + 'static{
+    pub fn new(name : String, timeout_duration: Duration) -> DuplexChannel<Request, Response> {
         let (request_tx, request_rx): (Sender<Request>, Receiver<Request>) = crossbeam_channel::bounded(0);
         let (response_tx, response_rx): (Sender<Response>, Receiver<Response>) = crossbeam_channel::bounded(0);
 
         let duplex_channel = DuplexChannel{
+            timeout_duration,
+            name,
             request_tx,
             request_rx,
             response_tx,
@@ -39,17 +48,17 @@ impl <Request, Response> DuplexChannel<Request, Response> {
     }
 
     //TODO consider & change result error type
-    pub fn send_request(&self, request: Request) -> Result<Response, &'static str> {
-        let timeout = Duration::from_millis(500);
+    pub fn send_request(&self, request: Request) -> Result<Response, Box<Error>> {
+        let send_result = self.request_tx.send_timeout(request, self.timeout_duration);
+        if let Err(err) = send_result {
+            return
+               errors::new_err( format!("Cannot send request. Channel : {} ", self.name),  Some(Box::new(err)))
 
-        let send_result = self.request_tx.send_timeout(request, timeout);
-        if let Err(_) = send_result {
-            return Err("Cannot send request. Timeout.")
         }
 
-        let receive_result = self.response_rx.recv_timeout(timeout);
-        if let Err(_) = receive_result {
-            return Err("Cannot receive from response_rx")
+        let receive_result = self.response_rx.recv_timeout(self.timeout_duration);
+        if let Err(err) = receive_result {
+            return errors::new_err(format!("Cannot receive response. Channel : {}", self.name), Some(Box::new(err)))
         }
         if let Ok(resp) = receive_result {
             let response = resp;

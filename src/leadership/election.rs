@@ -73,9 +73,7 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(protected_node
                 leader_initial_heartbeat_tx.send(true).expect("can send leader initial heartbeat");
             },
             LeaderElectionEvent::ResetNodeToFollower(vr) => {
-                trace!("changed to follower");
                 let mut node = protected_node.lock().expect("node lock is poisoned");
-                trace!("changed to follower2");
 
                 node.current_term = vr.term;
                 node.status = NodeStatus::Follower;

@@ -1,7 +1,12 @@
+use std::sync::Arc;
+use std::time::Duration;
+
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::communication::duplex_channel::DuplexChannel;
-use std::sync::Arc;
+use crate::errors;
+use std::error::Error;
+
 
 #[derive(Clone, Copy, Debug)]
 pub enum ClientResponseStatus {
@@ -39,11 +44,11 @@ pub struct InProcClientCommunicator {
 }
 
 impl InProcClientCommunicator {
-    pub fn new() -> InProcClientCommunicator {
+    pub fn new(node_id : u64, timeout : Duration) -> InProcClientCommunicator {
 
         let client = InProcClientCommunicator {
-            add_server_duplex_channel: DuplexChannel::new(),
-            new_data_duplex_channel: DuplexChannel::new()
+            add_server_duplex_channel: DuplexChannel::new(format!("AddServer channel NodeId={}", node_id), timeout),
+            new_data_duplex_channel: DuplexChannel::new(format!("NewData channel NodeId={}", node_id), timeout)
         };
 
         client
@@ -66,13 +71,13 @@ impl InProcClientCommunicator {
     }
 
     //TODO consider & change result error type
-    pub fn add_server(&self, request: AddServerRequest) -> Result<AddServerResponse, &'static str> {
+    pub fn add_server(&self, request: AddServerRequest) -> Result<AddServerResponse, Box<Error>> {
         trace!("Add server request {:?}", request);
         return self.add_server_duplex_channel.send_request(request);
      }
 
     //TODO consider & change result error type
-    pub fn new_data(&self, request: NewDataRequest) -> Result<NewDataResponse, &'static str> {
+    pub fn new_data(&self, request: NewDataRequest) -> Result<NewDataResponse, Box<Error>> {
         trace!("New data request {:?}", request);
         return self.new_data_duplex_channel.send_request(request);
      }
