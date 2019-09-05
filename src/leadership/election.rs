@@ -4,7 +4,7 @@ use std::thread;
 
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
-use crate::communication::peers::{VoteResponse, InProcNodeCommunicator};
+use crate::communication::peers::{InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 
 use super::peer_notifier;
@@ -25,7 +25,6 @@ pub struct ElectionNotice {
 pub fn run_leader_election_process<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
                                                                   leader_election_event_tx : Sender<LeaderElectionEvent>,
                                                                   leader_election_event_rx : Receiver<LeaderElectionEvent>,
-                                                                  response_event_rx : Receiver<VoteResponse>,
                                                                   leader_initial_heartbeat_tx : Sender<bool>,
                                                                   watchdog_event_tx : Sender<LeaderConfirmationEvent>,
                                                                   communicator : InProcNodeCommunicator,

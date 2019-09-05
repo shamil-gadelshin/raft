@@ -27,7 +27,6 @@ pub fn vote_request_processor<Log: Sync + Send + LogStorage>(leader_election_eve
             leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(follower_event)).expect("can send LeaderElectionEvent");
         }
         let resp_result = communicator.send_vote_response(request.candidate_id, VoteResponse { vote_granted, peer_id: node.id, term: request.term });
-
         info!("Node {:?} Voted {:?}", node.id, resp_result);
     }
 }

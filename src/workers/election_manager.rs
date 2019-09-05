@@ -26,7 +26,6 @@ pub fn run_thread<Log: Sync + Send + LogStorage + 'static>(protected_node : Arc<
 	let run_thread = thread::spawn(move|| run_leader_election_process(protected_node,
 																	  leader_election_tx,
 																	  leader_election_rx,
-																	  vote_response_rx_channel,
 																	  leader_initial_heartbeat_tx,
 																	  reset_leadership_watchdog_tx,
 																	  communicator,

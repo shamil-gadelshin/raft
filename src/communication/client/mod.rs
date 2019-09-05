@@ -4,7 +4,6 @@ use std::time::Duration;
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::communication::duplex_channel::DuplexChannel;
-use crate::errors;
 use std::error::Error;
 
 

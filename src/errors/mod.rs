@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::fmt::Display;
 use core::fmt;
-use std::ops::Add;
 
 #[derive (Debug)]
 pub struct RuftError {
@@ -9,8 +8,9 @@ pub struct RuftError {
 	cause: Option<Box<Error>>
 }
 
-pub fn new_err<T>(text : String, cause : Option<Box<Error>>) -> Result<T, Box<Error>>{
-	use std::str;
+pub type Result<T> = std::result::Result<T, Box<Error>>;
+
+pub fn new_err<T>(text : String, cause : Option<Box<Error>>) -> Result<T>{
 	Err(Box::new(RuftError{text, cause}))
 }
 
@@ -28,7 +28,7 @@ pub struct RuftMultipleError {
 	causes: Vec<Box<Error>>
 }
 
-pub fn new_multiple_err<T>(text : String, causes :  Vec<Box<Error>>) -> Result<T, Box<Error>>{
+pub fn new_multiple_err<T>(text : String, causes :  Vec<Box<Error>>) -> Result<T>{
 	Err(Box::new(RuftMultipleError{text, causes}))
 }
 

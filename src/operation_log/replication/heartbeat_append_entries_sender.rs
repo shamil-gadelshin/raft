@@ -47,6 +47,10 @@ fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node
 
         let requester = |dest_node_id: u64, req: AppendEntriesRequest| communicator.send_append_entries_request(dest_node_id, req);
         let result = notify_peers(append_entries_heartbeat, node.id,peers_list_copy, None, requester);
+
+        if result.is_err(){
+            error!("Node {:?} Send heartbeat failed: {}", node.id, result.unwrap_err().description())
+        }
     }
 }
 

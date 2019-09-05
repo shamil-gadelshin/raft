@@ -5,7 +5,6 @@ use crossbeam_channel::{Receiver, Sender};
 use crate::operation_log::storage::LogStorage;
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
 use crate::communication::peers::InProcNodeCommunicator;
-use crate::leadership::leader_watcher::watch_leader_status;
 
 
 pub fn replicate_log_to_peer<Log>(protected_node: Arc<Mutex<Node<Log>>>,

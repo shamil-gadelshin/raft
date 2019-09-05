@@ -2,7 +2,6 @@ use crossbeam_channel::{Sender, Receiver};
 
 use std::time::Duration;
 
-use crate::errors::{RuftError};
 use crate::errors;
 use std::error::Error;
 
