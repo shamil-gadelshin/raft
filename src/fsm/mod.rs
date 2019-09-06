@@ -29,7 +29,7 @@ impl Fsm{
 				self.data.push(data_content);
 			}
 		}
-		trace!("Fsm applied entry");
+		trace!("Fsm applied entry: {}", entry.index);
 		self.last_applied_index = entry.index;
 	}
 

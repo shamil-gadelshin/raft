@@ -119,23 +119,28 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
         false
     }
 
-    pub fn append_entry_to_log(&mut self, entry : LogEntry ){
-        self.log.append_entry(entry.clone());
+    pub fn append_entry_to_log(&mut self, entry : LogEntry ) -> Result<(), Box<Error>>{
+        self.log.append_entry(entry.clone()); //TODO error handling
 
-        self.fsm.apply_entry(entry);
+        self.fsm.apply_entry(entry);//TODO error handling
+
+        Ok(())
     }
 
 
     //TODO check result
     pub fn append_content_to_log(&mut self, content : EntryContent ) -> Result<(), Box<Error>> {
-        let entry = self.log.append_content(self.get_current_term(), content);
-        let send_result = self.send_append_entries(entry.clone());
+        let entry = self.log.create_next_entry(self.get_current_term(), content);
 
-        if !send_result.is_ok() {
-            return send_result;
+        let send_result = self.send_append_entries(entry.clone());
+        if send_result.is_err() {
+            return send_result; //TODO LOG
         }
 
-        self.fsm.apply_entry(entry);
+        let add_to_entry_result = self.append_entry_to_log(entry.clone());
+        if add_to_entry_result.is_err() {
+            return send_result; //TODO LOG
+        }
 
         Ok(())
     }
@@ -165,8 +170,6 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
                 prev_log_index=  last_entry.index;
             }
         };
-
-        trace!("Node {:?} - Prev_log_term = {:?}, prev_log_index = {:?}", self.id,  prev_log_term, prev_log_index);
 
         let append_entry_request = AppendEntriesRequest {
             term: self.get_current_term(),

@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::thread::{JoinHandle};
 use std::thread;
-use std::collections::HashMap;
 
 use crossbeam_channel::{Sender, Receiver};
 

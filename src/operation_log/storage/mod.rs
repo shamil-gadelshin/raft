@@ -1,7 +1,7 @@
 use crate::common::{LogEntry, EntryContent};
 
 pub trait LogStorage {
-    fn append_content(&mut self, term : u64, entry_content : EntryContent)-> LogEntry; //TODO error handling
+    fn create_next_entry(&mut self, term : u64, entry_content : EntryContent)-> LogEntry; //TODO error handling
     fn append_entry(&mut self, entry: LogEntry); //TODO error handling
     fn get_entry(&self, index : usize) -> Option<LogEntry>;
     fn get_last_entry_index(&self) -> usize;
@@ -15,10 +15,8 @@ pub struct MemoryLogStorage {
 }
 
 impl LogStorage for MemoryLogStorage {
-    fn append_content(&mut self,  term : u64, entry_content : EntryContent) -> LogEntry {
-        let entry = LogEntry { index: self.last_index + 1, term, entry_content };
-        self.append_entry(entry.clone());
-        entry
+    fn create_next_entry(&mut self,  term : u64, entry_content : EntryContent) -> LogEntry {
+        LogEntry { index: self.last_index + 1, term, entry_content }
     }
 
     //TODO check for duplicates

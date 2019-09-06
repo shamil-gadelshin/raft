@@ -14,7 +14,7 @@ pub fn vote_request_processor<Log: Sync + Send + LogStorage>(leader_election_eve
 
     loop {
         let request = request_event_rx.recv().expect("can get request from request_event_rx");
-        let mut node = protected_node.lock().expect("node lock is not poisoned");
+        let node = protected_node.lock().expect("node lock is not poisoned");
 
         info!("Node {:?} Received request {:?}", node.id, request);
         let mut vote_granted = false;
