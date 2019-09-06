@@ -1,4 +1,6 @@
 use std::sync::{Arc};
+use std::thread::JoinHandle;
+use std::thread;
 
 pub enum LeaderConfirmationEvent {
     ResetWatchdogCounter
@@ -27,4 +29,8 @@ pub struct LogEntry {
 pub enum EntryContent {
     AddServer(AddServerEntryContent),
     Data(DataEntryContent),
+}
+
+pub fn run_worker_thread<T: Send + 'static, F: Fn(T) + Send + 'static>(worker : F, params : T) -> JoinHandle<()> {
+    thread::spawn(move|| worker (params))
 }

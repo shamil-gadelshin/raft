@@ -7,15 +7,21 @@ use crate::state::{Node};
 use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
-pub fn vote_request_processor<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(leader_election_event_tx : Sender<LeaderElectionEvent>,
-																					   protected_node: Arc<Mutex<Node<Log, FsmT>>>,
-																					   communicator : InProcPeerCommunicator,
-																					   request_event_rx : Receiver<VoteRequest>,
-) {
 
+pub struct VoteRequestProcessorParams<Log, FsmT>
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+    pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+    pub leader_election_event_tx : Sender<LeaderElectionEvent>,
+    pub request_event_rx : Receiver<VoteRequest>,
+    pub communicator : InProcPeerCommunicator,
+}
+
+
+pub fn vote_request_processor<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : VoteRequestProcessorParams<Log, FsmT>)
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
     loop {
-        let request = request_event_rx.recv().expect("can get request from request_event_rx");
-        let node = protected_node.lock().expect("node lock is not poisoned");
+        let request = params.request_event_rx.recv().expect("can get request from request_event_rx");
+        let node = params.protected_node.lock().expect("node lock is not poisoned");
 
         info!("Node {:?} Received request {:?}", node.id, request);
         let mut vote_granted = false;
@@ -33,12 +39,12 @@ pub fn vote_request_processor<Log: Sync + Send + LogStorage, FsmT:  Sync + Send 
                     response_current_term = request.term;
 
                     let follower_event = ElectionNotice { term: request.term, candidate_id: request.candidate_id };
-                    leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(follower_event)).expect("can send LeaderElectionEvent");
+                    params.leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(follower_event)).expect("can send LeaderElectionEvent");
                 }
             }
         }
         let vote_response = VoteResponse { vote_granted, peer_id: node.id, term: response_current_term };
-        let resp_result = communicator.send_vote_response(request.candidate_id, vote_response);
+        let resp_result = params.communicator.send_vote_response(request.candidate_id, vote_response);
         info!("Node {:?} Voted {:?}", node.id, resp_result);
     }
 }

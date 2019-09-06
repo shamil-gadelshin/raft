@@ -11,21 +11,28 @@ use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
 
-pub fn watch_leader_status<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
-                                                          leadership_event_tx : Sender<LeaderElectionEvent>,
-                                                          watchdog_event_rx : Receiver<LeaderConfirmationEvent>) {
+pub struct WatchLeaderStatusParams<Log, FsmT>
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+    pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+    pub leader_election_event_tx : Sender<LeaderElectionEvent>,
+    pub watchdog_event_rx : Receiver<LeaderConfirmationEvent>,
+}
+
+
+pub fn watch_leader_status<Log, FsmT>(params : WatchLeaderStatusParams<Log, FsmT>)
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static{
     loop {
         let timeout = crossbeam_channel::after(random_awaiting_leader_duration_ms());
         select!(
-            recv(timeout) -> _  => {},
-            recv(watchdog_event_rx) -> _ => {
-                let node = protected_node.lock().expect("node lock is not poisoned");
+            recv(timeout) -> _  => {}, //TODO check err
+            recv(params.watchdog_event_rx) -> _ => { //TODO check err
+                let node = params.protected_node.lock().expect("node lock is not poisoned");
                 trace!("Node {:?} Received reset watchdog ", node.id);
                 continue
             },
         );
 
-        let node = protected_node.lock().expect("node lock is not poisoned");
+        let node = params.protected_node.lock().expect("node lock is not poisoned");
 
         if let NodeStatus::Follower = node.status {
             info!("Node {:?} Leader awaiting time elapsed. Starting new election.", node.id);
@@ -35,7 +42,7 @@ pub fn watch_leader_status<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + F
             if current_leader_id.is_none() || current_leader_id.unwrap() != node.id {
                 let next_term = node.get_next_term();
                 let candidate_promotion = LeaderElectionEvent::PromoteNodeToCandidate(ElectionNotice { term: next_term, candidate_id: node.id });
-                leadership_event_tx.send(candidate_promotion).expect("can promote to candidate");
+                params.leader_election_event_tx.send(candidate_promotion).expect("can promote to candidate");
             }
         }
     }

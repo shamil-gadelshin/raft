@@ -9,7 +9,6 @@ mod configuration;
 mod state;
 mod fsm;
 mod request_handler;
-mod workers;
 mod errors;
 mod node;
 

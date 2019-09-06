@@ -8,18 +8,24 @@ use crate::communication::peers::InProcPeerCommunicator;
 use crate::fsm::Fsm;
 
 
-pub fn replicate_log_to_peer<Log, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
-								  replicate_log_to_peer_rx: Receiver<u64>,
-								  replicate_log_to_peer_tx: Sender<u64>,
-								  communicator : InProcPeerCommunicator)
-where Log: Sync + Send + LogStorage {
+pub struct LogReplicatorParams<Log, FsmT>
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+	pub protected_node : Arc<Mutex<Node<Log, FsmT>>>,
+	pub replicate_log_to_peer_rx: Receiver<u64>,
+	pub replicate_log_to_peer_tx: Sender<u64>,
+	pub communicator : InProcPeerCommunicator
+}
+
+
+pub fn replicate_log_to_peer<Log, FsmT>(params : LogReplicatorParams<Log, FsmT>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
 	loop {
-		let peer_id = replicate_log_to_peer_rx.recv()
+		let peer_id = params.replicate_log_to_peer_rx.recv()
 			.expect("can receive peer_id from replicate_log_to_peer_rx");
 
 		trace!("Replicate request for peer {}", peer_id);
 
-		let mut node = protected_node.lock().expect("node lock is not poisoned");
+		let mut node = params.protected_node.lock().expect("node lock is not poisoned");
 
 		if node.status != NodeStatus::Leader {
 			warn!("Obsolete (Not a Leader) replicate log request - Node ({:?}) to peer ({:?}) ", node.id, peer_id );
@@ -32,7 +38,7 @@ where Log: Sync + Send + LogStorage {
 		let request_entry_count  = append_entries_request.entries.len() as u64;
 
 		if request_entry_count > 0 {
-			let resp_result = communicator.send_append_entries_request(peer_id, append_entries_request);
+			let resp_result = params.communicator.send_append_entries_request(peer_id, append_entries_request);
 
 			//TODO check result
 			let resp = resp_result.expect("can get append_entries response");
@@ -46,7 +52,7 @@ where Log: Sync + Send + LogStorage {
 					warn!("Unsuccessful replicate log request and next_index <= 1  - Node ({:?}) to peer ({:?}) ", node.id, peer_id);
 				}
 
-				replicate_log_to_peer_tx.send(peer_id).expect("can send update peer log request")
+				params.replicate_log_to_peer_tx.send(peer_id).expect("can send update peer log request")
 			} else {
 				node.set_next_index(peer_id, next_index + request_entry_count)
 			}
