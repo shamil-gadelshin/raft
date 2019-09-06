@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::state::Node;
 use crate::configuration::node::NodeConfiguration;
 use crate::request_handler::client::process_client_requests;

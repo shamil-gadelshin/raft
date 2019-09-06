@@ -31,7 +31,7 @@ impl MemoryFsm {
 impl Fsm for MemoryFsm {
 	fn apply_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
 		if self.get_last_applied_entry_index() >= entry.index {
-			warn!("Attemted to apply entry with existing index={}", entry.index);
+			warn!("Attempted to apply entry with existing index={}", entry.index);
 			return Ok(())
 		}
 

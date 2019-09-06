@@ -3,7 +3,7 @@ use std::thread;
 use std::sync::{Mutex, Arc};
 
 use crate::state::Node;
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use std::time::Duration;
 use crate::fsm::Fsm;
 

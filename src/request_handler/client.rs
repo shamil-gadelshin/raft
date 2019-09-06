@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::state::{Node, NodeStatus};
 use crate::communication::client::{AddServerResponse, ClientResponseStatus, InProcClientCommunicator, AddServerRequest, NewDataRequest, NewDataResponse};
-use crate::operation_log::storage::{LogStorage};
+use crate::operation_log::{LogStorage};
 use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
 use crate::errors;
 use crate::fsm::Fsm;

@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Receiver, Sender};
 
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
 use crate::communication::peers::InProcNodeCommunicator;
 use crate::fsm::Fsm;

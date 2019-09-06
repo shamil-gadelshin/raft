@@ -7,7 +7,7 @@ use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::peer_notifier::notify_peers;
 use crate::configuration::cluster::{ClusterConfiguration};
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
 //TODO remove clone-values

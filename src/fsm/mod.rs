@@ -1,9 +1,7 @@
 pub mod updater;
 
-use std::sync::{Mutex, Arc};
 use std::error::Error;
 
-use crate::configuration::cluster::ClusterConfiguration;
 use crate::common::{LogEntry};
 
 pub trait Fsm {

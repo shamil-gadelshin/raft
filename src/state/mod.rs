@@ -9,7 +9,7 @@ use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::common::{LogEntry,EntryContent};
 use crate::communication::peer_notifier::notify_peers;
 use crate::fsm::{Fsm};
-use crate::operation_log::storage::{LogStorage};
+use crate::operation_log::{LogStorage};
 use crate::errors;
 
 
@@ -121,10 +121,16 @@ where Log: Sized + Sync + LogStorage,
     }
 
     pub fn append_entry_to_log(&mut self, entry : LogEntry ) -> Result<(), Box<Error>>{
-        if self.log.get_last_entry_index() < entry.index {
+        let entry_index = entry.index;
+
+        if self.log.get_last_entry_index() < entry_index {
             self.log.append_entry(entry.clone()); //TODO error handling
 
-            self.fsm.apply_entry(entry);//TODO error handling
+            let fsm_apply_result = self.fsm.apply_entry(entry);
+
+            if let Err(err) = fsm_apply_result {
+                return errors::new_err(format!("cannot apply entry to fsm, index = {}", entry_index), Some(err));
+            }
         }
         Ok(())
     }
@@ -253,7 +259,7 @@ where Log: Sized + Sync + LogStorage,
 
             return notify_peers(append_entries_request, self.id,peers_list_copy, Some(quorum_size), requester);
         }
-        errors::new_err("Not a leader".to_string(), None)
+        errors::new_err("send_append_entries failed: Not a leader".to_string(), None)
     }
 }
 

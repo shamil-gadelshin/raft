@@ -7,7 +7,7 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use super::election::{LeaderElectionEvent, ElectionNotice};
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
 

@@ -7,7 +7,7 @@ use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{InProcNodeCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 use super::peer_notifier;
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
 pub enum LeaderElectionEvent {

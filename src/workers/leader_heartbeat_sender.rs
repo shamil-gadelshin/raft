@@ -5,7 +5,7 @@ use std::thread::JoinHandle;
 use crossbeam_channel::Receiver;
 
 use crate::configuration::node::NodeConfiguration;
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::operation_log::replication::heartbeat_append_entries_sender::send_heartbeat_append_entries;
 use crate::state::Node;
 use crate::fsm::Fsm;

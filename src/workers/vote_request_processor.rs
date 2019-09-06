@@ -4,7 +4,7 @@ use std::thread::JoinHandle;
 
 use crossbeam_channel::Sender;
 
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::state::Node;
 use crate::leadership::election::LeaderElectionEvent;
 use crate::configuration::node::NodeConfiguration;

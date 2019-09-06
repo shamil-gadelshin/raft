@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Receiver, Sender};
 
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::state::Node;
 use crate::leadership::election::{LeaderElectionEvent, run_leader_election_process};
 use crate::configuration::node::NodeConfiguration;

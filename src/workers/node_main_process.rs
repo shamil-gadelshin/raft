@@ -8,7 +8,7 @@ use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::configuration::node::{NodeConfiguration};
 use crate::leadership::election::{LeaderElectionEvent};
-use crate::operation_log::storage::LogStorage;
+use crate::operation_log::LogStorage;
 use crate::fsm::{Fsm};
 use crate::workers;
 
