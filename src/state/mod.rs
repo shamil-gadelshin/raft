@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender};
 
 use crate::configuration::cluster::ClusterConfiguration;
-use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
+use crate::communication::peers::{InProcPeerCommunicator, AppendEntriesRequest};
 use crate::common::{LogEntry,EntryContent};
 use crate::communication::peer_notifier::notify_peers;
 use crate::fsm::{Fsm};
@@ -27,7 +27,7 @@ pub struct Node<Log: LogStorage + Sized + Sync, FsmT: Fsm + Sized + Sync> {
     match_index : HashMap<u64, u64>, //TODO support match_index
     pub log : Log,
     fsm : FsmT,
-    pub communicator : InProcNodeCommunicator,
+    pub communicator : InProcPeerCommunicator,
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     pub replicate_log_to_peer_tx: Sender<u64> //TODO split god object
 }
@@ -55,7 +55,7 @@ where Log: Sized + Sync + LogStorage,
 			   status : NodeStatus,
 			   log : Log,
 			   fsm : FsmT,
-			   communicator : InProcNodeCommunicator,
+			   communicator : InProcPeerCommunicator,
 			   cluster_configuration : Arc<Mutex<ClusterConfiguration>>, replicate_log_to_peer_tx: Sender<u64> ) ->  Node<Log, FsmT> {
         Node {
             id,

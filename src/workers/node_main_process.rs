@@ -11,6 +11,9 @@ use crate::leadership::election::{LeaderElectionEvent};
 use crate::operation_log::LogStorage;
 use crate::fsm::{Fsm};
 use crate::workers;
+use crate::workers::generic_worker;
+use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
+use crate::operation_log::replication::append_entries_processor::{append_entries_processor, AppendEntriesProcessorParams};
 
 pub fn run_thread<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(node_config : NodeConfiguration, log_storage : Log, fsm : FsmT) -> JoinHandle<()>{
     thread::spawn(move || workers::node_main_process::start_node(node_config, log_storage, fsm))
@@ -58,16 +61,29 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
     );
 
     let send_heartbeat_append_entries_thread = workers::leader_heartbeat_sender::run_thread(protected_node.clone(),
-                                                                                            leader_initial_heartbeat_rx,
-                                                                                            &node_config);
+                                                                                            leader_initial_heartbeat_rx,&node_config);
+    let append_entries_request_rx = node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id);
+    let append_entries_response_tx = node_config.peer_communicator.get_append_entries_response_tx(node_config.node_id);
 
-    let append_entries_processor_thread = workers::append_entries_processor::run_thread(protected_node.clone(),
-                                                                                        reset_leadership_watchdog_tx.clone(),
-                                                                                        leader_election_tx.clone(),
-                                                                                        &node_config);
 
-    let client_request_handler_thread = workers::client_request_handler::run_thread(protected_node.clone(),
-                                                                                    &node_config);
+    let append_entries_processor_thread = generic_worker::run_thread(
+        append_entries_processor,
+        AppendEntriesProcessorParams {
+            protected_node: protected_node.clone(),
+            append_entries_request_rx: node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id),
+            append_entries_response_tx: node_config.peer_communicator.get_append_entries_response_tx(node_config.node_id),
+            reset_leadership_watchdog_tx: reset_leadership_watchdog_tx.clone(),
+            leader_election_event_tx: leader_election_tx.clone()
+        }
+    );
+
+    let client_request_handler_thread = generic_worker::run_thread(
+        process_client_requests,
+        ClientRequestHandlerParams{
+            protected_node: protected_node.clone(),
+            client_communicator : node_config.client_communicator.clone()}
+    );
+
     let peer_log_replicator_thread = workers::peer_log_replicator::run_thread(protected_node.clone(),
                                                                               replicate_log_to_peer_rx,
                                                                               replicate_log_to_peer_tx,

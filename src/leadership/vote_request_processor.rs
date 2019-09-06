@@ -2,15 +2,15 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
-use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
+use crate::communication::peers::{VoteRequest, VoteResponse, InProcPeerCommunicator};
 use crate::state::{Node};
 use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
 pub fn vote_request_processor<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(leader_election_event_tx : Sender<LeaderElectionEvent>,
-                                                             protected_node: Arc<Mutex<Node<Log, FsmT>>>,
-                                                             communicator : InProcNodeCommunicator,
-                                                             request_event_rx : Receiver<VoteRequest>,
+																					   protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+																					   communicator : InProcPeerCommunicator,
+																					   request_event_rx : Receiver<VoteRequest>,
 ) {
 
     loop {

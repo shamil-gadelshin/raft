@@ -4,7 +4,7 @@ use crossbeam_channel::{Receiver};
 
 
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
-use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
+use crate::communication::peers::{InProcPeerCommunicator, AppendEntriesRequest};
 use crate::communication::peer_notifier::notify_peers;
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::LogStorage;
@@ -15,7 +15,7 @@ use crate::fsm::Fsm;
 pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
                                                                     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                                                                     leader_initial_heartbeat_rx : Receiver<bool>,
-                                                                    communicator : InProcNodeCommunicator
+                                                                    communicator : InProcPeerCommunicator
 ) {
     loop {
         let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
@@ -33,7 +33,7 @@ pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage, FsmT:  Sync 
 
 fn send_heartbeat<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node : Arc<Mutex<Node<Log, FsmT>>>,
                                                  cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                                                 communicator : &InProcNodeCommunicator) {
+                                                 communicator : &InProcPeerCommunicator) {
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     if let NodeStatus::Leader = node.status {

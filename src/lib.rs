@@ -13,7 +13,7 @@ mod workers;
 mod errors;
 
 pub use communication::client::{AddServerRequest,NewDataRequest, InProcClientCommunicator};
-pub use communication::peers::{InProcNodeCommunicator};
+pub use communication::peers::InProcPeerCommunicator;
 pub use operation_log::{LogStorage};
 pub use configuration::cluster::ClusterConfiguration;
 pub use configuration::node::NodeConfiguration;

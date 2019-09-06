@@ -46,19 +46,19 @@ impl QuorumResponse for AppendEntriesResponse {
 }
 
 #[derive(Clone,Debug)]
-pub struct InProcNodeCommunicator {
+pub struct InProcPeerCommunicator {
     timeout: Duration,
     votes_channels: HashMap<u64,DuplexChannel<VoteRequest, VoteResponse>>,
     append_entries_channels: HashMap<u64,DuplexChannel<AppendEntriesRequest, AppendEntriesResponse>>,
 }
 
 
-impl InProcNodeCommunicator {
-    pub fn new(nodes : Vec<u64>, timeout : Duration) -> InProcNodeCommunicator {
+impl InProcPeerCommunicator {
+    pub fn new(nodes : Vec<u64>, timeout : Duration) -> InProcPeerCommunicator {
         let votes_channels = HashMap::new();
         let append_entries_channels = HashMap::new();
 
-        let mut communicator = InProcNodeCommunicator{
+        let mut communicator = InProcPeerCommunicator {
             timeout,
             votes_channels,
             append_entries_channels,

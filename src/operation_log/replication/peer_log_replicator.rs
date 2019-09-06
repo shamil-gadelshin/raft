@@ -4,14 +4,14 @@ use crossbeam_channel::{Receiver, Sender};
 
 use crate::operation_log::LogStorage;
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
-use crate::communication::peers::InProcNodeCommunicator;
+use crate::communication::peers::InProcPeerCommunicator;
 use crate::fsm::Fsm;
 
 
 pub fn replicate_log_to_peer<Log, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
 								  replicate_log_to_peer_rx: Receiver<u64>,
 								  replicate_log_to_peer_tx: Sender<u64>,
-								  communicator : InProcNodeCommunicator)
+								  communicator : InProcPeerCommunicator)
 where Log: Sync + Send + LogStorage {
 	loop {
 		let peer_id = replicate_log_to_peer_rx.recv()

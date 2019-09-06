@@ -17,7 +17,7 @@ use chrono::prelude::{DateTime, Local};
 extern crate ruft;
 
 use ruft::{AddServerRequest, InProcClientCommunicator};
-use ruft::{InProcNodeCommunicator};
+use ruft::{InProcPeerCommunicator};
 use ruft::ClusterConfiguration;
 use ruft::NodeConfiguration;
 use ruft::NewDataRequest;
@@ -45,7 +45,7 @@ fn main() {
     let communication_timeout = Duration::from_millis(500);
     let main_cluster_configuration = ClusterConfiguration::new(node_ids);
 
-    let mut communicator = InProcNodeCommunicator::new(main_cluster_configuration.get_all(), communication_timeout);
+    let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all(), communication_timeout);
     communicator.add_node_communication(new_node_id);
 
     let mut client_handlers : HashMap<u64, InProcClientCommunicator> = HashMap::new();
@@ -84,7 +84,7 @@ fn main() {
 
 
 
-fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
+fn run_add_server_thread_with_delay(communicator : InProcPeerCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
                                     client_handlers : HashMap<u64, InProcClientCommunicator>,
                                     new_node_id : u64) -> JoinHandle<()>{

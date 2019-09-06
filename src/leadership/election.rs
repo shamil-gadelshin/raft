@@ -4,7 +4,7 @@ use std::thread;
 
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
-use crate::communication::peers::{InProcNodeCommunicator};
+use crate::communication::peers::{InProcPeerCommunicator};
 use crate::configuration::cluster::{ClusterConfiguration};
 use super::peer_notifier;
 use crate::operation_log::LogStorage;
@@ -23,12 +23,12 @@ pub struct ElectionNotice {
 
 
 pub fn run_leader_election_process<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
-                                                                  leader_election_event_tx : Sender<LeaderElectionEvent>,
-                                                                  leader_election_event_rx : Receiver<LeaderElectionEvent>,
-                                                                  leader_initial_heartbeat_tx : Sender<bool>,
-                                                                  watchdog_event_tx : Sender<LeaderConfirmationEvent>,
-                                                                  communicator : InProcNodeCommunicator,
-                                                                  cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+																							leader_election_event_tx : Sender<LeaderElectionEvent>,
+																							leader_election_event_rx : Receiver<LeaderElectionEvent>,
+																							leader_initial_heartbeat_tx : Sender<bool>,
+																							watchdog_event_tx : Sender<LeaderConfirmationEvent>,
+																							communicator : InProcPeerCommunicator,
+																							cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
 ) {
     loop {
         let event_result = leader_election_event_rx.recv();
