@@ -8,7 +8,7 @@ use crate::configuration::cluster::ClusterConfiguration;
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::common::{LogEntry,EntryContent};
 use crate::communication::peer_notifier::notify_peers;
-use crate::fsm::{MemoryFsm, Fsm};
+use crate::fsm::{Fsm};
 use crate::operation_log::storage::{LogStorage};
 use crate::errors;
 

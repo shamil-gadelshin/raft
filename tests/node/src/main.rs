@@ -2,6 +2,8 @@
 extern crate env_logger;
 extern crate chrono;
 
+mod fsm;
+
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::collections::HashMap;
@@ -33,8 +35,6 @@ fn init_logger() {
 
 
 
-
-
 fn main() {
     init_logger();
 
@@ -58,7 +58,8 @@ fn main() {
             peer_communicator: communicator.clone(),
             client_communicator: client_request_handler.clone(),
         };
-        let thread_handle = ruft::start_node(config, MemoryLogStorage::new());
+        let fsm = fsm::MemoryFsm::new(protected_cluster_config.clone());
+        let thread_handle = ruft::start_node(config, MemoryLogStorage::new(), fsm);
         node_threads.push(thread_handle);
 
         client_handlers.insert(node_id, client_request_handler);
@@ -101,7 +102,8 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
         };
     }
 
-    let thread_handle = ruft::start_node(new_server_config, MemoryLogStorage::new());
+    let fsm = fsm::MemoryFsm::new(protected_cluster_config.clone());
+    let thread_handle = ruft::start_node(new_server_config, MemoryLogStorage::new(), fsm);
 
     let add_server_request = AddServerRequest{new_server : new_node_id};
     for kv in client_handlers.clone() {

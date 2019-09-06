@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::Receiver;
 
 use crate::operation_log::storage::LogStorage;
-use crate::fsm::{MemoryFsm, Fsm};
+use crate::fsm::{Fsm};
 use crate::common::LogEntry;
 
 pub fn update_fsm<Log, FsmT:  Sync + Send + Fsm>(protected_log : Arc<Mutex<Log>>, protected_fsm : Arc<Mutex<FsmT>>, update_fsm_rx: Receiver<bool>)

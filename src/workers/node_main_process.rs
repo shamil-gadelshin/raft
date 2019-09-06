@@ -9,25 +9,24 @@ use crate::state::{Node, NodeStatus};
 use crate::configuration::node::{NodeConfiguration};
 use crate::leadership::election::{LeaderElectionEvent};
 use crate::operation_log::storage::LogStorage;
-use crate::fsm::{MemoryFsm};
+use crate::fsm::{Fsm};
 use crate::workers;
 
-pub fn run_thread<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfiguration, log_storage : Log) -> JoinHandle<()>{
-    thread::spawn(move || workers::node_main_process::start_node(node_config, log_storage))
+pub fn run_thread<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(node_config : NodeConfiguration, log_storage : Log, fsm : FsmT) -> JoinHandle<()>{
+    thread::spawn(move || workers::node_main_process::start_node(node_config, log_storage, fsm))
 }
 
 //TODO check clones number - consider borrowing &
-fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfiguration, log_storage : Log) {
+fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm+ 'static>(node_config : NodeConfiguration, log_storage : Log, fsm : FsmT) {
 
     add_this_node_to_cluster(&node_config);
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx) : (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
-    let fsm = MemoryFsm::new(node_config.cluster_configuration.clone());
     let node = Node::new(node_config.node_id,
     None,
     NodeStatus::Follower,
     log_storage,
-    fsm.clone(),
+    fsm,
     node_config.peer_communicator.clone(),
     node_config.cluster_configuration.clone(),
     replicate_log_to_peer_tx.clone()
