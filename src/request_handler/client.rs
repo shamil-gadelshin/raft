@@ -5,8 +5,9 @@ use crate::communication::client::{AddServerResponse, ClientResponseStatus, InPr
 use crate::operation_log::storage::{LogStorage};
 use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
 use crate::errors;
+use crate::fsm::Fsm;
 
-pub fn process_client_requests<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
+pub fn process_client_requests<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
 														client_communicator : InProcClientCommunicator) {
 	let add_server_request_rx = client_communicator.get_add_server_request_rx();
 	let new_data_request_rx = client_communicator.get_new_data_request_rx();
@@ -25,7 +26,7 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage>(protected_node: Ar
 	}
 }
 
-fn process_new_data_request<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>, client_communicator: InProcClientCommunicator, request: NewDataRequest) -> errors::Result<()>{
+fn process_new_data_request<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>, client_communicator: InProcClientCommunicator, request: NewDataRequest) -> errors::Result<()>{
 	let mut node = protected_node.lock().expect("node lock is not poisoned");
 
 	info!("Node {:?} Received 'New data Request (Node {:?})'", node.id, request);
@@ -48,7 +49,7 @@ fn process_new_data_request<Log: Sync + Send + LogStorage>(protected_node: Arc<M
 	Ok(())
 }
 
-fn process_add_server_request<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>, client_communicator: InProcClientCommunicator, request: AddServerRequest) -> errors::Result<()>{
+fn process_add_server_request<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>, client_communicator: InProcClientCommunicator, request: AddServerRequest) -> errors::Result<()>{
 	let mut node = protected_node.lock().expect("node lock is not poisoned");
 
 	info!("Node {:?} Received 'Add Server Request (Node {:?})' {:?}", node.id, request.new_server, request);

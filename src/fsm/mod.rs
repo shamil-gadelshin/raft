@@ -1,28 +1,46 @@
 pub mod updater;
 
-use crate::configuration::cluster::ClusterConfiguration;
 use std::sync::{Mutex, Arc};
-use crate::common::{LogEntry, DataEntryContent, EntryContent};
+use std::error::Error;
 
-//TODO crate fsm trait
+use crate::configuration::cluster::ClusterConfiguration;
+use crate::common::{LogEntry, DataEntryContent, EntryContent};
+use crate::errors::RuftError;
+
+pub trait Fsm {
+	fn apply_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>>;
+	fn get_last_applied_entry_index(&self) -> u64;
+}
+
 #[derive(Debug, Clone)]
-pub struct Fsm {
+pub struct MemoryFsm {
 	cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
 	data : Vec<DataEntryContent>,
 	last_applied_index: u64,
 }
 
-impl Fsm{
-	pub fn new(cluster_configuration: Arc<Mutex<ClusterConfiguration>>)->Fsm {
-		Fsm{
+impl MemoryFsm {
+	pub fn new(cluster_configuration: Arc<Mutex<ClusterConfiguration>>)-> MemoryFsm {
+		MemoryFsm {
 			cluster_configuration,
 			data : Vec::new(),
 			last_applied_index: 0,
 		}
 	}
-	pub fn apply_entry(&mut self, entry: LogEntry) {
+
+	fn add_server_to_cluster(&self, new_server_id: u64) {
+		let mut cluster = self.cluster_configuration.lock().expect("cluster lock is not poisoned");
+
+		cluster.add_peer(new_server_id);
+	}
+
+}
+
+impl Fsm for MemoryFsm {
+	fn apply_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
 		if self.get_last_applied_entry_index() >= entry.index {
-			return;
+			warn!("Attemted to apply entry with existing index={}", entry.index);
+			return Ok(())
 		}
 
 		match entry.entry_content {
@@ -35,15 +53,12 @@ impl Fsm{
 		}
 		trace!("Fsm applied entry: {}", entry.index);
 		self.last_applied_index = entry.index;
+
+		Ok(())
 	}
 
-	fn add_server_to_cluster(&self, new_server_id: u64) {
-		let mut cluster = self.cluster_configuration.lock().expect("cluster lock is not poisoned");
 
-		cluster.add_peer(new_server_id);
-	}
-
-	pub fn get_last_applied_entry_index(&self) -> u64{
+	fn get_last_applied_entry_index(&self) -> u64{
 		self.last_applied_index
 	}
 }

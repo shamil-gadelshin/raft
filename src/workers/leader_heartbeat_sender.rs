@@ -8,9 +8,10 @@ use crate::configuration::node::NodeConfiguration;
 use crate::operation_log::storage::LogStorage;
 use crate::operation_log::replication::heartbeat_append_entries_sender::send_heartbeat_append_entries;
 use crate::state::Node;
+use crate::fsm::Fsm;
 
 
-pub fn run_thread<Log : Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
+pub fn run_thread<Log : Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(protected_node : Arc<Mutex<Node<Log, FsmT>>>,
 															leader_initial_heartbeat_rx : Receiver<bool>,
 															node_config : &NodeConfiguration) -> JoinHandle<()> {
 

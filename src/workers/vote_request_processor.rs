@@ -9,9 +9,10 @@ use crate::state::Node;
 use crate::leadership::election::LeaderElectionEvent;
 use crate::configuration::node::NodeConfiguration;
 use crate::leadership::vote_request_processor::vote_request_processor;
+use crate::fsm::Fsm;
 
 
-pub fn run_thread<Log: Sync + Send  + LogStorage + 'static >(protected_node : Arc<Mutex<Node<Log>>>,
+pub fn run_thread<Log: Sync + Send  + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(protected_node : Arc<Mutex<Node<Log, FsmT>>>,
 															 leader_election_tx : Sender<LeaderElectionEvent>,
 															 node_config : &NodeConfiguration) -> JoinHandle<()> {
 	let communicator = node_config.peer_communicator.clone();

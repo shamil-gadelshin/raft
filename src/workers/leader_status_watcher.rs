@@ -9,9 +9,10 @@ use crate::state::Node;
 use crate::leadership::election::LeaderElectionEvent;
 use crate::leadership::leader_watcher::watch_leader_status;
 use crate::common::LeaderConfirmationEvent;
+use crate::fsm::Fsm;
 
 
-pub fn run_thread<Log: Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
+pub fn run_thread<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(protected_node : Arc<Mutex<Node<Log, FsmT>>>,
 														   leader_election_tx : Sender<LeaderElectionEvent>,
 														   reset_leadership_watchdog_rx : Receiver<LeaderConfirmationEvent>) -> JoinHandle<()> {
 	let check_leader_thread = thread::spawn(move||

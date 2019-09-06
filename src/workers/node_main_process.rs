@@ -9,7 +9,7 @@ use crate::state::{Node, NodeStatus};
 use crate::configuration::node::{NodeConfiguration};
 use crate::leadership::election::{LeaderElectionEvent};
 use crate::operation_log::storage::LogStorage;
-use crate::fsm::{Fsm};
+use crate::fsm::{MemoryFsm};
 use crate::workers;
 
 pub fn run_thread<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfiguration, log_storage : Log) -> JoinHandle<()>{
@@ -22,7 +22,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
     add_this_node_to_cluster(&node_config);
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx) : (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
-    let fsm = Fsm::new(node_config.cluster_configuration.clone());
+    let fsm = MemoryFsm::new(node_config.cluster_configuration.clone());
     let node = Node::new(node_config.node_id,
     None,
     NodeStatus::Follower,

@@ -5,9 +5,10 @@ use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, VoteResponse, InProcNodeCommunicator};
 use crate::state::{Node};
 use crate::operation_log::storage::LogStorage;
+use crate::fsm::Fsm;
 
-pub fn vote_request_processor<Log: Sync + Send + LogStorage>(leader_election_event_tx : Sender<LeaderElectionEvent>,
-                                                             protected_node: Arc<Mutex<Node<Log>>>,
+pub fn vote_request_processor<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(leader_election_event_tx : Sender<LeaderElectionEvent>,
+                                                             protected_node: Arc<Mutex<Node<Log, FsmT>>>,
                                                              communicator : InProcNodeCommunicator,
                                                              request_event_rx : Receiver<VoteRequest>,
 ) {

@@ -8,10 +8,11 @@ use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::communication::peer_notifier::notify_peers;
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::storage::LogStorage;
+use crate::fsm::Fsm;
 
 //TODO remove clone-values
 //TODO park-unpark the thread
-pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
+pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
                                                                     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                                                                     leader_initial_heartbeat_rx : Receiver<bool>,
                                                                     communicator : InProcNodeCommunicator
@@ -30,7 +31,7 @@ pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage>(protected_no
     }
 }
 
-fn send_heartbeat<Log: Sync + Send + LogStorage>(protected_node : Arc<Mutex<Node<Log>>>,
+fn send_heartbeat<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node : Arc<Mutex<Node<Log, FsmT>>>,
                                                  cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                                                  communicator : &InProcNodeCommunicator) {
     let node = protected_node.lock().expect("node lock is not poisoned");

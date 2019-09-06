@@ -8,7 +8,7 @@ use crate::configuration::cluster::ClusterConfiguration;
 use crate::communication::peers::{InProcNodeCommunicator, AppendEntriesRequest};
 use crate::common::{LogEntry,EntryContent};
 use crate::communication::peer_notifier::notify_peers;
-use crate::fsm::Fsm;
+use crate::fsm::{MemoryFsm, Fsm};
 use crate::operation_log::storage::{LogStorage};
 use crate::errors;
 
@@ -17,7 +17,7 @@ use crate::errors;
 //TODO persist state
 //TODO decompose GOD object
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
-pub struct Node<Log: LogStorage + Sized + Sync> {
+pub struct Node<Log: LogStorage + Sized + Sync, FsmT: Fsm + Sized + Sync> {
     pub id : u64, //TODO pass node_id as copy to decrease mutex lock count
     current_term: u64,
     pub current_leader_id: Option<u64>,
@@ -26,7 +26,7 @@ pub struct Node<Log: LogStorage + Sized + Sync> {
     next_index : HashMap<u64, u64>,
     match_index : HashMap<u64, u64>, //TODO support match_index
     pub log : Log,
-    fsm : Fsm,
+    fsm : FsmT,
     pub communicator : InProcNodeCommunicator,
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     pub replicate_log_to_peer_tx: Sender<u64> //TODO split god object
@@ -47,14 +47,16 @@ pub enum AppendEntriesRequestType {
     UpdateNode(u64)
 }
 
-impl <Log: Sized + Sync + LogStorage> Node<Log> {
-    pub fn new(  id : u64,
-     voted_for_id: Option<u64>,
-     status : NodeStatus,
-     log : Log,
-     fsm : Fsm,
-     communicator : InProcNodeCommunicator,
-     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,replicate_log_to_peer_tx: Sender<u64> ) ->  Node<Log> {
+impl <Log, FsmT> Node<Log, FsmT>
+where Log: Sized + Sync + LogStorage,
+      FsmT: Fsm + Sync + Sized{
+    pub fn new(id : u64,
+			   voted_for_id: Option<u64>,
+			   status : NodeStatus,
+			   log : Log,
+			   fsm : FsmT,
+			   communicator : InProcNodeCommunicator,
+			   cluster_configuration : Arc<Mutex<ClusterConfiguration>>, replicate_log_to_peer_tx: Sender<u64> ) ->  Node<Log, FsmT> {
         Node {
             id,
             current_term : 0,

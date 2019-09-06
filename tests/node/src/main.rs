@@ -19,7 +19,6 @@ use ruft::{MemoryLogStorage};
 use ruft::ClusterConfiguration;
 use ruft::NodeConfiguration;
 use ruft::NewDataRequest;
-use ruft::workers::node_main_process;
 
 
 fn init_logger() {
@@ -30,6 +29,8 @@ fn init_logger() {
         })
         .init();
 }
+
+
 
 
 
@@ -57,7 +58,7 @@ fn main() {
             peer_communicator: communicator.clone(),
             client_communicator: client_request_handler.clone(),
         };
-        let thread_handle = ruft::node_main_process::run_thread(config, MemoryLogStorage::new());
+        let thread_handle = ruft::start_node(config, MemoryLogStorage::new());
         node_threads.push(thread_handle);
 
         client_handlers.insert(node_id, client_request_handler);
@@ -100,7 +101,7 @@ fn run_add_server_thread_with_delay(communicator : InProcNodeCommunicator,
         };
     }
 
-    let thread_handle = ruft::node_main_process::run_thread(new_server_config, MemoryLogStorage::new());
+    let thread_handle = ruft::start_node(new_server_config, MemoryLogStorage::new());
 
     let add_server_request = AddServerRequest{new_server : new_node_id};
     for kv in client_handlers.clone() {

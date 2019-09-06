@@ -8,8 +8,9 @@ use crate::operation_log::storage::LogStorage;
 use crate::state::Node;
 use crate::configuration::node::NodeConfiguration;
 use crate::operation_log::replication::peer_log_replicator::replicate_log_to_peer;
+use crate::fsm::Fsm;
 
-pub fn run_thread<Log>(protected_node: Arc<Mutex<Node<Log>>>,
+pub fn run_thread<Log, FsmT:  Sync + Send + Fsm+ 'static>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
 					   replicate_log_to_peer_rx: Receiver<u64>,
 					   replicate_log_to_peer_tx: Sender<u64>,
 					   node_config : &NodeConfiguration) -> JoinHandle<()>

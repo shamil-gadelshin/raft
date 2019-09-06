@@ -10,9 +10,10 @@ use crate::leadership::election::LeaderElectionEvent;
 use crate::common::LeaderConfirmationEvent;
 use crate::configuration::node::NodeConfiguration;
 use crate::operation_log::replication::append_entries_processor::append_entries_processor;
+use crate::fsm::Fsm;
 
 
-pub fn run_thread<Log: Sync + Send + LogStorage + 'static>(protected_node : Arc<Mutex<Node<Log>>>,
+pub fn run_thread<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(protected_node : Arc<Mutex<Node<Log, FsmT>>>,
 														   reset_leadership_watchdog_tx : Sender<LeaderConfirmationEvent>,
 														   leader_election_tx : Sender<LeaderElectionEvent>,
 														   node_config : &NodeConfiguration) -> JoinHandle<()> {

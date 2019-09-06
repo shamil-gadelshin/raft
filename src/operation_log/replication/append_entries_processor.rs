@@ -7,9 +7,10 @@ use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
 use crate::operation_log::storage::{LogStorage};
 use crate::leadership::election::{LeaderElectionEvent, ElectionNotice};
+use crate::fsm::Fsm;
 
-pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
-                                protected_node: Arc<Mutex<Node<Log>>>,
+pub fn append_entries_processor<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(
+                                protected_node: Arc<Mutex<Node<Log, FsmT>>>,
                                 leader_election_event_tx : Sender<LeaderElectionEvent>,
                                 append_entries_request_rx : Receiver<AppendEntriesRequest>,
                                 append_entries_response_tx : Sender<AppendEntriesResponse>,

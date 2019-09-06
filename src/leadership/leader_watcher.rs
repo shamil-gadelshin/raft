@@ -8,9 +8,10 @@ use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::storage::LogStorage;
+use crate::fsm::Fsm;
 
 
-pub fn watch_leader_status<Log: Sync + Send + LogStorage>(protected_node: Arc<Mutex<Node<Log>>>,
+pub fn watch_leader_status<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
                                                           leadership_event_tx : Sender<LeaderElectionEvent>,
                                                           watchdog_event_rx : Receiver<LeaderConfirmationEvent>) {
     loop {
