@@ -10,14 +10,16 @@ use crate::configuration::node::{NodeConfiguration};
 use crate::leadership::election::{LeaderElectionEvent, ElectionManagerParams, run_leader_election_process};
 use crate::operation_log::LogStorage;
 use crate::fsm::{Fsm};
-use crate::workers;
+use crate::{workers, node};
 use crate::workers::generic_worker;
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::append_entries_processor::{append_entries_processor, AppendEntriesProcessorParams};
 use crate::operation_log::replication::heartbeat_append_entries_sender::{SendHeartbeatAppendEntriesParams, send_heartbeat_append_entries};
 
-pub fn run_thread<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(node_config : NodeConfiguration, log_storage : Log, fsm : FsmT) -> JoinHandle<()>{
-    thread::spawn(move || workers::node_main_process::start_node(node_config, log_storage, fsm))
+
+//TODO refactor to generic worker
+pub fn start<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(node_config : NodeConfiguration, log_storage : Log, fsm : FsmT) -> JoinHandle<()>{
+    thread::spawn(move || node::start_node(node_config, log_storage, fsm))
 }
 
 //TODO check clones number - consider borrowing &

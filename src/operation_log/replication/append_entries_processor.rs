@@ -8,7 +8,6 @@ use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
 use crate::operation_log::{LogStorage};
 use crate::leadership::election::{LeaderElectionEvent, ElectionNotice};
 use crate::fsm::Fsm;
-use crate::InProcPeerCommunicator;
 
 pub struct AppendEntriesProcessorParams<Log, FsmT>
     where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
