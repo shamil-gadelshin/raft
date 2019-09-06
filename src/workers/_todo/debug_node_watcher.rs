@@ -16,7 +16,7 @@ pub fn run_thread<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + 
 
 
 fn debug_node_status<Log: Sync + LogStorage + 'static, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>) {
-	sleep(Duration::from_secs(1000));
+	sleep(Duration::from_secs(100000));
 	loop {
 		let _ = protected_node.lock().expect("node lock is not poisoned");
 //		trace!("Node {:?}. {:?}", node.id, node);

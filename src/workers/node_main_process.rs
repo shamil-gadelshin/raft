@@ -7,13 +7,14 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::configuration::node::{NodeConfiguration};
-use crate::leadership::election::{LeaderElectionEvent};
+use crate::leadership::election::{LeaderElectionEvent, ElectionManagerParams, run_leader_election_process};
 use crate::operation_log::LogStorage;
 use crate::fsm::{Fsm};
 use crate::workers;
 use crate::workers::generic_worker;
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::append_entries_processor::{append_entries_processor, AppendEntriesProcessorParams};
+use crate::operation_log::replication::heartbeat_append_entries_sender::{SendHeartbeatAppendEntriesParams, send_heartbeat_append_entries};
 
 pub fn run_thread<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static>(node_config : NodeConfiguration, log_storage : Log, fsm : FsmT) -> JoinHandle<()>{
     thread::spawn(move || workers::node_main_process::start_node(node_config, log_storage, fsm))
@@ -41,15 +42,15 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
     let (reset_leadership_watchdog_tx, reset_leadership_watchdog_rx) : (Sender<LeaderConfirmationEvent>, Receiver<LeaderConfirmationEvent>) = crossbeam_channel::unbounded();
     let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx) : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
 
-    let election_thread = workers::election_manager::run_thread(protected_node.clone(),
-                                                                &node_config,
-                                                                leader_election_rx.clone(),
-                                                                leader_election_tx.clone(),
-                                                                leader_initial_heartbeat_tx,
-                                                                reset_leadership_watchdog_tx.clone(),
-    );
-
-
+    let election_thread = generic_worker::run_thread(run_leader_election_process,ElectionManagerParams {
+        protected_node: protected_node.clone(),
+        leader_election_event_tx: leader_election_tx.clone(),
+        leader_election_event_rx: leader_election_rx.clone(),
+        leader_initial_heartbeat_tx,
+        watchdog_event_tx: reset_leadership_watchdog_tx.clone(),
+        communicator: node_config.peer_communicator.clone(),
+        cluster_configuration: node_config.cluster_configuration.clone(),
+    });
 
     let check_leader_thread = workers::leader_status_watcher::run_thread(protected_node.clone(),
                                                                          leader_election_tx.clone(),
@@ -60,8 +61,13 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
                                                                                     &node_config
     );
 
-    let send_heartbeat_append_entries_thread = workers::leader_heartbeat_sender::run_thread(protected_node.clone(),
-                                                                                            leader_initial_heartbeat_rx,&node_config);
+    let send_heartbeat_append_entries_thread = generic_worker::run_thread(send_heartbeat_append_entries,
+                                                                          SendHeartbeatAppendEntriesParams {
+                                                                              protected_node: protected_node.clone(),
+                                                                              cluster_configuration: node_config.cluster_configuration.clone(),
+                                                                              communicator: node_config.peer_communicator.clone(),
+                                                                              leader_initial_heartbeat_rx
+                                                                          });
     let append_entries_request_rx = node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id);
     let append_entries_response_tx = node_config.peer_communicator.get_append_entries_response_tx(node_config.node_id);
 

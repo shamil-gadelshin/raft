@@ -22,22 +22,28 @@ pub struct ElectionNotice {
 }
 
 
-pub fn run_leader_election_process<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
-																							leader_election_event_tx : Sender<LeaderElectionEvent>,
-																							leader_election_event_rx : Receiver<LeaderElectionEvent>,
-																							leader_initial_heartbeat_tx : Sender<bool>,
-																							watchdog_event_tx : Sender<LeaderConfirmationEvent>,
-																							communicator : InProcPeerCommunicator,
-																							cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-) {
+pub struct ElectionManagerParams<Log, FsmT>
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+    pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+    pub leader_election_event_tx : Sender<LeaderElectionEvent>,
+    pub leader_election_event_rx : Receiver<LeaderElectionEvent>,
+    pub leader_initial_heartbeat_tx : Sender<bool>,
+    pub watchdog_event_tx : Sender<LeaderConfirmationEvent>,
+    pub communicator : InProcPeerCommunicator,
+    pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+}
+
+
+pub fn run_leader_election_process<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : ElectionManagerParams<Log, FsmT>)
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
     loop {
-        let event_result = leader_election_event_rx.recv();
+        let event_result = params.leader_election_event_rx.recv();
 
         let event = event_result.expect("can receive election event from channel");
 
         match event {
             LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
-                let mut node = protected_node.lock().expect("node lock is not poisoned");
+                let mut node = params.protected_node.lock().expect("node lock is not poisoned");
 
                 let node_id = node.id;
                 node.voted_for_id = Some(node_id);
@@ -45,17 +51,19 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage, FsmT:  Sync + 
                 node.status = NodeStatus::Candidate;
                 info!("Node {:?} Status changed to Candidate", node.id);
 
-                let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
+                let cluster = params.cluster_configuration.lock().expect("node lock is not poisoned");
 
                 let (peers_copy, quorum_size) =
                     (cluster.get_peers(node_id), cluster.get_quorum_size());
 
 
-                let communicator_copy = communicator.clone();
-                let election_event_tx_copy = leader_election_event_tx.clone();
+                let communicator_copy = params.communicator.clone();
+                let election_event_tx_copy = params.leader_election_event_tx.clone();
                 let last_entry_index = node.log.get_last_entry_index() as u64;
                 let last_entry_term = node.log.get_last_entry_term();
                 let actual_current_term = node.get_current_term() - 1; //TODO refactor
+
+                //TODO spawn a worker
                 thread::spawn(move || peer_notifier::notify_peers(
                     actual_current_term,
                     vr.term,
@@ -68,7 +76,7 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage, FsmT:  Sync + 
                     last_entry_term));
             },
             LeaderElectionEvent::PromoteNodeToLeader(term) => {
-                let mut node = protected_node.lock().expect("node lock is not poisoned");
+                let mut node = params.protected_node.lock().expect("node lock is not poisoned");
 
                 node.current_leader_id = Some(node.id);
                 node.set_current_term(term);
@@ -76,18 +84,18 @@ pub fn run_leader_election_process<Log: Sync + Send + LogStorage, FsmT:  Sync + 
                 node.status = NodeStatus::Leader;
                 info!("Node {:?} Status changed to Leader", node.id);
 
-                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderElectedEvent");
-                leader_initial_heartbeat_tx.send(true).expect("can send leader initial heartbeat");
+                params.watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderElectedEvent");
+                params.leader_initial_heartbeat_tx.send(true).expect("can send leader initial heartbeat");
             },
             LeaderElectionEvent::ResetNodeToFollower(vr) => {
-                let mut node = protected_node.lock().expect("node lock is poisoned");
+                let mut node = params.protected_node.lock().expect("node lock is poisoned");
 
                 node.set_current_term(vr.term);
                 node.status = NodeStatus::Follower;
                 node.voted_for_id = None;
                 info!("Node {:?} Status changed to Follower", node.id);
 
-                watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");
+                params. watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");
             },
         }
     }

@@ -10,22 +10,27 @@ use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
+pub struct SendHeartbeatAppendEntriesParams<Log, FsmT>
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+    pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+    pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+    pub communicator : InProcPeerCommunicator,
+    pub leader_initial_heartbeat_rx : Receiver<bool>,
+}
+
 //TODO remove clone-values
 //TODO park-unpark the thread
-pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node: Arc<Mutex<Node<Log, FsmT>>>,
-                                                                    cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                                                                    leader_initial_heartbeat_rx : Receiver<bool>,
-                                                                    communicator : InProcPeerCommunicator
-) {
+pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : SendHeartbeatAppendEntriesParams<Log, FsmT>)
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
     loop {
         let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
         select!(
             recv(heartbeat_timeout) -> _  => {
-                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), &communicator)
+                send_heartbeat(params.protected_node.clone(), params.cluster_configuration.clone(), &params.communicator)
                 },
-            recv(leader_initial_heartbeat_rx) -> _  => {
+            recv(params.leader_initial_heartbeat_rx) -> _  => {
                 trace!("Sending initial heartbeat...");
-                send_heartbeat(protected_node.clone(), cluster_configuration.clone(), &communicator)
+                send_heartbeat(params.protected_node.clone(), params.cluster_configuration.clone(), &params.communicator)
                 },
         );
     }
