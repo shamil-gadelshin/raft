@@ -9,6 +9,7 @@ use super::QuorumResponse;
 
 
 //TODO add proper error handling
+//TODO rename
 pub fn notify_peers<Req, Resp, Requester>(request: Req,
     node_id : u64,
     peers : Vec<u64>,

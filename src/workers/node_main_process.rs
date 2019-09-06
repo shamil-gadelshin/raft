@@ -38,7 +38,6 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
     let (leader_election_tx, leader_election_rx): (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) = crossbeam_channel::unbounded();
     let (reset_leadership_watchdog_tx, reset_leadership_watchdog_rx) : (Sender<LeaderConfirmationEvent>, Receiver<LeaderConfirmationEvent>) = crossbeam_channel::unbounded();
     let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx) : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
-    let (replicate_log_to_peer_rx, replicate_log_to_peer_tx) : (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
 
     let election_thread = workers::election_manager::run_thread(protected_node.clone(),
                                                                 &node_config,
@@ -71,8 +70,8 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
     let client_request_handler_thread = workers::client_request_handler::run_thread(protected_node.clone(),
                                                                                     &node_config);
     let peer_log_replicator_thread = workers::peer_log_replicator::run_thread(protected_node.clone(),
-                                                                              replicate_log_to_peer_tx,
                                                                               replicate_log_to_peer_rx,
+                                                                              replicate_log_to_peer_tx,
                                                                                     &node_config);
 
     info!("Node {:?} started", node_config.node_id);
@@ -83,6 +82,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static>(node_config : NodeConfigu
     let _ = vote_request_processor_thread.join();
     let _ = check_leader_thread.join();
     let _ = election_thread.join();
+    let _ = peer_log_replicator_thread.join();
 }
 
 fn add_this_node_to_cluster(node_config: &NodeConfiguration) {

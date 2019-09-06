@@ -23,8 +23,8 @@ pub struct Node<Log: LogStorage + Sized + Sync> {
     pub current_leader_id: Option<u64>,
     pub voted_for_id: Option<u64>,
     pub status : NodeStatus,
-    pub next_index : HashMap<u64, u64>,
-    pub match_index : HashMap<u64, u64>, //TODO support match_index
+    next_index : HashMap<u64, u64>,
+    match_index : HashMap<u64, u64>, //TODO support match_index
     pub log : Log,
     fsm : Fsm,
     pub communicator : InProcNodeCommunicator,
@@ -84,16 +84,15 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
     }
 
     pub fn set_current_term(&mut self, new_term: u64) {
-        trace!("Node {} Current term: {}", self.id, self.current_term);
         self.current_term = new_term;
     }
-    pub fn get_last_applied_index(&self) -> usize{
+    pub fn get_last_applied_index(&self) -> u64{
         self.fsm.get_last_applied_entry_index()
     }
 
     ///Gets entry by index & compares terms.
     /// Special case index=0, term=0 returns true
-    pub fn check_log_for_previous_entry(&self, prev_log_term: u64, prev_log_index: usize) -> bool {
+    pub fn check_log_for_previous_entry(&self, prev_log_term: u64, prev_log_index: u64) -> bool {
         if prev_log_term == 0  && prev_log_index == 0 {
             return true
         }
@@ -105,7 +104,7 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
 
         false
     }
-    pub fn check_log_for_last_entry(&self, log_term: u64, log_index: usize) -> bool {
+    pub fn check_log_for_last_entry(&self, log_term: u64, log_index: u64) -> bool {
         if self.log.get_last_entry_term() > log_term {
             return false
         }
@@ -120,10 +119,11 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
     }
 
     pub fn append_entry_to_log(&mut self, entry : LogEntry ) -> Result<(), Box<Error>>{
-        self.log.append_entry(entry.clone()); //TODO error handling
+        if self.log.get_last_entry_index() < entry.index {
+            self.log.append_entry(entry.clone()); //TODO error handling
 
-        self.fsm.apply_entry(entry);//TODO error handling
-
+            self.fsm.apply_entry(entry);//TODO error handling
+        }
         Ok(())
     }
 
@@ -193,35 +193,57 @@ impl <Log: Sized + Sync + LogStorage> Node<Log> {
                 let entries = vec![entry];
                 entries
             },
-            AppendEntriesRequestType::UpdateNode(id) => {
-                let entries = Vec::new();
-                trace!("Node {:?} log update requested", id);
+            AppendEntriesRequestType::UpdateNode(peer_id) => {
+                let mut next_index = self.get_next_index(peer_id);
+                let last_index = self.log.get_last_entry_index();
+
+                let mut entries = Vec::new();
+                for idx in  next_index..=last_index {
+                    let entry = self.log.get_entry(idx).expect("valid entry index");
+                    entries.push(entry)
+                }
+
                 entries
             }
         }
     }
 
+    pub fn get_next_index(&self, peer_id: u64) -> u64 {
+        let next_index = {
+            if !self.next_index.contains_key(&peer_id){
+                self.log.get_last_entry_index() as u64
+            } else {
+                self.next_index[&peer_id]
+            }
+        };
+
+        next_index
+    }
+
+    pub fn set_next_index(&mut self, peer_id: u64, new_next_index : u64) {
+        (*(self.next_index.entry(peer_id).or_insert(new_next_index))) = new_next_index;
+    }
+
     fn send_append_entries(&self, entry : LogEntry) -> Result<(), Box<Error>>{
         if let NodeStatus::Leader = self.status {
-            let (peers_list_copy, quorum_size) =  {
-                let cluster = self.cluster_configuration.lock()
-                    .expect("cluster lock is not poisoned");
+            let cluster = self.cluster_configuration.lock()
+                .expect("cluster lock is not poisoned");
 
-                (cluster.get_peers(self.id), cluster.get_quorum_size())
-            };
+            let (peers_list_copy, quorum_size) =
+                (cluster.get_peers(self.id), cluster.get_quorum_size());
 
+            let entry_index = entry.index;
+            trace!("Node {:?} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
             let append_entries_request =  self.create_append_entry_request(AppendEntriesRequestType::NewEntry(entry));
-
-            trace!("Node {:?} Send 'empty Append Entries Request(heartbeat)'.", self.id);
 
             let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();
             let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
                 let resp_result = self.communicator.send_append_entries_request(dest_node_id, req);
                 let resp = resp_result.expect("can get append_entries response"); //TODO check timeout
 
+                trace!("Destination Node {} Append Entry (index={}) result={}",dest_node_id,  entry_index, resp.success);
                 if !resp.success {
                     replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
-
                 }
 
                 Ok(resp)

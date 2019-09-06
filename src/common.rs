@@ -18,7 +18,7 @@ pub struct AddServerEntryContent {
 
 #[derive(Clone, Debug)]
 pub struct LogEntry {
-    pub index: usize,
+    pub index: u64,
     pub term: u64,
     pub entry_content: EntryContent
 }

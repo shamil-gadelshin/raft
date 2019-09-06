@@ -49,7 +49,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
 
         node.current_leader_id = Some(request.leader_id);
 
-        let previous_entry_exist = node.check_log_for_previous_entry(request.prev_log_term, request.prev_log_index as usize);
+        let previous_entry_exist = node.check_log_for_previous_entry(request.prev_log_term, request.prev_log_index);
 
         if !previous_entry_exist {
             trace!("Node {:?} no previous entry 'Append Entries Request'. Prev term: {:?},Prev index: {:?}", node.id, request.prev_log_term, request.prev_log_index);
@@ -62,7 +62,7 @@ pub fn append_entries_processor<Log: Sync + Send + LogStorage>(
 
         //add to operation log
         for entry in request.entries{
-            node.append_entry_to_log(entry);
+            node.append_entry_to_log(entry); //TODO check result
         }
 
         //TODO change to timeout

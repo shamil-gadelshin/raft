@@ -9,7 +9,7 @@ use crate::common::{LogEntry, DataEntryContent, EntryContent};
 pub struct Fsm {
 	cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
 	data : Vec<DataEntryContent>,
-	last_applied_index: usize,
+	last_applied_index: u64,
 }
 
 impl Fsm{
@@ -21,6 +21,10 @@ impl Fsm{
 		}
 	}
 	pub fn apply_entry(&mut self, entry: LogEntry) {
+		if self.get_last_applied_entry_index() >= entry.index {
+			return;
+		}
+
 		match entry.entry_content {
 			EntryContent::AddServer(add_server_content) => {
 				self.add_server_to_cluster(add_server_content.new_server);
@@ -39,7 +43,7 @@ impl Fsm{
 		cluster.add_peer(new_server_id);
 	}
 
-	pub fn get_last_applied_entry_index(&self) -> usize{
+	pub fn get_last_applied_entry_index(&self) -> u64{
 		self.last_applied_index
 	}
 }

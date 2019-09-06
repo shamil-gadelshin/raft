@@ -27,7 +27,7 @@ pub fn vote_request_processor<Log: Sync + Send + LogStorage>(leader_election_eve
                 && node.voted_for_id.expect("vote_id_result") == request.candidate_id;
 
             if node.get_current_term() < request.term || is_same_term_and_candidate {
-                if node.check_log_for_last_entry(request.last_log_term, request.last_log_index as usize) {
+                if node.check_log_for_last_entry(request.last_log_term, request.last_log_index) {
                     vote_granted = true;
                     response_current_term = request.term;
 

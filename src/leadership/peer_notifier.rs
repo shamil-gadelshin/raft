@@ -21,7 +21,7 @@ pub fn notify_peers(
     let peers_exist = !peers.is_empty();
 
     for peer_id in peers {
-        communicator.send_vote_request(peer_id, vote_request);
+        communicator.send_vote_request(peer_id, vote_request); //TODO check result
     }
 
     if peers_exist {
