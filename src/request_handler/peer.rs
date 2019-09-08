@@ -1,72 +1,72 @@
 use std::sync::{Arc, Mutex};
-use crossbeam_channel::{Sender, Receiver};
+use std::time::Duration;
+use crossbeam_channel::{Sender};
 
 use crate::leadership::election::{LeaderElectionEvent};
 use crate::leadership::vote_request_processor::process_vote_request;
-use crate::communication::peers::{VoteRequest, InProcPeerCommunicator};
+use crate::communication::peers::{VoteRequest, InProcPeerCommunicator, AppendEntriesRequest};
 use crate::state::{Node};
 use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
+use crate::common::LeaderConfirmationEvent;
+use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
 
 
 pub struct PeerRequestHandlerParams<Log, FsmT>
 	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-	pub protected_node : Arc<Mutex<Node<Log, FsmT>>>,
-	pub peer_communicator : InProcPeerCommunicator,
-	pub leader_election_event_tx : Sender<LeaderElectionEvent>,
-	pub vote_request_event_rx : Receiver<VoteRequest>,
+	pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+	pub peer_communicator: InProcPeerCommunicator,
+	pub leader_election_event_tx: Sender<LeaderElectionEvent>,
+	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>
 }
 
-pub fn process_peer_request<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : PeerRequestHandlerParams<Log, FsmT>)
+pub fn process_peer_request<Log, FsmT>(params : PeerRequestHandlerParams<Log, FsmT>)
 	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-	let vote_request_rx = params.vote_request_event_rx.clone();
+	let node_id = {params.protected_node.lock().expect("node lock is not poisoned").id};
+	let vote_request_rx = params.peer_communicator.get_vote_request_rx(node_id).clone();
+	let append_entries_request_rx = params.peer_communicator.get_append_entries_request_rx(node_id);
+
 	loop {
-		let request = vote_request_rx.recv().expect("can get request from request_event_rx");
-		let node_id = {
-			let node = params.protected_node.lock().expect("node lock is not poisoned");
+		select!(
+			recv(vote_request_rx) -> res => {
+				let request = res.expect("can get request from vote_request_rx");
 
-			node.id
-		};
+				handle_vote_request(node_id,request,  &params);
+			},
+			recv(append_entries_request_rx) -> res => {
+				let request = res.expect("can get request from append_entries_request_rx");
 
-		info!("Node {:?} Received request {:?}", node_id, request);
+				handle_append_entries_request(node_id, request,  &params);
+			}
+		);
 
-		let vote_response = process_vote_request(params.protected_node.clone(),
-												 params.leader_election_event_tx.clone(),
-												 request);
-		let resp_result = params.peer_communicator.send_vote_response(request.candidate_id, vote_response);
-		info!("Node {:?} Voted {:?}", node_id, resp_result);
 	}
 }
 
+fn handle_vote_request<Log, FsmT>(node_id: u64, request : VoteRequest, params : &PeerRequestHandlerParams<Log, FsmT>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+	info!("Node {:?} Received  vote request {:?}", node_id, request);
+
+	let vote_response = process_vote_request(request,
+											 params.protected_node.clone(),
+											 params.leader_election_event_tx.clone()
+											 );
+	let resp_result = params.peer_communicator.send_vote_response(request.candidate_id, vote_response);
+	info!("Node {:?} voted {:?}", node_id, resp_result);
+}
+
+
+pub fn handle_append_entries_request<Log, FsmT>(node_id : u64, request : AppendEntriesRequest, params : &PeerRequestHandlerParams<Log, FsmT>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+	let append_entries_response_tx = params.peer_communicator.get_append_entries_response_tx(node_id);
+	trace!("Node {:?} Received 'Append Entries Request' {:?}", node_id, request);
+
+	let append_entry_response = process_append_entries_request(request, params.protected_node.clone(),
+	params.leader_election_event_tx.clone(), params.reset_leadership_watchdog_tx.clone());
+
+	let send_result = append_entries_response_tx.send_timeout(append_entry_response, Duration::from_secs(1));
+	trace!("Node {:?} AppendEntriesResponse: {:?}", node_id, send_result);
+}
 
 
 
-
-
-//
-//pub fn process_peer_requests<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : PeerRequestHandlerParams<Log,FsmT>) {
-//	let add_server_request_rx = params.p.get_add_server_request_rx();
-//	let new_data_request_rx = params.client_communicator.get_new_data_request_rx();
-//	loop {
-//		let process_request_result;
-//		select!(
-//            recv(add_server_request_rx) -> res => {
-//				let request = res.expect("can get add server request");
-//				let entry_content = EntryContent::AddServer(AddServerEntryContent { new_server: request.new_server });
-//					process_request_result = process_client_request(params.protected_node.clone(),
-//					params.client_communicator.get_add_server_response_tx(),
-//					entry_content);            },
-//            recv(new_data_request_rx) -> res => {
-//            	let request = res.expect("can get new_data request");
-//				let entry_content = EntryContent::Data(DataEntryContent { data: request.data });
-//					process_request_result = process_client_request(params.protected_node.clone(),
-//					params.client_communicator.get_new_data_response_tx(),
-//					entry_content);
-//            },
-//        );
-//
-//		trace!("Client request processed: {:?}", process_request_result)
-//	}
-//}
-//
-//

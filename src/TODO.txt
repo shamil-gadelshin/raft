@@ -2,21 +2,14 @@ TODO: Features:
 
 Main algorithm:
 - fsm
-    .persistent
-        .load on start
     .append sync on entry-commit
-- election
-    .check log on votes
 - operation_log replication
-    .file snapshot
-        .load on start
     .persist server's current term and vote and cluster configuration (state persistence)
     .operation_log forcing from the leader (clear entries with invalid terms and indices
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
-
+    .append_entries: process equal terms
 - cluster membership changes
-    .change quorum size
     .remove server(shutdown self)
 - client RPC
     .sessions - for duplicate request handling
@@ -29,11 +22,9 @@ Details:
     .project timeouts
     .investigate channels faults
 - investigate
-   .'static in the 'Log : LogStorage + Sync + Send+ 'static'
    .futures
    .election trait?
    .extract communicator trait
-   .worker thread structure: all peer-request thread, client-thread?
    .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - identity
     .generic
@@ -98,16 +89,26 @@ Details:
 Future Features:
 - transfer leadership
 - log compaction
+    .file snapshot
+        .load on start
+- fsm
+    .persistent
+        .load on start
 
 
 
 Done:
+- investigate
+    .'static in the 'Log : LogStorage + Sync + Send+ 'static'
+    .worker thread structure: all peer-request thread, client-thread?
 - fsm support
 - leader election
+    .check log on votes
 - channel communication
 - modules create
 - cluster_membership changes
     .add server
+    .change quorum size
 - system events logging
     .introduce logging system (remove print_event())
         .response to the client after majority of the servers responses

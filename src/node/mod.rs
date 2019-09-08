@@ -12,8 +12,7 @@ use crate::operation_log::LogStorage;
 use crate::fsm::{Fsm};
 use crate::{node, common};
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
-use crate::operation_log::replication::append_entries_processor::{append_entries_processor, AppendEntriesProcessorParams};
-use crate::operation_log::replication::heartbeat_append_entries_sender::{SendHeartbeatAppendEntriesParams, send_heartbeat_append_entries};
+use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEntriesParams, send_heartbeat_append_entries};
 use crate::leadership::leader_watcher::{WatchLeaderStatusParams, watch_leader_status};
 use crate::operation_log::replication::peer_log_replicator::{LogReplicatorParams, replicate_log_to_peer};
 use crate::fsm::updater::{update_fsm, FsmUpdaterParams};
@@ -73,7 +72,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
         PeerRequestHandlerParams {
             protected_node: protected_node.clone(),
             leader_election_event_tx: leader_election_tx.clone(),
-            vote_request_event_rx: node_config.peer_communicator.get_vote_request_rx(node_config.node_id),
+            reset_leadership_watchdog_tx : reset_leadership_watchdog_tx.clone(),
             peer_communicator: node_config.peer_communicator.clone()
         });
 
@@ -86,16 +85,16 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
             leader_initial_heartbeat_rx
         });
 
-    let append_entries_processor_thread = common::run_worker_thread(
-        append_entries_processor,
-        AppendEntriesProcessorParams {
-            protected_node: protected_node.clone(),
-            append_entries_request_rx: node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id),
-            append_entries_response_tx: node_config.peer_communicator.get_append_entries_response_tx(node_config.node_id),
-            reset_leadership_watchdog_tx: reset_leadership_watchdog_tx.clone(),
-            leader_election_event_tx: leader_election_tx.clone()
-        }
-    );
+//    let append_entries_processor_thread = common::run_worker_thread(
+//        append_entries_processor,
+//        AppendEntriesProcessorParams {
+//            protected_node: protected_node.clone(),
+//            append_entries_request_rx: node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id),
+//            append_entries_response_tx: node_config.peer_communicator.get_append_entries_response_tx(node_config.node_id),
+//            reset_leadership_watchdog_tx: reset_leadership_watchdog_tx.clone(),
+//            leader_election_event_tx: leader_election_tx.clone()
+//        }
+//    );
 
     let client_request_handler_thread = common::run_worker_thread(
         process_client_requests,
@@ -124,7 +123,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
 
     let _ = client_request_handler_thread.join();
     let _ = send_heartbeat_append_entries_thread.join();
-    let _ = append_entries_processor_thread.join();
+ //   let _ = append_entries_processor_thread.join();
     let _ = peer_request_processor_thread.join();
     let _ = check_leader_thread.join();
     let _ = election_thread.join();

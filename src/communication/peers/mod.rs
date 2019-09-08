@@ -33,6 +33,7 @@ pub struct AppendEntriesRequest {
     pub entries : Vec<LogEntry>
 }
 
+//TODO add failure reason
 #[derive(Clone, Copy, Debug)]
 pub struct AppendEntriesResponse {
     pub term : u64,
@@ -107,5 +108,10 @@ impl InProcPeerCommunicator {
         trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
         self.append_entries_channels[&destination_node_id].send_request(request)
     }
+
+//    pub fn send_append_entries_response(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
+//        trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
+//        self.append_entries_channels[&destination_node_id].se(request)
+//    }
 }
 
