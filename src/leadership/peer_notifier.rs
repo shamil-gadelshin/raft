@@ -4,6 +4,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use super::election::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, InProcPeerCommunicator};
+use std::error::Error;
 
 //TODO refactor to DuplexChannel.send_request. Watch out for election timeout
 //TODO refactor to generic peer_notifier
@@ -21,7 +22,10 @@ pub fn notify_peers(
     let peers_exist = !peers.is_empty();
 
     for peer_id in peers {
-        communicator.send_vote_request(peer_id, vote_request); //TODO check result
+        let send_vote_result = communicator.send_vote_request(peer_id, vote_request);
+		if let Err(err) = send_vote_result {
+			error!("Vote request for Node {} failed:{}", peer_id, err.description());
+		}
     }
 
     if peers_exist {

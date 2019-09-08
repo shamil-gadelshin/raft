@@ -4,17 +4,17 @@ Main algorithm:
 - fsm
     .persistent
         .load on start
+    .append sync on entry-commit
 - election
     .check log on votes
 - operation_log replication
     .file snapshot
         .load on start
     .persist server's current term and vote and cluster configuration (state persistence)
-    .response to the client after majority of the servers responses
     .operation_log forcing from the leader (clear entries with invalid terms and indices
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
-    .not commit entry if quorum fails (clear entry?)
+
 - cluster membership changes
     .change quorum size
     .remove server(shutdown self)
@@ -111,8 +111,10 @@ Done:
     .introduce logging system (remove print_event())
         .response to the client after majority of the servers responses
 - operation_log
+    .response to the client after majority of the servers responses
     .memory snapshot
     .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
+    .not commit entry if quorum fails (clear entry?)
 - error handling
     .error style
 

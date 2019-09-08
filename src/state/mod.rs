@@ -212,7 +212,7 @@ where Log: Sized + Sync + LogStorage,
                 entries
             },
             AppendEntriesRequestType::UpdateNode(peer_id) => {
-                let mut next_index = self.get_next_index(peer_id);
+                let next_index = self.get_next_index(peer_id);
                 let last_index = self.log.get_last_entry_index();
 
                 let mut entries = Vec::new();
@@ -239,7 +239,10 @@ where Log: Sized + Sync + LogStorage,
     }
 
     pub fn set_next_index(&mut self, peer_id: u64, new_next_index : u64) {
-        (*(self.next_index.entry(peer_id).or_insert(new_next_index))) = new_next_index;
+        let next_index_entry =  self.next_index.entry(peer_id)
+            .or_insert(new_next_index);
+
+        *next_index_entry = new_next_index;
     }
 
     //TODO Result = bool quorum-no-quorum
