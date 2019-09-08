@@ -2,6 +2,7 @@ use std::sync::{Arc};
 use std::thread::JoinHandle;
 use std::thread;
 
+//TODO downgrade to bool
 pub enum LeaderConfirmationEvent {
     ResetWatchdogCounter
 }

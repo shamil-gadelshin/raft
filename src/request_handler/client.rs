@@ -8,6 +8,7 @@ use crate::operation_log::{LogStorage};
 use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
 use crate::errors;
 use crate::fsm::Fsm;
+use std::error::Error;
 
 
 pub struct ClientRequestHandlerParams<Log, FsmT>
@@ -21,22 +22,34 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage, FsmT:  Sync + Send
 	let add_server_request_rx = params.client_communicator.get_add_server_request_rx();
 	let new_data_request_rx = params.client_communicator.get_new_data_request_rx();
 	loop {
-		let process_request_result;
+		let response_tx;
+		let entry_content;
 		select!(
             recv(add_server_request_rx) -> res => {
 				let request = res.expect("can get add server request");
-				let entry_content = EntryContent::AddServer(AddServerEntryContent { new_server: request.new_server });
-					process_request_result = process_client_request(params.protected_node.clone(),
-					params.client_communicator.get_add_server_response_tx(),
-					entry_content);            },
+				entry_content = EntryContent::AddServer(AddServerEntryContent { new_server: request.new_server });
+				response_tx = params.client_communicator.get_add_server_response_tx();
+
+           },
             recv(new_data_request_rx) -> res => {
             	let request = res.expect("can get new_data request");
-				let entry_content = EntryContent::Data(DataEntryContent { data: request.data });
-					process_request_result = process_client_request(params.protected_node.clone(),
-					params.client_communicator.get_new_data_response_tx(),
-					entry_content);
+				entry_content = EntryContent::Data(DataEntryContent { data: request.data });
+				response_tx = params.client_communicator.get_new_data_response_tx();
             },
         );
+
+
+		let client_rpc_response_result = process_client_request_internal(params.protected_node.clone(), entry_content);
+
+		let process_request_result = match client_rpc_response_result {
+			Ok(client_rpc_response) => {
+				send_client_response(client_rpc_response, response_tx)
+			},
+			Err(err) => {
+				error!("Process client request error: {}", err.description());
+				Err(err)
+			}
+		};
 
 		trace!("Client request processed: {:?}", process_request_result)
 	}
@@ -44,13 +57,21 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage, FsmT:  Sync + Send
 
 
 
-fn process_client_request<Log, FsmT>(protected_node: Arc<Mutex<Node<Log, FsmT>>>, response_tx: Sender<ClientRpcResponse>, entry_content: EntryContent) -> errors::Result<()>
+fn send_client_response(client_rpc_response: ClientRpcResponse, response_tx: Sender<ClientRpcResponse>) -> Result<(), Box<Error>> {
+	let send_result = response_tx.send(client_rpc_response);
+	if let Err(err) = send_result {
+		return errors::new_err("cannot send clientRpcResponse".to_string(), Some(Box::new(err)))
+	}
+
+	Ok(())
+}
+
+fn process_client_request_internal<Log, FsmT>(protected_node: Arc<Mutex<Node<Log, FsmT>>>, entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
 where Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm {
 	let mut node = protected_node.lock().expect("node lock is not poisoned");
 
 	let client_rpc_response = match node.status {
 		NodeStatus::Leader => {
-
 			node.append_content_to_log(entry_content)?;
 			ClientRpcResponse { status: ClientResponseStatus::Ok, current_leader: node.current_leader_id }
 		},
@@ -58,10 +79,6 @@ where Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm {
 			ClientRpcResponse { status: ClientResponseStatus::NotLeader, current_leader: node.current_leader_id }
 		}
 	};
-	let send_result = response_tx.send(client_rpc_response);
-	if let Err(err) = send_result {
-		return errors::new_err("can send response".to_string(), Some(Box::new(err)))
-	}
 
-	Ok(())
+	Ok(client_rpc_response)
 }

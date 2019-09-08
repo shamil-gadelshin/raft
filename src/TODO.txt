@@ -60,6 +60,7 @@ Details:
     .dev-dependencies
         .env-logger
 - code style
+    .clear #[allow(dead_code)]
     .investigate & remove use crate::
     .introduce aliases (Arc<Mutex<Node<Log>>>)
     .enforce code line length limit

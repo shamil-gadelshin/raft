@@ -1,21 +1,48 @@
-//use std::sync::{Arc, Mutex};
-//
-//use crossbeam_channel::Sender;
-//
-//use crate::state::{Node, NodeStatus};
-//use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, InProcClientCommunicator};
-//use crate::operation_log::{LogStorage};
-//use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
-//use crate::{errors, InProcPeerCommunicator};
-//use crate::fsm::Fsm;
-//
-//
-//pub struct PeerRequestHandlerParams<Log, FsmT>
-//	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-//	pub protected_node : Arc<Mutex<Node<Log, FsmT>>>,
-//	pub peer_communicator : InProcPeerCommunicator
-//}
-//
+use std::sync::{Arc, Mutex};
+use crossbeam_channel::{Sender, Receiver};
+
+use crate::leadership::election::{LeaderElectionEvent};
+use crate::leadership::vote_request_processor::process_vote_request;
+use crate::communication::peers::{VoteRequest, InProcPeerCommunicator};
+use crate::state::{Node};
+use crate::operation_log::LogStorage;
+use crate::fsm::Fsm;
+
+
+pub struct PeerRequestHandlerParams<Log, FsmT>
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+	pub protected_node : Arc<Mutex<Node<Log, FsmT>>>,
+	pub peer_communicator : InProcPeerCommunicator,
+	pub leader_election_event_tx : Sender<LeaderElectionEvent>,
+	pub vote_request_event_rx : Receiver<VoteRequest>,
+}
+
+pub fn process_peer_request<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : PeerRequestHandlerParams<Log, FsmT>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+	let vote_request_rx = params.vote_request_event_rx.clone();
+	loop {
+		let request = vote_request_rx.recv().expect("can get request from request_event_rx");
+		let node_id = {
+			let node = params.protected_node.lock().expect("node lock is not poisoned");
+
+			node.id
+		};
+
+		info!("Node {:?} Received request {:?}", node_id, request);
+
+		let vote_response = process_vote_request(params.protected_node.clone(),
+												 params.leader_election_event_tx.clone(),
+												 request);
+		let resp_result = params.peer_communicator.send_vote_response(request.candidate_id, vote_response);
+		info!("Node {:?} Voted {:?}", node_id, resp_result);
+	}
+}
+
+
+
+
+
+
 //
 //pub fn process_peer_requests<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : PeerRequestHandlerParams<Log,FsmT>) {
 //	let add_server_request_rx = params.p.get_add_server_request_rx();
@@ -43,25 +70,3 @@
 //}
 //
 //
-//
-//fn process_client_request<Log, FsmT>(protected_node: Arc<Mutex<Node<Log, FsmT>>>, response_tx: Sender<ClientRpcResponse>, entry_content: EntryContent) -> errors::Result<()>
-//where Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm {
-//	let mut node = protected_node.lock().expect("node lock is not poisoned");
-//
-//	let client_rpc_response = match node.status {
-//		NodeStatus::Leader => {
-//
-//			node.append_content_to_log(entry_content)?;
-//			ClientRpcResponse { status: ClientResponseStatus::Ok, current_leader: node.current_leader_id }
-//		},
-//		NodeStatus::Candidate | NodeStatus::Follower => {
-//			ClientRpcResponse { status: ClientResponseStatus::NotLeader, current_leader: node.current_leader_id }
-//		}
-//	};
-//	let send_result = response_tx.send(client_rpc_response);
-//	if let Err(err) = send_result {
-//		return errors::new_err("can send response".to_string(), Some(Box::new(err)))
-//	}
-//
-//	Ok(())
-//}

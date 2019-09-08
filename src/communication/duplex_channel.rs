@@ -37,6 +37,7 @@ where Request: Send + 'static{
     pub fn get_request_rx(&self) -> Receiver<Request> {
         self.request_rx.clone()
     }
+    #[allow(dead_code)]
     pub fn get_request_tx(&self) -> Sender<Request> { self.request_tx.clone() }
 
     pub fn get_response_tx(&self) -> Sender<Response> {
