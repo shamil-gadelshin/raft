@@ -27,6 +27,7 @@ where Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm{
 
         trace!("Node {:?} Received 'Append Entries Request' {:?}", node.id, request);
 
+        //TODO process equals terms!!
         if request.term < node.get_current_term() {
             trace!("Node {:?} Stale 'Append Entries Request'. Old term: {:?}", node.id, request);
 

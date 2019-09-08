@@ -10,13 +10,16 @@ impl ClusterConfiguration {
     pub fn get_quorum_size(&self) -> u32 {
         let node_count = self.nodes_id_map.len() as u32;
 
-        if node_count > 2 {
-            node_count - 1
-        } else {
-           // 1
-            node_count
+        if node_count == 0 {
+            panic!("Cannot calculate quorum size: node_count = 0")
         }
+
+        let half = node_count / 2;
+        let majority = half + 1;
+
+        majority
     }
+
 
     pub fn get_peers(&self, node_id : u64) -> Vec<u64>{
         let mut peer_ids = self.get_all();
