@@ -17,6 +17,7 @@ use crate::operation_log::replication::heartbeat_append_entries_sender::{SendHea
 use crate::leadership::leader_watcher::{WatchLeaderStatusParams, watch_leader_status};
 use crate::operation_log::replication::peer_log_replicator::{LogReplicatorParams, replicate_log_to_peer};
 use crate::leadership::vote_request_processor::{VoteRequestProcessorParams, vote_request_processor};
+use crate::fsm::updater::{update_fsm, FsmUpdaterParams};
 
 
 //TODO refactor to generic worker
@@ -29,6 +30,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
     add_this_node_to_cluster(&node_config);
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
+    let (commit_index_updated_tx, commit_index_updated_rx ): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
     let node = Node::new(node_config.node_id,
                          None,
                          NodeStatus::Follower,
@@ -36,7 +38,8 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
                          fsm,
                          node_config.peer_communicator.clone(),
                          node_config.cluster_configuration.clone(),
-                         replicate_log_to_peer_tx.clone()
+                         replicate_log_to_peer_tx.clone(),
+        commit_index_updated_tx
     );
 
     let protected_node = Arc::new(Mutex::new(node));
@@ -110,6 +113,13 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
             communicator: node_config.peer_communicator.clone()
         });
 
+    let fsm_updater_thread = common::run_worker_thread(
+        update_fsm,
+        FsmUpdaterParams {
+            protected_node: protected_node.clone(),
+            commit_index_updated_rx
+        });
+
     info!("Node {:?} started", node_config.node_id);
 
     let _ = client_request_handler_thread.join();
@@ -119,6 +129,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
     let _ = check_leader_thread.join();
     let _ = election_thread.join();
     let _ = peer_log_replicator_thread.join();
+    let _ = fsm_updater_thread.join();
 }
 
 fn add_this_node_to_cluster(node_config: &NodeConfiguration) {

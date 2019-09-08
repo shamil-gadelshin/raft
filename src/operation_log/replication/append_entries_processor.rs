@@ -67,7 +67,16 @@ where Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm{
 
         //add to operation log
         for entry in request.entries{
-            node.append_entry_to_log(entry); //TODO check result
+            let entry_index = entry.index;
+            let append_entry_result = node.append_entry_to_log(entry);
+            if let Err(err) = append_entry_result {
+                error!("Append entry to Log error. Entry = {}: {}", entry_index, err.description());
+                break;
+            }
+        }
+
+        if request.leader_commit > node.get_commit_index(){
+            node.set_commit_index(request.leader_commit);
         }
 
         //TODO change to timeout

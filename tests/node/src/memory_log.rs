@@ -1,5 +1,6 @@
 use ruft::{LogEntry, EntryContent};
 use ruft::LogStorage;
+use std::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct MemoryLogStorage {
@@ -13,11 +14,13 @@ impl LogStorage for MemoryLogStorage {
     }
 
     //TODO check for duplicates
-    fn append_entry(&mut self, entry: LogEntry) {
+    fn append_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
         if self.last_index < entry.index {
             self.last_index = entry.index;
             self.entries.push(entry);
         }
+
+        Ok(())
     }
     fn get_entry(&self, index: u64) -> Option<LogEntry> {
         let idx = index as usize;

@@ -25,11 +25,13 @@ pub struct Node<Log: LogStorage + Sized + Sync, FsmT: Fsm + Sized + Sync> {
     pub status : NodeStatus,
     next_index : HashMap<u64, u64>,
     match_index : HashMap<u64, u64>, //TODO support match_index
+    commit_index: u64,
     pub log : Log,
-    fsm : FsmT,
-    pub communicator : InProcPeerCommunicator,
-    pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-    pub replicate_log_to_peer_tx: Sender<u64> //TODO split god object
+    pub fsm : FsmT,
+    communicator : InProcPeerCommunicator,
+    cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+    replicate_log_to_peer_tx: Sender<u64> ,//TODO split god object
+    commit_index_updated_tx : Sender<u64>,
 }
 
 
@@ -56,7 +58,9 @@ where Log: Sized + Sync + LogStorage,
 			   log : Log,
 			   fsm : FsmT,
 			   communicator : InProcPeerCommunicator,
-			   cluster_configuration : Arc<Mutex<ClusterConfiguration>>, replicate_log_to_peer_tx: Sender<u64> ) ->  Node<Log, FsmT> {
+			   cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+               replicate_log_to_peer_tx: Sender<u64>,
+               commit_index_updated_tx : Sender<u64>) ->  Node<Log, FsmT> {
         Node {
             id,
             current_term : 0,
@@ -65,11 +69,13 @@ where Log: Sized + Sync + LogStorage,
             status,
             next_index: HashMap::new(),
             match_index: HashMap::new(),
+            commit_index: 0,
             log,
             fsm,
             communicator,
             cluster_configuration,
-            replicate_log_to_peer_tx
+            replicate_log_to_peer_tx,
+            commit_index_updated_tx
         }
     }
 
@@ -81,15 +87,20 @@ where Log: Sized + Sync + LogStorage,
         }
     }
 
+    pub fn set_commit_index(&mut self, new_commit_index: u64) {
+        self.commit_index = new_commit_index;
+        self.commit_index_updated_tx.send(new_commit_index).expect("can send updated commit_index")
+    }
+
+    pub fn get_commit_index(&self)-> u64 {
+        self.commit_index
+    }
+
     pub fn get_next_term(&self) -> u64 {
         self.current_term + 1
     }
-
     pub fn set_current_term(&mut self, new_term: u64) {
         self.current_term = new_term;
-    }
-    pub fn get_last_applied_index(&self) -> u64{
-        self.fsm.get_last_applied_entry_index()
     }
 
     ///Gets entry by index & compares terms.
@@ -124,12 +135,9 @@ where Log: Sized + Sync + LogStorage,
         let entry_index = entry.index;
 
         if self.log.get_last_entry_index() < entry_index {
-            self.log.append_entry(entry.clone()); //TODO error handling
-
-            let fsm_apply_result = self.fsm.apply_entry(entry);
-
-            if let Err(err) = fsm_apply_result {
-                return errors::new_err(format!("cannot apply entry to fsm, index = {}", entry_index), Some(err));
+            let log_append_result =self.log.append_entry(entry.clone()); //TODO error handling
+            if let Err(err) = log_append_result {
+                return errors::new_err(format!("cannot append entry to log, index = {}", entry_index), Some(err));
             }
         }
         Ok(())
@@ -149,6 +157,8 @@ where Log: Sized + Sync + LogStorage,
         if add_to_entry_result.is_err() {
             return send_result; //TODO LOG
         }
+
+        self.set_commit_index(entry.index);
 
         Ok(())
     }
@@ -184,7 +194,7 @@ where Log: Sized + Sync + LogStorage,
             leader_id: self.id,
             prev_log_term,
             prev_log_index: prev_log_index as u64,
-            leader_commit: self.fsm.get_last_applied_entry_index() as u64,
+            leader_commit: self.commit_index,
             entries
         };
 
@@ -232,6 +242,7 @@ where Log: Sized + Sync + LogStorage,
         (*(self.next_index.entry(peer_id).or_insert(new_next_index))) = new_next_index;
     }
 
+    //TODO Result = bool quorum-no-quorum
     fn send_append_entries(&self, entry : LogEntry) -> Result<(), Box<Error>>{
         if let NodeStatus::Leader = self.status {
             let cluster = self.cluster_configuration.lock()
