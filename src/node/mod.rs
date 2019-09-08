@@ -7,7 +7,7 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::configuration::node::{NodeConfiguration};
-use crate::leadership::election::{LeaderElectionEvent, ElectionManagerParams, run_leader_election_process};
+use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams, run_node_status_watcher};
 use crate::operation_log::LogStorage;
 use crate::fsm::{Fsm};
 use crate::{node, common};
@@ -48,7 +48,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
     let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx): (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
 
     let election_thread = common::run_worker_thread(
-        run_leader_election_process,
+        run_node_status_watcher,
         ElectionManagerParams {
             protected_node: protected_node.clone(),
             leader_election_event_tx: leader_election_tx.clone(),

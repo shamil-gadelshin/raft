@@ -5,7 +5,7 @@ use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
 use crate::operation_log::{LogStorage};
-use crate::leadership::election::{LeaderElectionEvent, ElectionNotice};
+use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
 use crate::fsm::Fsm;
 
 

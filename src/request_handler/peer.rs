@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use crossbeam_channel::{Sender};
 
-use crate::leadership::election::{LeaderElectionEvent};
+use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::leadership::vote_request_processor::process_vote_request;
 use crate::communication::peers::{VoteRequest, InProcPeerCommunicator, AppendEntriesRequest};
 use crate::state::{Node};
