@@ -55,7 +55,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
             leader_election_event_rx: leader_election_rx.clone(),
             leader_initial_heartbeat_tx,
             watchdog_event_tx: reset_leadership_watchdog_tx.clone(),
-            communicator: node_config.peer_communicator.clone(),
+            peer_communicator: node_config.peer_communicator.clone(),
             cluster_configuration: node_config.cluster_configuration.clone(),
         });
 
@@ -85,17 +85,6 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
             leader_initial_heartbeat_rx
         });
 
-//    let append_entries_processor_thread = common::run_worker_thread(
-//        append_entries_processor,
-//        AppendEntriesProcessorParams {
-//            protected_node: protected_node.clone(),
-//            append_entries_request_rx: node_config.peer_communicator.get_append_entries_request_rx(node_config.node_id),
-//            append_entries_response_tx: node_config.peer_communicator.get_append_entries_response_tx(node_config.node_id),
-//            reset_leadership_watchdog_tx: reset_leadership_watchdog_tx.clone(),
-//            leader_election_event_tx: leader_election_tx.clone()
-//        }
-//    );
-
     let client_request_handler_thread = common::run_worker_thread(
         process_client_requests,
         ClientRequestHandlerParams {
@@ -123,7 +112,6 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
 
     let _ = client_request_handler_thread.join();
     let _ = send_heartbeat_append_entries_thread.join();
- //   let _ = append_entries_processor_thread.join();
     let _ = peer_request_processor_thread.join();
     let _ = check_leader_thread.join();
     let _ = election_thread.join();
