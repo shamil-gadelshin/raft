@@ -5,7 +5,7 @@ use crossbeam_channel::{Sender, Receiver, SendTimeoutError};
 
 use crate::common::{LogEntry};
 use crate::communication::duplex_channel::DuplexChannel;
-use crate::communication::QuorumResponse;
+use crate::common::QuorumResponse;
 use std::error::Error;
 
 #[derive(Clone, Copy, Debug)]

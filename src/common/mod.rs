@@ -1,6 +1,11 @@
 use std::sync::{Arc};
 use std::thread::JoinHandle;
 use std::thread;
+pub mod peer_notifier;
+
+pub trait QuorumResponse {
+    fn get_result(&self) -> bool;
+}
 
 //TODO downgrade to bool
 pub enum LeaderConfirmationEvent {

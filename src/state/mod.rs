@@ -7,7 +7,7 @@ use crossbeam_channel::{Sender};
 use crate::configuration::cluster::ClusterConfiguration;
 use crate::communication::peers::{InProcPeerCommunicator, AppendEntriesRequest};
 use crate::common::{LogEntry,EntryContent};
-use crate::communication::peer_notifier::notify_peers;
+use crate::common::peer_notifier::notify_peers;
 use crate::fsm::{Fsm};
 use crate::operation_log::{LogStorage};
 use crate::errors;
