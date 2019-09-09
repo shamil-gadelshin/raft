@@ -56,12 +56,14 @@ Details:
     .introduce aliases (Arc<Mutex<Node<Log>>>)
     .enforce code line length limit
     .rustfmt
+    .clippy
 - release
     .consensus
     .implement Display
     .configuration
         .cmd params
         .file (toml?)
+    .travis-ci
 - debug
     .tests
     .cases

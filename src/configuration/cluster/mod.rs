@@ -15,11 +15,9 @@ impl ClusterConfiguration {
         }
 
         let half = node_count / 2;
-        let majority = half + 1;
 
-        majority
+        half + 1 //majority
     }
-
 
     pub fn get_peers(&self, node_id : u64) -> Vec<u64>{
         let mut peer_ids = self.get_all();
@@ -44,8 +42,6 @@ impl ClusterConfiguration {
     }
 
     pub fn get_all(&self)-> Vec<u64> {
-        let key_vector =  self.nodes_id_map.keys().map(|key| *key).collect();
-
-        key_vector
+        self.nodes_id_map.keys().map(|key| *key).collect() //key vector
     }
 }

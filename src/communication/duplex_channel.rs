@@ -22,16 +22,14 @@ where Request: Send + 'static{
         let (request_tx, request_rx): (Sender<Request>, Receiver<Request>) = crossbeam_channel::bounded(0);
         let (response_tx, response_rx): (Sender<Response>, Receiver<Response>) = crossbeam_channel::bounded(0);
 
-        let duplex_channel = DuplexChannel{
+        DuplexChannel{
             timeout_duration,
             name,
             request_tx,
             request_rx,
             response_tx,
             response_rx
-        };
-
-        duplex_channel
+        }
     }
 
     pub fn get_request_rx(&self) -> Receiver<Request> {
