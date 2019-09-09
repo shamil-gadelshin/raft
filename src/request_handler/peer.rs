@@ -51,7 +51,7 @@ fn handle_vote_request<Log, FsmT>(node_id: u64, request : VoteRequest, params : 
 											 params.protected_node.clone(),
 											 params.leader_election_event_tx.clone()
 											 );
-	let resp_result = params.peer_communicator.send_vote_response(request.candidate_id, vote_response);
+	let resp_result = params.peer_communicator.send_vote_response(node_id, vote_response);
 	info!("Node {:?} voted {:?}", node_id, resp_result);
 }
 

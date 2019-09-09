@@ -23,6 +23,12 @@ pub struct VoteResponse {
     pub peer_id: u64
 }
 
+impl QuorumResponse for VoteResponse {
+    fn get_result(&self) -> bool {
+        self.vote_granted
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct AppendEntriesRequest {
     pub term : u64,
@@ -95,23 +101,17 @@ impl InProcPeerCommunicator {
         self.append_entries_channels[&node_id].get_response_tx()
     }
 
-    //TODO check node_id existence
-    pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<(), SendTimeoutError<VoteRequest>> {
-        trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
-        self.votes_channels[&destination_node_id].request_tx.send_timeout(request, self.timeout)
+    pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, Box<Error>>  {
+        trace!("Destination Node {} Sending request {:?}",destination_node_id, request);
+        self.votes_channels[&destination_node_id].send_request(request)
     }
-    pub fn send_vote_response(&self, destination_node_id: u64, response: VoteResponse) -> Result<(), SendTimeoutError<VoteResponse>>{
-        trace!("Destination Node {:?} Sending response {:?}", destination_node_id, response);
-        self.votes_channels[&destination_node_id].response_tx.send_timeout(response, self.timeout)
+    pub fn send_vote_response(&self, from_node_id: u64, response: VoteResponse) -> Result<(), SendTimeoutError<VoteResponse>>{
+        trace!("Node {} Sending response {:?}", from_node_id, response);
+        self.votes_channels[&from_node_id].response_tx.send_timeout(response, self.timeout)
     }
     pub fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
-        trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
+        trace!("Destination Node {} Sending request {:?}",destination_node_id, request);
         self.append_entries_channels[&destination_node_id].send_request(request)
     }
-
-//    pub fn send_append_entries_response(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
-//        trace!("Destination Node {:?} Sending request {:?}",destination_node_id, request);
-//        self.append_entries_channels[&destination_node_id].se(request)
-//    }
 }
 

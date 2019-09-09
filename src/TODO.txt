@@ -58,6 +58,7 @@ Details:
     .rustfmt
 - release
     .consensus
+    .implement Display
     .configuration
         .cmd params
         .file (toml?)

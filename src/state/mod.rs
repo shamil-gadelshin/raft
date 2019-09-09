@@ -271,7 +271,11 @@ where Log: Sized + Sync + LogStorage,
                 Ok(resp)
             };
 
-            return notify_peers(append_entries_request, self.id,peers_list_copy, Some(quorum_size), requester);
+            let notify_peers_result = notify_peers(append_entries_request, self.id,peers_list_copy, Some(quorum_size), requester);
+            return match notify_peers_result {
+                Ok(_)=> Ok(()),
+                Err(err) => Err(err)
+            };
         }
         errors::new_err("send_append_entries failed: Not a leader".to_string(), None)
     }
