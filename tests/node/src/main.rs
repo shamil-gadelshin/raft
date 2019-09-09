@@ -2,9 +2,6 @@
 extern crate env_logger;
 extern crate chrono;
 
-mod memory_fsm;
-mod memory_log;
-
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::collections::HashMap;
@@ -15,6 +12,7 @@ use std::thread;
 use chrono::prelude::{DateTime, Local};
 
 extern crate ruft;
+extern crate ruft_testkit;
 
 use ruft::{AddServerRequest, InProcClientCommunicator, ClientResponseStatus};
 use ruft::{InProcPeerCommunicator};
@@ -22,8 +20,8 @@ use ruft::ClusterConfiguration;
 use ruft::NodeConfiguration;
 use ruft::NewDataRequest;
 
-use memory_fsm::MemoryFsm;
-use memory_log::MemoryLogStorage;
+use ruft_testkit::MemoryFsm;
+use ruft_testkit::MemoryLogStorage;
 
 fn init_logger() {
     env_logger::builder()
