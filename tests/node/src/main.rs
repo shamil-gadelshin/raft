@@ -16,7 +16,7 @@ use chrono::prelude::{DateTime, Local};
 
 extern crate ruft;
 
-use ruft::{AddServerRequest, InProcClientCommunicator};
+use ruft::{AddServerRequest, InProcClientCommunicator, ClientResponseStatus};
 use ruft::{InProcPeerCommunicator};
 use ruft::ClusterConfiguration;
 use ruft::NodeConfiguration;
@@ -69,10 +69,15 @@ fn main() {
 
     let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
     let thread_handle = run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
-                                                         client_handlers,
+                                                         client_handlers.clone(),
                                                          new_node_id);
 
     node_threads.push(thread_handle);
+
+
+    let leader_id = find_a_leader(client_handlers.clone());
+    add_thousands_of_data(client_handlers.clone(), leader_id);
+
 
     for node_thread in node_threads {
         let thread = node_thread.join();
@@ -83,6 +88,33 @@ fn main() {
 }
 
 
+fn find_a_leader(client_handlers : HashMap<u64, InProcClientCommunicator>) -> u64{
+    let bytes = "find a leader".as_bytes();
+    let new_data_request = NewDataRequest{data : Arc::new(bytes)};
+    for kv in client_handlers {
+        let (_k, v) = kv;
+
+        let result = v.new_data(new_data_request.clone());
+        if let Ok(resp) = result {
+            if let ClientResponseStatus::Ok = resp.status {
+                return resp.current_leader.expect("can get a leader");
+            }
+        }
+    }
+
+    panic!("cannot get a leader!")
+}
+
+fn add_thousands_of_data(client_handlers : HashMap<u64, InProcClientCommunicator>, leader_id : u64)
+{
+    thread::sleep(Duration::from_secs(7));
+
+    let bytes = "find a leader".as_bytes();
+    let data_request = NewDataRequest{data : Arc::new(bytes)};
+    for _count in 1..=10000 {
+        let _resp = client_handlers[&leader_id].new_data(data_request.clone());
+    }
+}
 
 fn run_add_server_thread_with_delay(communicator : InProcPeerCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
@@ -92,7 +124,7 @@ fn run_add_server_thread_with_delay(communicator : InProcPeerCommunicator,
 
     let communication_timeout = Duration::from_millis(500);
 
-    thread::sleep(Duration::from_secs(3));
+    thread::sleep(Duration::from_secs(5));
 
     let new_server_config;
     {
