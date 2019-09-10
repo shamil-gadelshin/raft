@@ -1,7 +1,7 @@
 use std::sync::Arc;
-use crossbeam_channel::{Sender, Receiver};
-
 use std::error::Error;
+
+use crossbeam_channel::{Sender, Receiver};
 
 #[derive(Clone, Copy, Debug)]
 pub enum ClientResponseStatus {
@@ -12,6 +12,11 @@ pub enum ClientResponseStatus {
 #[derive(Clone, Copy, Debug)]
 pub struct AddServerRequest {
     pub new_server : u64
+}
+
+#[derive(Clone, Debug)]
+pub struct NewDataRequest {
+    pub data : Arc<&'static [u8]>
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -32,8 +37,4 @@ pub trait ClientRequestChannels {
     fn new_data_response_tx(&self) -> Sender<ClientRpcResponse>;
 }
 
-#[derive(Clone, Debug)]
-pub struct NewDataRequest {
-    pub data : Arc<&'static [u8]>
-}
 

@@ -41,9 +41,8 @@ where Request: Send + 'static{
     pub fn get_response_tx(&self) -> Sender<Response> {
         self.response_tx.clone()
     }
-    pub fn get_response_rx(&self) -> Receiver<Response> {
-        self.response_rx.clone()
-    }
+    #[allow(dead_code)]
+    pub fn get_response_rx(&self) -> Receiver<Response> { self.response_rx.clone() }
 
     //TODO consider & change result error type
     pub fn send_request(&self, request: Request) -> Result<Response, Box<Error>> {

@@ -3,7 +3,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
-use crate::communication::peers::{InProcPeerCommunicator, PeerRequestHandler};
+use crate::communication::peers::{PeerRequestHandler};
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::common;
 use crate::operation_log::LogStorage;
@@ -23,19 +23,19 @@ pub struct ElectionNotice {
 
 
 pub struct ElectionManagerParams<Log, FsmT,Pc>
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc :  Sync + Send + 'static  + PeerRequestHandler + Clone {
     pub protected_node: Arc<Mutex<Node<Log, FsmT, Pc>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub leader_election_event_rx : Receiver<LeaderElectionEvent>,
     pub leader_initial_heartbeat_tx : Sender<bool>,
     pub watchdog_event_tx : Sender<LeaderConfirmationEvent>,
-    pub peer_communicator: InProcPeerCommunicator,
+    pub peer_communicator: Pc,
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
 }
 
 
 pub fn run_node_status_watcher<Log, FsmT, Pc>(params : ElectionManagerParams<Log, FsmT, Pc>)
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : Sync + Send + 'static  + PeerRequestHandler + Clone {
     loop {
         let event_result = params.leader_election_event_rx.recv();
 

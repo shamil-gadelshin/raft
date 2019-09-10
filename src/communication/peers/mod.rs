@@ -64,6 +64,14 @@ pub trait PeerRequestHandler {
     fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>;
 }
 
+pub trait PeerRequestChannels {
+    fn vote_request_rx(&self, node_id : u64) -> Receiver<VoteRequest>;
+    fn vote_response_tx(&self, node_id : u64) -> Sender<VoteResponse>;
+    fn append_entries_request_rx(&self, node_id : u64) -> Receiver<AppendEntriesRequest>;
+    fn append_entries_response_tx(&self, node_id : u64) -> Sender<AppendEntriesResponse>;
+}
+
+
 impl InProcPeerCommunicator {
     pub fn new(nodes : Vec<u64>, timeout : Duration) -> InProcPeerCommunicator {
         let votes_channels = HashMap::new();
@@ -90,24 +98,7 @@ impl InProcPeerCommunicator {
         self.append_entries_channels.insert(node_id, append_entries_duplex);
     }
 
-    pub fn get_vote_request_rx(&self, node_id : u64) -> Receiver<VoteRequest> {
-        self.votes_channels[&node_id].get_request_rx()
-    }
 
-//    pub fn get_vote_response_rx(&self, node_id : u64) -> Receiver<VoteResponse> {
-//        self.votes_channels[&node_id].get_response_rx()
-//    }
-
-    pub fn get_vote_response_tx(&self, node_id : u64) -> Sender<VoteResponse> {
-        self.votes_channels[&node_id].get_response_tx()
-    }
-
-    pub fn get_append_entries_request_rx(&self, node_id : u64) -> Receiver<AppendEntriesRequest> {
-        self.append_entries_channels[&node_id].get_request_rx()
-    }
-    pub fn get_append_entries_response_tx(&self, node_id : u64) -> Sender<AppendEntriesResponse> {
-        self.append_entries_channels[&node_id].get_response_tx()
-    }
 }
 
 impl PeerRequestHandler for InProcPeerCommunicator {
@@ -118,5 +109,23 @@ impl PeerRequestHandler for InProcPeerCommunicator {
     fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
         trace!("Destination Node {} Sending request {:?}",destination_node_id, request);
         self.append_entries_channels[&destination_node_id].send_request(request)
+    }
+}
+
+impl PeerRequestChannels for InProcPeerCommunicator{
+    fn vote_request_rx(&self, node_id : u64) -> Receiver<VoteRequest> {
+        self.votes_channels[&node_id].get_request_rx()
+    }
+
+    fn vote_response_tx(&self, node_id : u64) -> Sender<VoteResponse> {
+        self.votes_channels[&node_id].get_response_tx()
+    }
+
+    fn append_entries_request_rx(&self, node_id : u64) -> Receiver<AppendEntriesRequest> {
+        self.append_entries_channels[&node_id].get_request_rx()
+    }
+
+    fn append_entries_response_tx(&self, node_id : u64) -> Sender<AppendEntriesResponse> {
+        self.append_entries_channels[&node_id].get_response_tx()
     }
 }
