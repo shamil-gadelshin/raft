@@ -19,8 +19,8 @@ pub use configuration::cluster::ClusterConfiguration;
 pub use configuration::node::NodeConfiguration;
 pub use fsm::Fsm;
 pub use common::{LogEntry, DataEntryContent, EntryContent};
+pub use crate::communication::peers::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse};
 pub use crate::communication::peers::{PeerRequestHandler, PeerRequestChannels};
-pub use crate::communication::peers::{InProcPeerCommunicator};
 
 
 use std::thread::JoinHandle;
