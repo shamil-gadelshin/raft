@@ -23,6 +23,18 @@ pub struct ClientRpcResponse {
     pub current_leader : Option<u64>
 }
 
+pub trait ClientRequestHandler {
+    fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, Box<Error>>;
+    fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, Box<Error>>;
+}
+
+pub trait ClientRequestChannels {
+    fn add_server_request_rx(&self) -> Receiver<AddServerRequest>;
+    fn add_server_response_tx(&self) -> Sender<ClientRpcResponse>;
+    fn new_data_request_rx(&self) -> Receiver<NewDataRequest>;
+    fn new_data_response_tx(&self) -> Sender<ClientRpcResponse>;
+}
+
 #[derive(Clone, Debug)]
 pub struct NewDataRequest {
     pub data : Arc<&'static [u8]>
@@ -42,32 +54,35 @@ impl InProcClientCommunicator {
         }
     }
 
-    pub fn get_add_server_request_rx(&self) -> Receiver<AddServerRequest> {
-        self.add_server_duplex_channel.get_request_rx()
-    }
 
-    pub fn get_add_server_response_tx(&self) -> Sender<ClientRpcResponse> {
-        self.add_server_duplex_channel.get_response_tx()
-    }
-
-    pub fn get_new_data_request_rx(&self) -> Receiver<NewDataRequest> {
-        self.new_data_duplex_channel.get_request_rx()
-    }
-
-    pub fn get_new_data_response_tx(&self) -> Sender<ClientRpcResponse> {
-        self.new_data_duplex_channel.get_response_tx()
-    }
-
-    //TODO consider & change result error type
-    pub fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, Box<Error>> {
-        trace!("Add server request {:?}", request);
-        self.add_server_duplex_channel.send_request(request)
-     }
-
-    //TODO consider & change result error type
-    pub fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, Box<Error>> {
-        trace!("New data request {:?}", request);
-        self.new_data_duplex_channel.send_request(request)
-     }
 }
 
+impl ClientRequestChannels for InProcClientCommunicator {
+	fn add_server_request_rx(&self) -> Receiver<AddServerRequest> {
+		self.add_server_duplex_channel.get_request_rx()
+	}
+
+	fn add_server_response_tx(&self) -> Sender<ClientRpcResponse> {
+		self.add_server_duplex_channel.get_response_tx()
+	}
+
+	fn new_data_request_rx(&self) -> Receiver<NewDataRequest> {
+		self.new_data_duplex_channel.get_request_rx()
+	}
+
+	fn new_data_response_tx(&self) -> Sender<ClientRpcResponse> {
+		self.new_data_duplex_channel.get_response_tx()
+	}
+}
+
+impl ClientRequestHandler for InProcClientCommunicator{
+    fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, Box<Error>> {
+        trace!("Add server request {:?}", request);
+        self.add_server_duplex_channel.send_request(request)
+    }
+
+    fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, Box<Error>> {
+        trace!("New data request {:?}", request);
+        self.new_data_duplex_channel.send_request(request)
+    }
+}

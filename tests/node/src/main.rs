@@ -14,7 +14,7 @@ use chrono::prelude::{DateTime, Local};
 extern crate ruft;
 extern crate ruft_testkit;
 
-use ruft::{AddServerRequest, InProcClientCommunicator, ClientResponseStatus};
+use ruft::{AddServerRequest, InProcClientCommunicator, ClientResponseStatus, ClientRequestHandler};
 use ruft::{InProcPeerCommunicator};
 use ruft::ClusterConfiguration;
 use ruft::NodeConfiguration;
@@ -46,7 +46,7 @@ fn main() {
     let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all(), communication_timeout);
     communicator.add_node_communication(new_node_id);
 
-    let mut client_handlers : HashMap<u64, InProcClientCommunicator> = HashMap::new();
+    let mut client_handlers  = HashMap::new(); //: HashMap<u64, ClientRequestHandler>
     let mut node_threads = Vec::new();
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
