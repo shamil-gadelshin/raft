@@ -12,7 +12,7 @@ use std::thread;
 use chrono::prelude::{DateTime, Local};
 
 extern crate ruft;
-extern crate ruft_testkit;
+extern crate ruft_modules;
 
 use ruft::{AddServerRequest, InProcClientCommunicator, ClientResponseStatus, ClientRequestHandler};
 use ruft::{InProcPeerCommunicator};
@@ -20,8 +20,8 @@ use ruft::ClusterConfiguration;
 use ruft::NodeConfiguration;
 use ruft::NewDataRequest;
 
-use ruft_testkit::MemoryFsm;
-use ruft_testkit::MemoryLogStorage;
+use ruft_modules::MemoryFsm;
+use ruft_modules::MemoryLogStorage;
 
 fn init_logger() {
     env_logger::builder()

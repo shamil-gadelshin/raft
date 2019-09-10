@@ -1,9 +1,9 @@
 [package]
-name = "ruft-testkit"
+name = "ruft-modules"
 version = "0.1.0"
 authors = ["Shamil Gadelshin <shamilgadelshin@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-ruft = { package = "ruft", path = "../../"}
+ruft = { package = "ruft", path = "../"}
 log = "0.4"

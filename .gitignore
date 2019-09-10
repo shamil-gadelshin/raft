@@ -2,7 +2,7 @@
 **/*.rs.bk
 
 /tests/node/target
-/tests/ruft-testkit/target
+/ruft-modules/target
 
 .idea
 /.idea
