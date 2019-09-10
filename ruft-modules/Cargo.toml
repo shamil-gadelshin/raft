@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 ruft = { package = "ruft", path = "../"}
 log = "0.4"
+crossbeam-channel = "0.3"

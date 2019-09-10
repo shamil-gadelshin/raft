@@ -14,14 +14,16 @@ use chrono::prelude::{DateTime, Local};
 extern crate ruft;
 extern crate ruft_modules;
 
-use ruft::{AddServerRequest, InProcClientCommunicator, ClientResponseStatus, ClientRequestHandler};
+use ruft::{AddServerRequest, ClientResponseStatus, ClientRequestHandler};
 use ruft::{InProcPeerCommunicator};
+
 use ruft::ClusterConfiguration;
 use ruft::NodeConfiguration;
 use ruft::NewDataRequest;
 
 use ruft_modules::MemoryFsm;
 use ruft_modules::MemoryLogStorage;
+use ruft_modules::{InProcClientCommunicator};
 
 fn init_logger() {
     env_logger::builder()

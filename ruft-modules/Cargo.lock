@@ -180,6 +180,7 @@ dependencies = [
 name = "ruft-modules"
 version = "0.1.0"
 dependencies = [
+ "crossbeam-channel 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruft 0.1.0",
 ]

@@ -13,7 +13,7 @@ mod errors;
 mod node;
 
 
-pub use communication::client::{AddServerRequest,NewDataRequest, InProcClientCommunicator, ClientResponseStatus,ClientRequestHandler};
+pub use communication::client::{AddServerRequest,NewDataRequest, ClientRpcResponse, ClientResponseStatus,ClientRequestHandler, ClientRequestChannels};
 pub use communication::peers::InProcPeerCommunicator;
 pub use operation_log::{LogStorage};
 pub use configuration::cluster::ClusterConfiguration;
@@ -22,7 +22,6 @@ pub use fsm::Fsm;
 pub use common::{LogEntry, DataEntryContent, EntryContent};
 
 use std::thread::JoinHandle;
-use crate::communication::client::ClientRequestChannels;
 
 pub fn start_node<Log, FsmT, Cc : Sync + Send + 'static + Clone  +  ClientRequestChannels >(node_config : NodeConfiguration<Cc>, log_storage : Log, fsm : FsmT ) -> JoinHandle<()>
 where Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static{
