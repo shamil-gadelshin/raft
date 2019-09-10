@@ -4,23 +4,23 @@ use crossbeam_channel::{Receiver};
 
 
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
-use crate::communication::peers::{InProcPeerCommunicator, AppendEntriesRequest};
+use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::peer_notifier::notify_peers;
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
 
-pub struct SendHeartbeatAppendEntriesParams<Log, FsmT>
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-    pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+pub struct SendHeartbeatAppendEntriesParams<Log, FsmT, Pc>
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+    pub protected_node: Arc<Mutex<Node<Log, FsmT, Pc>>>,
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-    pub communicator : InProcPeerCommunicator,
+    pub communicator : Pc,
     pub leader_initial_heartbeat_rx : Receiver<bool>,
 }
 
 //TODO remove clone-values
 //TODO park-unpark the thread
-pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(params : SendHeartbeatAppendEntriesParams<Log, FsmT>)
+pub fn send_heartbeat_append_entries<Log, FsmT, Pc : PeerRequestHandler + Clone>(params : SendHeartbeatAppendEntriesParams<Log, FsmT, Pc>)
     where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
     loop {
         let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
@@ -36,9 +36,9 @@ pub fn send_heartbeat_append_entries<Log: Sync + Send + LogStorage, FsmT:  Sync 
     }
 }
 
-fn send_heartbeat<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm>(protected_node : Arc<Mutex<Node<Log, FsmT>>>,
+fn send_heartbeat<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm, Pc : PeerRequestHandler + Clone>(protected_node : Arc<Mutex<Node<Log, FsmT, Pc>>>,
                                                  cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                                                 communicator : &InProcPeerCommunicator) {
+                                                 communicator : &Pc) {
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     if let NodeStatus::Leader = node.status {

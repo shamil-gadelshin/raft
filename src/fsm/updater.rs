@@ -6,16 +6,17 @@ use crate::operation_log::LogStorage;
 use crate::fsm::{Fsm};
 use crate::common::LogEntry;
 use crate::state::Node;
+use crate::communication::peers::PeerRequestHandler;
 
-pub struct FsmUpdaterParams<Log, FsmT>
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-	pub protected_node : Arc<Mutex<Node<Log,FsmT>>>,
+pub struct FsmUpdaterParams<Log, FsmT,Pc>
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+	pub protected_node : Arc<Mutex<Node<Log,FsmT,Pc>>>,
 	pub commit_index_updated_rx : Receiver<u64>
 }
 
 
-pub fn update_fsm<Log, FsmT:  Sync + Send + Fsm>(params : FsmUpdaterParams<Log,FsmT>)
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static{
+pub fn update_fsm<Log, FsmT,Pc>(params : FsmUpdaterParams<Log,FsmT,Pc>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone{
 	loop {
 		let new_commit_index = params.commit_index_updated_rx.recv().expect("valid receive of commit index"); //fsm should be updated
 		let mut node = params.protected_node.lock().expect("node lock is not poisoned");

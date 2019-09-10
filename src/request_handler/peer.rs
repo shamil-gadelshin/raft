@@ -4,7 +4,7 @@ use crossbeam_channel::{Sender};
 
 use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::leadership::vote_request_processor::process_vote_request;
-use crate::communication::peers::{VoteRequest, InProcPeerCommunicator, AppendEntriesRequest};
+use crate::communication::peers::{VoteRequest, InProcPeerCommunicator, AppendEntriesRequest, PeerRequestHandler};
 use crate::state::{Node};
 use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
@@ -12,16 +12,16 @@ use crate::common::LeaderConfirmationEvent;
 use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
 
 
-pub struct PeerRequestHandlerParams<Log, FsmT>
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-	pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+pub struct PeerRequestHandlerParams<Log, FsmT,Pc>
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+	pub protected_node: Arc<Mutex<Node<Log, FsmT, Pc>>>,
 	pub peer_communicator: InProcPeerCommunicator,
 	pub leader_election_event_tx: Sender<LeaderElectionEvent>,
 	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>
 }
 
-pub fn process_peer_request<Log, FsmT>(params : PeerRequestHandlerParams<Log, FsmT>)
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+pub fn process_peer_request<Log, FsmT,Pc>(params : PeerRequestHandlerParams<Log, FsmT,Pc>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
 	let node_id = {params.protected_node.lock().expect("node lock is not poisoned").id};
 	let vote_request_rx = params.peer_communicator.get_vote_request_rx(node_id).clone();
 	let append_entries_request_rx = params.peer_communicator.get_append_entries_request_rx(node_id);
@@ -43,27 +43,33 @@ pub fn process_peer_request<Log, FsmT>(params : PeerRequestHandlerParams<Log, Fs
 	}
 }
 
-fn handle_vote_request<Log, FsmT>(node_id: u64, request : VoteRequest, params : &PeerRequestHandlerParams<Log, FsmT>)
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+fn handle_vote_request<Log, FsmT,Pc>(node_id: u64, request : VoteRequest, params : &PeerRequestHandlerParams<Log, FsmT,Pc>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
 	info!("Node {:?} Received  vote request {:?}", node_id, request);
 
 	let vote_response = process_vote_request(request,
 											 params.protected_node.clone(),
 											 params.leader_election_event_tx.clone()
 											 );
-	let resp_result = params.peer_communicator.send_vote_response(node_id, vote_response);
+	let resp_result = {
+		trace!("Node {} Sending response {:?}", node_id, vote_response);
+		let timeout = Duration::from_secs(1);
+		params.peer_communicator.get_vote_response_tx(node_id).send_timeout(vote_response, timeout)
+	};
+	//let resp_result = params.peer_communicator.send_vote_response(node_id, vote_response);
 	info!("Node {:?} voted {:?}", node_id, resp_result);
 }
 
 
-pub fn handle_append_entries_request<Log, FsmT>(node_id : u64, request : AppendEntriesRequest, params : &PeerRequestHandlerParams<Log, FsmT>)
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+pub fn handle_append_entries_request<Log, FsmT, Pc>(node_id : u64, request : AppendEntriesRequest, params : &PeerRequestHandlerParams<Log, FsmT, Pc>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
 	let append_entries_response_tx = params.peer_communicator.get_append_entries_response_tx(node_id);
 	trace!("Node {:?} Received 'Append Entries Request' {:?}", node_id, request);
 
 	let append_entry_response = process_append_entries_request(request, params.protected_node.clone(),
 	params.leader_election_event_tx.clone(), params.reset_leadership_watchdog_tx.clone());
 
+	//TODO outer communication timeouts
 	let send_result = append_entries_response_tx.send_timeout(append_entry_response, Duration::from_secs(1));
 	trace!("Node {:?} AppendEntriesResponse: {:?}", node_id, send_result);
 }

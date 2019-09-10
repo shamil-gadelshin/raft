@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender};
 
 use crate::configuration::cluster::ClusterConfiguration;
-use crate::communication::peers::{InProcPeerCommunicator, AppendEntriesRequest};
+use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::{LogEntry,EntryContent};
 use crate::common::peer_notifier::notify_peers;
 use crate::fsm::{Fsm};
@@ -17,7 +17,7 @@ use crate::errors;
 //TODO persist state
 //TODO decompose GOD object
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
-pub struct Node<Log: LogStorage + Sized + Sync, FsmT: Fsm + Sized + Sync> {
+pub struct Node<Log: LogStorage + Sized + Sync, FsmT: Fsm + Sized + Sync, Pc : PeerRequestHandler + Clone> {
     pub id : u64, //TODO pass node_id as copy to decrease mutex lock count
     current_term: u64,
     pub current_leader_id: Option<u64>,
@@ -28,7 +28,7 @@ pub struct Node<Log: LogStorage + Sized + Sync, FsmT: Fsm + Sized + Sync> {
     commit_index: u64,
     pub log : Log,
     pub fsm : FsmT,
-    communicator : InProcPeerCommunicator,
+    communicator : Pc,
     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     replicate_log_to_peer_tx: Sender<u64> ,//TODO split god object
     commit_index_updated_tx : Sender<u64>,
@@ -49,18 +49,19 @@ pub enum AppendEntriesRequestType {
     UpdateNode(u64)
 }
 
-impl <Log, FsmT> Node<Log, FsmT>
+impl <Log, FsmT,Pc> Node<Log, FsmT,Pc>
 where Log: Sized + Sync + LogStorage,
-      FsmT: Fsm + Sync + Sized{
+      FsmT: Fsm + Sync + Sized,
+      Pc : PeerRequestHandler + Clone{
     pub fn new(id : u64,
 			   voted_for_id: Option<u64>,
 			   status : NodeStatus,
 			   log : Log,
 			   fsm : FsmT,
-			   communicator : InProcPeerCommunicator,
+			   communicator : Pc,
 			   cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                replicate_log_to_peer_tx: Sender<u64>,
-               commit_index_updated_tx : Sender<u64>) ->  Node<Log, FsmT> {
+               commit_index_updated_tx : Sender<u64>) ->  Node<Log, FsmT, Pc> {
         Node {
             id,
             current_term : 0,

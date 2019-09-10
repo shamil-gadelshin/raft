@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use crossbeam_channel::{Sender, Receiver, SendTimeoutError};
+use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LogEntry};
 use crate::communication::duplex_channel::DuplexChannel;
@@ -59,6 +59,10 @@ pub struct InProcPeerCommunicator {
     append_entries_channels: HashMap<u64,DuplexChannel<AppendEntriesRequest, AppendEntriesResponse>>,
 }
 
+pub trait PeerRequestHandler {
+    fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, Box<Error>>;
+    fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>;
+}
 
 impl InProcPeerCommunicator {
     pub fn new(nodes : Vec<u64>, timeout : Duration) -> InProcPeerCommunicator {
@@ -90,8 +94,12 @@ impl InProcPeerCommunicator {
         self.votes_channels[&node_id].get_request_rx()
     }
 
-    pub fn get_vote_response_rx(&self, node_id : u64) -> Receiver<VoteResponse> {
-        self.votes_channels[&node_id].get_response_rx()
+//    pub fn get_vote_response_rx(&self, node_id : u64) -> Receiver<VoteResponse> {
+//        self.votes_channels[&node_id].get_response_rx()
+//    }
+
+    pub fn get_vote_response_tx(&self, node_id : u64) -> Sender<VoteResponse> {
+        self.votes_channels[&node_id].get_response_tx()
     }
 
     pub fn get_append_entries_request_rx(&self, node_id : u64) -> Receiver<AppendEntriesRequest> {
@@ -100,18 +108,15 @@ impl InProcPeerCommunicator {
     pub fn get_append_entries_response_tx(&self, node_id : u64) -> Sender<AppendEntriesResponse> {
         self.append_entries_channels[&node_id].get_response_tx()
     }
+}
 
-    pub fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, Box<Error>>  {
+impl PeerRequestHandler for InProcPeerCommunicator {
+    fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, Box<Error>>  {
         trace!("Destination Node {} Sending request {:?}",destination_node_id, request);
         self.votes_channels[&destination_node_id].send_request(request)
     }
-    pub fn send_vote_response(&self, from_node_id: u64, response: VoteResponse) -> Result<(), SendTimeoutError<VoteResponse>>{
-        trace!("Node {} Sending response {:?}", from_node_id, response);
-        self.votes_channels[&from_node_id].response_tx.send_timeout(response, self.timeout)
-    }
-    pub fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
+    fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
         trace!("Destination Node {} Sending request {:?}",destination_node_id, request);
         self.append_entries_channels[&destination_node_id].send_request(request)
     }
 }
-

@@ -9,18 +9,19 @@ use crate::state::{Node, NodeStatus};
 use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::LogStorage;
 use crate::fsm::Fsm;
+use crate::communication::peers::PeerRequestHandler;
 
 
-pub struct WatchLeaderStatusParams<Log, FsmT>
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-    pub protected_node: Arc<Mutex<Node<Log, FsmT>>>,
+pub struct WatchLeaderStatusParams<Log, FsmT, Pc>
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+    pub protected_node: Arc<Mutex<Node<Log, FsmT, Pc>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub watchdog_event_rx : Receiver<LeaderConfirmationEvent>,
 }
 
 
-pub fn watch_leader_status<Log, FsmT>(params : WatchLeaderStatusParams<Log, FsmT>)
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static{
+pub fn watch_leader_status<Log, FsmT, Pc>(params : WatchLeaderStatusParams<Log, FsmT, Pc>)
+    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone{
     loop {
         let timeout = crossbeam_channel::after(random_awaiting_leader_duration_ms());
         select!(

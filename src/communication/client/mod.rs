@@ -21,8 +21,8 @@ pub struct ClientRpcResponse {
 }
 
 pub trait ClientRequestHandler {
-    fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, Box<Error>>;
-    fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, Box<Error>>;
+    fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, Box<dyn Error>>;
+    fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, Box<dyn Error>>;
 }
 
 pub trait ClientRequestChannels {

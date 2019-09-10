@@ -4,21 +4,21 @@ use crossbeam_channel::{Receiver, Sender};
 
 use crate::operation_log::LogStorage;
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
-use crate::communication::peers::InProcPeerCommunicator;
+use crate::communication::peers::{PeerRequestHandler};
 use crate::fsm::Fsm;
 
 
-pub struct LogReplicatorParams<Log, FsmT>
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
-	pub protected_node : Arc<Mutex<Node<Log, FsmT>>>,
+pub struct LogReplicatorParams<Log, FsmT, Pc>
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+	pub protected_node : Arc<Mutex<Node<Log, FsmT,Pc>>>,
 	pub replicate_log_to_peer_rx: Receiver<u64>,
 	pub replicate_log_to_peer_tx: Sender<u64>,
-	pub communicator : InProcPeerCommunicator
+	pub communicator : Pc
 }
 
 
-pub fn replicate_log_to_peer<Log, FsmT>(params : LogReplicatorParams<Log, FsmT>)
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+pub fn replicate_log_to_peer<Log, FsmT, Pc>(params : LogReplicatorParams<Log, FsmT, Pc>)
+	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
 	loop {
 		let peer_id = params.replicate_log_to_peer_rx.recv()
 			.expect("can receive peer_id from replicate_log_to_peer_rx");

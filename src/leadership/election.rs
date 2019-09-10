@@ -1,11 +1,11 @@
 use crossbeam_channel::{Sender};
 
 use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
-use crate::communication::peers::{VoteRequest, InProcPeerCommunicator};
+use crate::communication::peers::{VoteRequest, PeerRequestHandler};
 use crate::common::peer_notifier::notify_peers;
 
 
-pub struct StartElectionParams {
+pub struct StartElectionParams<Pc : PeerRequestHandler> {
 	pub node_id: u64,
 	pub actual_current_term: u64,
 	pub next_term: u64,
@@ -14,13 +14,13 @@ pub struct StartElectionParams {
 	pub leader_election_event_tx: Sender<LeaderElectionEvent>,
 	pub peers: Vec<u64>,
 	pub quorum_size: u32,
-	pub peer_communicator: InProcPeerCommunicator
+	pub peer_communicator: Pc
 }
 
 
 //TODO refactor to DuplexChannel.send_request. Watch out for election timeout
 //TODO refactor to generic peer_notifier
-pub fn start_election(params : StartElectionParams) {
+pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionParams<Pc>) {
 	let vote_request = VoteRequest {
 		candidate_id: params.node_id,
 		term: params.next_term,
