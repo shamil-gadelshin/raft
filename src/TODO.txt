@@ -26,11 +26,7 @@ Details:
     .generic
     .libp2p
 - communication
-    .client_requests support
-        .server api
-        .separate client_requests
     .libp2p
-    .tarpc
     .grpc
     .change client and node response patterns (after committing to the operation_log)
 - system events logging
@@ -42,7 +38,6 @@ Details:
     .separate client?
     .exe-project
         .remove node_id from log
-    .raft vs infrastructure module(code) separation
 - code style
     .clear #[allow(dead_code)]
     .investigate & remove use crate::
@@ -99,7 +94,6 @@ Future Features:
         .load on start
 
 
-
 Done:
 - investigate
     .'static in the 'Log : LogStorage + Sync + Send+ 'static'
@@ -112,6 +106,9 @@ Done:
 - communication
     .channel communication
     .tarpc (won't do)
+    .client_requests support
+        .server api
+        .separate client_requests
 - modules create
 - cluster_membership changes
     .add server
@@ -131,4 +128,5 @@ Done:
     .exe-project
     .dev-dependencies
         .env-logger
+    .raft vs infrastructure module(code) separation
 
