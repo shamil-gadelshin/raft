@@ -1,27 +1,22 @@
-use crate::communication::duplex_channel::DuplexChannel;
-use ruft::{ ClientRequestHandler};
-use ruft::{ ClientRequestChannels};
-use std::time::Duration;
-use crossbeam_channel::{Receiver, Sender};
-use std::error::Error;
-use crate::errors;
-
-use futures::sync::mpsc;
-use futures::{future, stream, Future, Sink, Stream};
-use log::error;
-use std::hash::{Hash, Hasher};
-use std::time::Instant;
-use tokio::net::TcpListener;
-use tower_grpc::{Request, Response, Streaming};
-use tower_hyper::server::{Http, Server};
-
-
-use crate::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
-use crate::communication::comm_client::{new_data_request};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::thread;
+use std::time::Duration;
+use std::error::Error;
 
+use crossbeam_channel::{Receiver, Sender};
+use futures::{future, Future, Stream};
+use log::error;
+use tokio::net::TcpListener;
+use tower_grpc::{Request, Response};
+use tower_hyper::server::{Http, Server};
+
+use ruft::{ ClientRequestHandler};
+use ruft::{ ClientRequestChannels};
+
+use crate::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
+use super::client_requests::{new_data_request};
+use super::duplex_channel::DuplexChannel;
 
 #[derive(Clone)]
 pub struct NetworkClientCommunicator {
@@ -46,35 +41,8 @@ impl NetworkClientCommunicator {
 		comm
 	}
 
-	fn old_new_data(&self, request: ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
-		trace!("New data request {:?}", request);
-
-		let send_result = self.new_data_duplex_channel.request_tx.send_timeout(request, self.timeout);
-		if let Err(err) = send_result {
-			return
-				errors::new_err( format!("Cannot send request. Channel : {} ", "new_data"),  Some(Box::new(err)))
-
-		}
-
-		let receive_result = self.new_data_duplex_channel.response_rx.recv_timeout(self.timeout);
-		if let Err(err) = receive_result {
-			return errors::new_err(format!("Cannot receive response. Channel : {}", "new_data"), Some(Box::new(err)))
-		}
-		if let Ok(resp) = receive_result {
-			let response = resp;
-
-			return Ok(response);
-		}
-
-		unreachable!("invalid request-response sequence");
-	}
-
-
-//	pub fn run_server(handler: &NetworkClientCommunicator)
 	pub fn run_server(&self)
 	{
-//	let _ = ::env_logger::init();
-
 		let new_service = server::ClientRequestHandlerServer::new(self.clone());
 
 		let mut server = Server::new(new_service);
@@ -159,9 +127,8 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 
 	fn new_data(&mut self, request: Request<NewDataRequest>) -> Self::NewDataFuture {
 		trace!("New data request {:?}", request);
-		let mut vec = request.into_inner().data;
-
-		let mut data = vec.into_boxed_slice();
+		let inner_vec = request.into_inner().data;
+		let data = inner_vec.into_boxed_slice();
 		let ruft_req = ruft::NewDataRequest{data: Arc::new(Box::leak(data))};
 		let send_result = self.new_data_duplex_channel.request_tx.send_timeout(ruft_req, self.timeout);
 		if let Err(err) = send_result {

@@ -24,11 +24,10 @@ use ruft_modules::MemoryFsm;
 use ruft_modules::MemoryLogStorage;
 use ruft_modules::{InProcClientCommunicator};
 use ruft_modules::{InProcPeerCommunicator};
-use crate::communication::network_client_communicator::NetworkClientCommunicator;
+use crate::network::client_communicator::network_client_communicator::NetworkClientCommunicator;
 
 mod network;
 mod errors;
-mod communication;
 
 
 fn init_logger() {
@@ -76,16 +75,16 @@ fn main() {
         let leader_id = find_a_leader(client_handlers.clone());
     println!("Leader: {}", leader_id);
 
-//    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
-//    let thread_handle = run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
-//                                                         client_handlers.clone(),
-//                                                         new_node_id);
-//
-//    node_threads.push(thread_handle);
-//
-//
-//    let leader_id = find_a_leader(client_handlers.clone());
-//    add_thousands_of_data(client_handlers.clone(), leader_id);
+    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
+    let thread_handle = run_add_server_thread_with_delay(communicator.clone(), protected_cluster_config,
+                                                         client_handlers.clone(),
+                                                         new_node_id);
+
+    node_threads.push(thread_handle);
+
+
+    let leader_id = find_a_leader(client_handlers.clone());
+    add_thousands_of_data(client_handlers.clone(), leader_id);
 
 
     for node_thread in node_threads {
@@ -115,7 +114,7 @@ fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) 
 }
 
 
-fn add_thousands_of_data(client_handlers : HashMap<u64, InProcClientCommunicator>, leader_id : u64)
+fn add_thousands_of_data<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>, leader_id : u64)
 {
     thread::sleep(Duration::from_secs(7));
 
@@ -126,9 +125,9 @@ fn add_thousands_of_data(client_handlers : HashMap<u64, InProcClientCommunicator
     }
 }
 
-fn run_add_server_thread_with_delay(communicator : InProcPeerCommunicator,
+fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communicator : InProcPeerCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
-                                    client_handlers : HashMap<u64, InProcClientCommunicator>,
+                                    client_handlers : HashMap<u64, Cc>,
                                     new_node_id : u64) -> JoinHandle<()>{
 //return;
 

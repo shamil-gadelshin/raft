@@ -1,24 +1,13 @@
 use hyper::client::connect::{Destination, HttpConnector};
-use tower_hyper::{client, util, Connection};
+use tower_hyper::{client, util};
 use tower_util::MakeService;
-use futures::sync::mpsc;
-use futures::{future, stream, Future, Sink, Stream};
-use log::error;
-use std::hash::{Hash, Hasher};
-use std::time::Instant;
-use tokio::net::TcpListener;
-use tower_grpc::{Request, Response, Streaming, BoxBody, Status};
-use tower_hyper::server::{Http, Server};
-use tower_request_modifier::RequestModifier;
-use crate::network::client_communicator::grpc::generated::gprc_client_communicator::{ClientRpcResponse, AddServerRequest, NewDataRequest};
+use futures::{Future};
+use tower_grpc::{Request};
+
+use crate::network::client_communicator::grpc::generated::gprc_client_communicator::{AddServerRequest, NewDataRequest};
 use crate::network::client_communicator::grpc::generated::gprc_client_communicator::client::ClientRequestHandler;
-use tower_hyper::util::Connector;
-use hyper::client::connect::dns::GaiResolver;
-use tower_hyper::client::ConnectFuture;
-use http::Uri;
-use std::error::Error;
+
 use ruft::ClientResponseStatus;
-use tokio::sync::oneshot;
 
 
 pub fn add_server_request() {
@@ -97,7 +86,7 @@ pub fn new_data_request(node_id: u64, request : ruft::NewDataRequest) -> ruft::C
 			println!("RESPONSE = {:?}", response);
 
 			let resp = ruft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
-			tx.send(resp);
+			tx.send(resp).expect("can send response");
 			Ok(())
 		})
 		.map_err(|e| {
@@ -107,7 +96,7 @@ pub fn new_data_request(node_id: u64, request : ruft::NewDataRequest) -> ruft::C
 
 	tokio::run(response);
 
-	rx.recv().expect("receive result")//.expect("valid response")
+	rx.recv().expect("receive result")
 }
 
 fn get_uri(node_id: u64) -> http::Uri{
