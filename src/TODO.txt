@@ -9,11 +9,7 @@ Main algorithm:
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
     .append_entries: process equal terms
-- cluster membership changes
-    .remove server(shutdown self)
-- client RPC
-    .sessions - for duplicate request handling
-    .read query
+
 Details:
 - stability
     .crossbeam recv, send - parse result
@@ -22,9 +18,9 @@ Details:
     .project timeouts
     .investigate channels faults
 - investigate
+   .Arc<dyn Log> to get rid of &static + Send ...
    .futures
    .election trait?
-   .extract communicator trait
    .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - identity
     .generic
@@ -43,13 +39,10 @@ Details:
 - error handling
     .communication timeouts
 - project structure
-    .library crate
     .separate client?
     .exe-project
         .remove node_id from log
     .raft vs infrastructure module(code) separation
-    .dev-dependencies
-        .env-logger
 - code style
     .clear #[allow(dead_code)]
     .investigate & remove use crate::
@@ -79,6 +72,7 @@ Details:
     .readme.md
     .documentation
         .add the top of the main file: #![warn(missing_docs, unsafe_code)]
+        .comment .proto
     .license
     .Rust API Guidelines
 - optimization
@@ -91,9 +85,15 @@ Details:
 
 Future Features:
 - transfer leadership
+- cluster membership changes
+    .remove server
+        .shutdown self
 - log compaction
     .file snapshot
         .load on start
+- client RPC
+    .sessions - for duplicate request handling
+    .read query
 - fsm
     .persistent
         .load on start
@@ -104,10 +104,14 @@ Done:
 - investigate
     .'static in the 'Log : LogStorage + Sync + Send+ 'static'
     .worker thread structure: all peer-request thread, client-thread?
+   .extract communicator trait
 - fsm support
 - leader election
     .check log on votes
-- channel communication
+
+- communication
+    .channel communication
+    .tarpc (won't do)
 - modules create
 - cluster_membership changes
     .add server
@@ -122,4 +126,8 @@ Done:
     .not commit entry if quorum fails (clear entry?)
 - error handling
     .error style
-
+- project structure
+    .library crate
+    .exe-project
+    .dev-dependencies
+        .env-logger
