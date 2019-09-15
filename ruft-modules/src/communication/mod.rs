@@ -1,3 +1,2 @@
 mod duplex_channel;
-pub mod inproc_client_communicator;
-pub mod inproc_peer_communicator;
+pub mod inproc;
