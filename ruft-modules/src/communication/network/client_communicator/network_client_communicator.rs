@@ -5,11 +5,8 @@ use std::time::Duration;
 use std::error::Error;
 
 use crossbeam_channel::{Receiver, Sender};
-use futures::{future, Future, Stream};
-use log::error;
-use tokio::net::TcpListener;
+use futures::{future};
 use tower_grpc::{Request, Response};
-use tower_hyper::server::{Http, Server};
 
 use ruft::{ ClientRequestHandler};
 use ruft::{ ClientRequestChannels};
@@ -18,6 +15,7 @@ use crate::communication::network::client_communicator::grpc::generated::gprc_cl
 use super::client_requests::{new_data_request};
 use super::server::run_server;
 use crate::communication::duplex_channel::DuplexChannel;
+use crate::communication::network::client_communicator::client_requests::add_server_request;
 
 #[derive(Clone)]
 pub struct NetworkClientCommunicator {
@@ -71,18 +69,16 @@ impl ClientRequestChannels for NetworkClientCommunicator {
 
 impl ClientRequestHandler for NetworkClientCommunicator{
 	fn add_server(&self, request: ruft::AddServerRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
-		unreachable!();
 		trace!("Add server request {:?}", request);
-		self.add_server_duplex_channel.send_request(request)
+
+		add_server_request(self.host.clone(), self.timeout, request)
 	}
 
 
 	fn new_data(&self, request: ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
 		trace!("New data request {:?}", request);
 
-		let resp = new_data_request(self.host.clone(), request);
-
-		Ok(resp)
+		new_data_request(self.host.clone(),self.timeout, request)
 	}
 }
 
@@ -92,31 +88,16 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 	type NewDataFuture = future::FutureResult<Response<ClientRpcResponse>, tower_grpc::Status>;
 
 	fn add_server(&mut self, request: Request<AddServerRequest>) -> Self::AddServerFuture {
-		let response = Response::new(ClientRpcResponse {
-			current_leader : 12,
-			status : 2
-		});
-
-		future::ok(response)
-	}
-
-	fn new_data(&mut self, request: Request<NewDataRequest>) -> Self::NewDataFuture {
-		trace!("New data request {:?}", request);
-		let inner_vec = request.into_inner().data;
-		let data = inner_vec.into_boxed_slice();
-		let ruft_req = ruft::NewDataRequest{data: Arc::new(Box::leak(data))};
-		let send_result = self.new_data_duplex_channel.request_tx.send_timeout(ruft_req, self.timeout);
+		trace!("Add server request {:?}", request);
+		let ruft_req = ruft::AddServerRequest{new_server: request.into_inner().new_server};
+		let send_result = self.add_server_duplex_channel.request_tx.send_timeout(ruft_req, self.timeout);
 		if let Err(err) = send_result {
-			return
-			//	future::err(errors::new_err( format!("Cannot send request. Channel : {} ", "new_data"),  Some(Box::new(err))))
-				future::err(tower_grpc::Status::new(tower_grpc::Code::Unknown, format!(" error:{}",err)))
-
+			return future::err(tower_grpc::Status::new(tower_grpc::Code::Unknown, format!(" error:{}",err)))
 		}
 
-		let receive_result = self.new_data_duplex_channel.response_rx.recv_timeout(self.timeout);
+		let receive_result = self.add_server_duplex_channel.response_rx.recv_timeout(self.timeout);
 		if let Err(err) = receive_result {
 			return future::err(tower_grpc::Status::new(tower_grpc::Code::Unknown, format!(" error:{}",err)))
-	//		return future::err(errors::new_err(format!("Cannot receive response. Channel : {}", "new_data"), Some(Box::new(err))))
 		}
 
 		if let Ok(resp) = receive_result {
@@ -128,7 +109,35 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 			return future::ok(response);
 		}
 
-		unreachable!("unreach");
+		unreachable!("invalid receive-response sequence");
+
+	}
+
+	fn new_data(&mut self, request: Request<NewDataRequest>) -> Self::NewDataFuture {
+		trace!("New data request {:?}", request);
+		let inner_vec = request.into_inner().data;
+		let data = inner_vec.into_boxed_slice();
+		let ruft_req = ruft::NewDataRequest{data: Arc::new(Box::leak(data))};
+		let send_result = self.new_data_duplex_channel.request_tx.send_timeout(ruft_req, self.timeout);
+		if let Err(err) = send_result {
+			return future::err(tower_grpc::Status::new(tower_grpc::Code::Unknown, format!(" error:{}",err)))
+		}
+
+		let receive_result = self.new_data_duplex_channel.response_rx.recv_timeout(self.timeout);
+		if let Err(err) = receive_result {
+			return future::err(tower_grpc::Status::new(tower_grpc::Code::Unknown, format!(" error:{}",err)))
+		}
+
+		if let Ok(resp) = receive_result {
+			let response = Response::new(ClientRpcResponse {
+				current_leader: resp.current_leader.unwrap(),
+				status: 1
+			});
+
+			return future::ok(response);
+		}
+
+		unreachable!("invalid receive-response sequence");
 	}
 }
 

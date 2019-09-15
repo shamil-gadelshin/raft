@@ -7,16 +7,22 @@ use tower_grpc::{Request};
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{AddServerRequest, NewDataRequest};
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::client::ClientRequestHandler;
 
-use ruft::ClientResponseStatus;
+use ruft::{ClientResponseStatus};
+use std::error::Error;
+use std::time::Duration;
+use crate::errors::new_err;
 
 
-pub fn add_server_request(host : String) {
+pub fn add_server_request(host : String, _timeout: Duration, request : ruft::AddServerRequest) -> Result<ruft::ClientRpcResponse, Box<Error>>{
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
 	let connector = util::Connector::new(HttpConnector::new(4));
 	let settings = client::Builder::new().http2_only(true).clone();
 	let mut make_client = client::Connect::with_builder(connector, settings);
+	let (tx, rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
+	let (err_tx, err_rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
+
 	let client_service = make_client
 		.make_service(dst)
 		.map_err(|e| {
@@ -32,34 +38,45 @@ pub fn add_server_request(host : String) {
 			ClientRequestHandler::new(conn).ready()
 		});
 	let request = client_service
-		.and_then(|mut client|
+		.and_then(move |mut client|
 			{
 			client.add_server(Request::new(AddServerRequest {
-				new_server: 25
+				new_server: request.new_server
 			}))
 		});
 	let response = request
-		.and_then(|response| {
-			println!("RESPONSE = {:?}", response);
+		.and_then(move |response| {
+			trace!("NewData RESPONSE = {:?}", response);
+
+			let resp = ruft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
+			tx.send(resp).expect("can send response");
 			Ok(())
 		})
-		.map_err(|e| {
-			println!("ERR = {:?}", e);
+		.map_err(move |e| {
+			error!("NewData request failed = {:?}", e);
+			err_tx.send(format!("Communication error:{}", e)).expect("can send error");
 		});
 
 	tokio::run(response);
+
+
+	crossbeam_channel::select!(
+            recv(rx) -> resp  => {return Ok(resp.expect("valid response"))},
+            recv(err_rx) -> err => {return new_err(err.expect("valid error"), None)},
+    );
+
 }
 
-pub fn new_data_request(host: String, request : ruft::NewDataRequest) -> ruft::ClientRpcResponse {
+pub fn new_data_request(host: String, _timeout: Duration, request : ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
 	let uri = get_uri(host);
-	println!("uri: {}", uri);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
 	let connector = util::Connector::new(HttpConnector::new(4));
 	let settings = client::Builder::new().http2_only(true).clone();
 	let mut make_client = client::Connect::with_builder(connector, settings);
 
-	let (tx, rx) = crossbeam_channel::unbounded();
+	let (tx, rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
+	let (err_tx, err_rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
 	let client_service = make_client
 		.make_service(dst)
 		.map_err(|e| {
@@ -83,20 +100,24 @@ pub fn new_data_request(host: String, request : ruft::NewDataRequest) -> ruft::C
 		});
 	let response = request
 		.and_then(move |response| {
-			println!("RESPONSE = {:?}", response);
+			trace!("NewData RESPONSE = {:?}", response);
 
 			let resp = ruft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
 			tx.send(resp).expect("can send response");
 			Ok(())
 		})
-		.map_err(|e| {
-			println!("ERR = {:?}", e);
-	//		tx.send(Err(Box::new(e)));
+		.map_err(move |e| {
+			error!("NewData request failed = {:?}", e);
+			err_tx.send(format!("Communication error:{}", e)).expect("can send error");
 		});
 
 	tokio::run(response);
 
-	rx.recv().expect("receive result")
+
+	crossbeam_channel::select!(
+            recv(rx) -> resp  => {return Ok(resp.expect("valid response"))},
+            recv(err_rx) -> err => {return new_err(err.expect("valid error"), None)},
+    );
 }
 
 fn get_uri(host: String) -> http::Uri{
