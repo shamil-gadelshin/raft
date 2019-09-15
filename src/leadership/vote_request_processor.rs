@@ -33,4 +33,3 @@ pub fn process_vote_request<Log, FsmT,Pc>(request: VoteRequest,protected_node : 
 
     VoteResponse { vote_granted, peer_id: node.id, term: response_current_term }
 }
-

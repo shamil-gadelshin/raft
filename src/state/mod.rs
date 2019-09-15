@@ -175,7 +175,7 @@ where Log: Sized + Sync + LogStorage,
             if new_entry_index > 1{
                 let prev_entry_index = new_entry_index - 1;
                 let prev_entry = self.log.get_entry(prev_entry_index)
-                    .expect(format!("entry exist, index =  {:?}", prev_entry_index).as_str());
+                    .unwrap_or_else(|| panic!("entry exist, index =  {:?}", prev_entry_index));
 
                 prev_log_term  = prev_entry.term;
                 prev_log_index=  prev_entry.index;

@@ -42,6 +42,6 @@ impl ClusterConfiguration {
     }
 
     pub fn get_all(&self)-> Vec<u64> {
-        self.nodes_id_map.keys().map(|key| *key).collect() //key vector
+        self.nodes_id_map.keys().cloned().collect()
     }
 }
