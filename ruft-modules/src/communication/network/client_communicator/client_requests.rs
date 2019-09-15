@@ -10,8 +10,8 @@ use crate::communication::network::client_communicator::grpc::generated::gprc_cl
 use ruft::ClientResponseStatus;
 
 
-pub fn add_server_request() {
-	let uri = get_uri(1);
+pub fn add_server_request(host : String) {
+	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
 	let connector = util::Connector::new(HttpConnector::new(4));
@@ -50,8 +50,8 @@ pub fn add_server_request() {
 	tokio::run(response);
 }
 
-pub fn new_data_request(node_id: u64, request : ruft::NewDataRequest) -> ruft::ClientRpcResponse {
-	let uri = get_uri(node_id);
+pub fn new_data_request(host: String, request : ruft::NewDataRequest) -> ruft::ClientRpcResponse {
+	let uri = get_uri(host);
 	println!("uri: {}", uri);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -99,8 +99,8 @@ pub fn new_data_request(node_id: u64, request : ruft::NewDataRequest) -> ruft::C
 	rx.recv().expect("receive result")
 }
 
-fn get_uri(node_id: u64) -> http::Uri{
-	format!("http://127.0.0.1:{}", 50000 + node_id).parse().unwrap()
+fn get_uri(host: String) -> http::Uri{
+	format!("http://{}", host).parse().unwrap()
 }
 
 

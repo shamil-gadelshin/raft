@@ -16,63 +16,38 @@ use ruft::{ ClientRequestChannels};
 
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
 use super::client_requests::{new_data_request};
-use super::duplex_channel::DuplexChannel;
+use super::server::run_server;
+use crate::communication::duplex_channel::DuplexChannel;
 
 #[derive(Clone)]
 pub struct NetworkClientCommunicator {
 	node_id : u64,
 	timeout: Duration,
+	host: String,
 	add_server_duplex_channel: DuplexChannel<ruft::AddServerRequest, ruft::ClientRpcResponse>,
 	new_data_duplex_channel: DuplexChannel<ruft::NewDataRequest, ruft::ClientRpcResponse>
 }
 
 impl NetworkClientCommunicator {
-	pub fn new(node_id : u64, timeout : Duration) -> NetworkClientCommunicator {
+	pub fn new(host : String, node_id : u64, timeout : Duration) -> NetworkClientCommunicator {
 		let comm = NetworkClientCommunicator {
 			node_id,
 			timeout,
+			host,
 			add_server_duplex_channel: DuplexChannel::new(format!("AddServer channel NodeId={}", node_id), timeout),
 			new_data_duplex_channel: DuplexChannel::new(format!("NewData channel NodeId={}", node_id), timeout)
 		};
 
 		let comm_clone = comm.clone();
-		thread::spawn(move ||comm_clone.run_server());
+		let listen_address = comm_clone.get_address();
+		thread::spawn(move ||run_server(listen_address, comm_clone));
 
 		comm
 	}
 
-	pub fn run_server(&self)
-	{
-		let new_service = server::ClientRequestHandlerServer::new(self.clone());
-
-		let mut server = Server::new(new_service);
-		let http = Http::new().http2_only(true).clone();
-
-		let addr = self.get_address();
-		let bind = TcpListener::bind(&addr).expect("bind");
-
-		println!("listening on {:?}", addr);
-
-		let serve = bind
-			.incoming()
-			.for_each(move |sock| {
-				if let Err(e) = sock.set_nodelay(true) {
-					return Err(e);
-				}
-
-				let serve = server.serve_with(sock, http.clone());
-				tokio::spawn(serve.map_err(|e| error!("h2 error: {:?}", e)));
-
-				Ok(())
-			})
-			.map_err(|e| eprintln!("accept error: {}", e));
-
-		tokio::run(serve);
-
-	}
 
 	pub fn get_address(&self) -> SocketAddr{
-		format!("127.0.0.1:{}", 50000 + self.node_id).parse().unwrap()
+		self.host.parse().unwrap()
 	}
 }
 
@@ -105,7 +80,7 @@ impl ClientRequestHandler for NetworkClientCommunicator{
 	fn new_data(&self, request: ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
 		trace!("New data request {:?}", request);
 
-		let resp = new_data_request(self.node_id, request);
+		let resp = new_data_request(self.host.clone(), request);
 
 		Ok(resp)
 	}

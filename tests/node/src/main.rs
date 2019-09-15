@@ -55,7 +55,7 @@ fn main() {
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
-        let client_request_handler = NetworkClientCommunicator::new(node_id, communication_timeout);
+        let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout);
         let config = NodeConfiguration {
             node_id,
             cluster_configuration: protected_cluster_config.clone(),
@@ -93,6 +93,10 @@ fn main() {
     }
 }
 
+
+pub fn get_address(node_id : u64) -> String{
+    format!("127.0.0.1:{}", 50000 + node_id)
+}
 
 fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) -> u64{
     let bytes = "find a leader".as_bytes();
