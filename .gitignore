@@ -2,7 +2,7 @@
 **/*.rs.bk
 
 /tests/node/target
-/ruft-modules/target
+/raft-modules/target
 
 .idea
 /.idea

@@ -1,8 +1,8 @@
 use std::sync::{Mutex, Arc};
 use std::error::Error;
 
-use ruft::ClusterConfiguration;
-use ruft::{LogEntry, DataEntryContent, EntryContent, Fsm};
+use raft::ClusterConfiguration;
+use raft::{LogEntry, DataEntryContent, EntryContent, Fsm};
 
 #[derive(Debug, Clone)]
 pub struct MemoryFsm {

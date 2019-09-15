@@ -1,5 +1,5 @@
-use ruft::{LogEntry, EntryContent};
-use ruft::LogStorage;
+use raft::{LogEntry, EntryContent};
+use raft::LogStorage;
 use std::error::Error;
 
 #[derive(Clone, Debug)]

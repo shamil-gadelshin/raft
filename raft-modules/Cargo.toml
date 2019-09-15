@@ -1,11 +1,11 @@
 [package]
-name = "ruft-modules"
+name = "raft-modules"
 version = "0.1.0"
 authors = ["Shamil Gadelshin <shamilgadelshin@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-ruft = { package = "ruft", path = "../"}
+raft = { package = "raft", path = "../"}
 log = "0.4"
 crossbeam-channel = "0.3"
 

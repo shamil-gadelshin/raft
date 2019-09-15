@@ -12,19 +12,19 @@ use std::thread;
 
 use chrono::prelude::{DateTime, Local};
 
-extern crate ruft;
-extern crate ruft_modules;
+extern crate raft;
+extern crate raft_modules;
 
-use ruft::{ ClientResponseStatus, ClientRequestHandler};
-use ruft::ClusterConfiguration;
-use ruft::NodeConfiguration;
-use ruft::NewDataRequest;
+use raft::{ ClientResponseStatus, ClientRequestHandler};
+use raft::ClusterConfiguration;
+use raft::NodeConfiguration;
+use raft::NewDataRequest;
 
-use ruft_modules::MemoryFsm;
-use ruft_modules::MemoryLogStorage;
-use ruft_modules::{InProcClientCommunicator};
-use ruft_modules::{InProcPeerCommunicator};
-use ruft_modules::NetworkClientCommunicator;
+use raft_modules::MemoryFsm;
+use raft_modules::MemoryLogStorage;
+use raft_modules::{InProcClientCommunicator};
+use raft_modules::{InProcPeerCommunicator};
+use raft_modules::NetworkClientCommunicator;
 
 
 
@@ -63,7 +63,7 @@ fn main() {
             client_communicator: client_request_handler.clone(),
         };
         let fsm = MemoryFsm::new(protected_cluster_config.clone());
-        let thread_handle = ruft::start_node(config, MemoryLogStorage::new(), fsm);
+        let thread_handle = raft::start_node(config, MemoryLogStorage::new(), fsm);
         node_threads.push(thread_handle);
 
         client_handlers.insert(node_id, client_request_handler);
@@ -148,9 +148,9 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
     }
 
     let fsm = MemoryFsm::new(protected_cluster_config.clone());
-    let thread_handle = ruft::start_node(new_server_config, MemoryLogStorage::new(), fsm);
+    let thread_handle = raft::start_node(new_server_config, MemoryLogStorage::new(), fsm);
 
-    let add_server_request = ruft::AddServerRequest{new_server : new_node_id};
+    let add_server_request = raft::AddServerRequest{new_server : new_node_id};
     for kv in client_handlers.clone() {
         let (k,v) = kv;
 

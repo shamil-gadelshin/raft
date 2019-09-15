@@ -8,8 +8,8 @@ use crossbeam_channel::{Receiver, Sender};
 use futures::{future};
 use tower_grpc::{Request, Response};
 
-use ruft::{ ClientRequestHandler};
-use ruft::{ ClientRequestChannels};
+use raft::{ ClientRequestHandler};
+use raft::{ ClientRequestChannels};
 
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
 use super::client_requests::{new_data_request};
@@ -22,8 +22,8 @@ pub struct NetworkClientCommunicator {
 	node_id : u64,
 	timeout: Duration,
 	host: String,
-	add_server_duplex_channel: DuplexChannel<ruft::AddServerRequest, ruft::ClientRpcResponse>,
-	new_data_duplex_channel: DuplexChannel<ruft::NewDataRequest, ruft::ClientRpcResponse>
+	add_server_duplex_channel: DuplexChannel<raft::AddServerRequest, raft::ClientRpcResponse>,
+	new_data_duplex_channel: DuplexChannel<raft::NewDataRequest, raft::ClientRpcResponse>
 }
 
 impl NetworkClientCommunicator {
@@ -50,32 +50,32 @@ impl NetworkClientCommunicator {
 }
 
 impl ClientRequestChannels for NetworkClientCommunicator {
-	fn add_server_request_rx(&self) -> Receiver<ruft::AddServerRequest> {
+	fn add_server_request_rx(&self) -> Receiver<raft::AddServerRequest> {
 		self.add_server_duplex_channel.get_request_rx()
 	}
 
-	fn add_server_response_tx(&self) -> Sender<ruft::ClientRpcResponse> {
+	fn add_server_response_tx(&self) -> Sender<raft::ClientRpcResponse> {
 		self.add_server_duplex_channel.get_response_tx()
 	}
 
-	fn new_data_request_rx(&self) -> Receiver<ruft::NewDataRequest> {
+	fn new_data_request_rx(&self) -> Receiver<raft::NewDataRequest> {
 		self.new_data_duplex_channel.get_request_rx()
 	}
 
-	fn new_data_response_tx(&self) -> Sender<ruft::ClientRpcResponse> {
+	fn new_data_response_tx(&self) -> Sender<raft::ClientRpcResponse> {
 		self.new_data_duplex_channel.get_response_tx()
 	}
 }
 
 impl ClientRequestHandler for NetworkClientCommunicator{
-	fn add_server(&self, request: ruft::AddServerRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
+	fn add_server(&self, request: raft::AddServerRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
 		trace!("Add server request {:?}", request);
 
 		add_server_request(self.host.clone(), self.timeout, request)
 	}
 
 
-	fn new_data(&self, request: ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
+	fn new_data(&self, request: raft::NewDataRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
 		trace!("New data request {:?}", request);
 
 		new_data_request(self.host.clone(),self.timeout, request)
@@ -89,8 +89,8 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 
 	fn add_server(&mut self, request: Request<AddServerRequest>) -> Self::AddServerFuture {
 		trace!("Add server request {:?}", request);
-		let ruft_req = ruft::AddServerRequest{new_server: request.into_inner().new_server};
-		let send_result = self.add_server_duplex_channel.request_tx.send_timeout(ruft_req, self.timeout);
+		let raft_req = raft::AddServerRequest{new_server: request.into_inner().new_server};
+		let send_result = self.add_server_duplex_channel.request_tx.send_timeout(raft_req, self.timeout);
 		if let Err(err) = send_result {
 			return future::err(tower_grpc::Status::new(tower_grpc::Code::Unknown, format!(" error:{}",err)))
 		}
@@ -117,8 +117,8 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 		trace!("New data request {:?}", request);
 		let inner_vec = request.into_inner().data;
 		let data = inner_vec.into_boxed_slice();
-		let ruft_req = ruft::NewDataRequest{data: Arc::new(Box::leak(data))};
-		let send_result = self.new_data_duplex_channel.request_tx.send_timeout(ruft_req, self.timeout);
+		let raft_req = raft::NewDataRequest{data: Arc::new(Box::leak(data))};
+		let send_result = self.new_data_duplex_channel.request_tx.send_timeout(raft_req, self.timeout);
 		if let Err(err) = send_result {
 			return future::err(tower_grpc::Status::new(tower_grpc::Code::Unknown, format!(" error:{}",err)))
 		}

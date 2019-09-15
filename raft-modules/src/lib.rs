@@ -1,6 +1,6 @@
 #[macro_use] extern crate log;
 extern crate crossbeam_channel;
-extern crate ruft;
+extern crate raft;
 
 mod memory_log;
 mod memory_fsm;

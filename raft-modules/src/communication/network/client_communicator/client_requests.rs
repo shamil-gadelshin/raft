@@ -7,13 +7,13 @@ use tower_grpc::{Request};
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{AddServerRequest, NewDataRequest};
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::client::ClientRequestHandler;
 
-use ruft::{ClientResponseStatus};
+use raft::{ClientResponseStatus};
 use std::error::Error;
 use std::time::Duration;
 use crate::errors::new_err;
 
 
-pub fn add_server_request(host : String, _timeout: Duration, request : ruft::AddServerRequest) -> Result<ruft::ClientRpcResponse, Box<Error>>{
+pub fn add_server_request(host : String, _timeout: Duration, request : raft::AddServerRequest) -> Result<raft::ClientRpcResponse, Box<Error>>{
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -48,7 +48,7 @@ pub fn add_server_request(host : String, _timeout: Duration, request : ruft::Add
 		.and_then(move |response| {
 			trace!("NewData RESPONSE = {:?}", response);
 
-			let resp = ruft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
+			let resp = raft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
 			tx.send(resp).expect("can send response");
 			Ok(())
 		})
@@ -67,7 +67,7 @@ pub fn add_server_request(host : String, _timeout: Duration, request : ruft::Add
 
 }
 
-pub fn new_data_request(host: String, _timeout: Duration, request : ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
+pub fn new_data_request(host: String, _timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -75,8 +75,8 @@ pub fn new_data_request(host: String, _timeout: Duration, request : ruft::NewDat
 	let settings = client::Builder::new().http2_only(true).clone();
 	let mut make_client = client::Connect::with_builder(connector, settings);
 
-	let (tx, rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
-	let (err_tx, err_rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
+	let (tx, rx)= crossbeam_channel::unbounded();
+	let err_tx = tx.clone();
 	let client_service = make_client
 		.make_service(dst)
 		.map_err(|e| {
@@ -102,21 +102,27 @@ pub fn new_data_request(host: String, _timeout: Duration, request : ruft::NewDat
 		.and_then(move |response| {
 			trace!("NewData RESPONSE = {:?}", response);
 
-			let resp = ruft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
-			tx.send(resp).expect("can send response");
+			let resp = raft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
+			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})
 		.map_err(move |e| {
 			error!("NewData request failed = {:?}", e);
-			err_tx.send(format!("Communication error:{}", e)).expect("can send error");
+			err_tx.send(Err(format!("Communication error:{}", e))).expect("can send error");
 		});
 
 	tokio::run(response);
 
 
 	crossbeam_channel::select!(
-            recv(rx) -> resp  => {return Ok(resp.expect("valid response"))},
-            recv(err_rx) -> err => {return new_err(err.expect("valid error"), None)},
+            recv(rx) -> receive_result  => {
+            let result = receive_result.expect("valid response");
+            match result {
+            	Ok(resp) => {return Ok(resp)},
+            	Err(str) => {return new_err(str, None)},
+            }
+		}
+ //           recv(err_rx) -> err => {return new_err(err.expect("valid error"), None)},
     );
 }
 

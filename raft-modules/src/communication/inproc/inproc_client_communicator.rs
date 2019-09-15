@@ -1,6 +1,6 @@
 use crate::communication::duplex_channel::DuplexChannel;
-use ruft::{AddServerRequest, NewDataRequest, ClientRequestHandler};
-use ruft::{ClientRpcResponse, ClientRequestChannels};
+use raft::{AddServerRequest, NewDataRequest, ClientRequestHandler};
+use raft::{ClientRpcResponse, ClientRequestChannels};
 use std::time::Duration;
 use crossbeam_channel::{Receiver, Sender};
 use std::error::Error;

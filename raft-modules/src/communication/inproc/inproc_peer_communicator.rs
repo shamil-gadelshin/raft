@@ -1,7 +1,7 @@
 use crate::communication::duplex_channel::DuplexChannel;
 
 use crossbeam_channel::{Receiver, Sender};
-use ruft::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler, PeerRequestChannels};
+use raft::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler, PeerRequestChannels};
 
 use std::time::Duration;
 use std::error::Error;
