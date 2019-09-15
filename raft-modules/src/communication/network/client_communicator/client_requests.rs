@@ -20,8 +20,8 @@ pub fn add_server_request(host : String, _timeout: Duration, request : raft::Add
 	let connector = util::Connector::new(HttpConnector::new(4));
 	let settings = client::Builder::new().http2_only(true).clone();
 	let mut make_client = client::Connect::with_builder(connector, settings);
-	let (tx, rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
-	let (err_tx, err_rx)= crossbeam_channel::unbounded();//: Result<ClientRpcResponse, Box<Error>>
+	let (tx, rx)= crossbeam_channel::unbounded();
+	let err_tx = tx.clone();
 
 	let client_service = make_client
 		.make_service(dst)
@@ -49,21 +49,22 @@ pub fn add_server_request(host : String, _timeout: Duration, request : raft::Add
 			trace!("NewData RESPONSE = {:?}", response);
 
 			let resp = raft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
-			tx.send(resp).expect("can send response");
+			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})
 		.map_err(move |e| {
 			error!("NewData request failed = {:?}", e);
-			err_tx.send(format!("Communication error:{}", e)).expect("can send error");
+			err_tx.send(Err(format!("Communication error:{}", e))).expect("can send error");
 		});
 
 	tokio::run(response);
 
-
-	crossbeam_channel::select!(
-            recv(rx) -> resp  => {return Ok(resp.expect("valid response"))},
-            recv(err_rx) -> err => {return new_err(err.expect("valid error"), None)},
-    );
+	let receive_result = rx.recv();
+	let result = receive_result.expect("valid response");
+	match result {
+		Ok(resp) => { return Ok(resp) },
+		Err(str) => { return new_err(str, None) },
+	}
 
 }
 
@@ -75,12 +76,12 @@ pub fn new_data_request(host: String, _timeout: Duration, request : raft::NewDat
 	let settings = client::Builder::new().http2_only(true).clone();
 	let mut make_client = client::Connect::with_builder(connector, settings);
 
-	let (tx, rx)= crossbeam_channel::unbounded();
+	let (tx, rx) = crossbeam_channel::unbounded();
 	let err_tx = tx.clone();
 	let client_service = make_client
 		.make_service(dst)
 		.map_err(|e| {
-			tower_grpc::Status::new(tower_grpc::Code::Unknown, format!("Connection error:{}",e))
+			tower_grpc::Status::new(tower_grpc::Code::Unknown, format!("Connection error:{}", e))
 		})
 		.and_then(move |conn| {
 			let conn = tower_request_modifier::Builder::new()
@@ -94,15 +95,15 @@ pub fn new_data_request(host: String, _timeout: Duration, request : raft::NewDat
 	let request = client_service
 		.and_then(move |mut client|
 			{
-			client.new_data(Request::new(NewDataRequest {
-				data: Vec::from(*request.data)
-			}))
-		});
+				client.new_data(Request::new(NewDataRequest {
+					data: Vec::from(*request.data)
+				}))
+			});
 	let response = request
 		.and_then(move |response| {
 			trace!("NewData RESPONSE = {:?}", response);
 
-			let resp = raft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
+			let resp = raft::ClientRpcResponse { current_leader: Some(response.get_ref().current_leader), status: ClientResponseStatus::Ok };
 			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})
@@ -113,17 +114,12 @@ pub fn new_data_request(host: String, _timeout: Duration, request : raft::NewDat
 
 	tokio::run(response);
 
-
-	crossbeam_channel::select!(
-            recv(rx) -> receive_result  => {
-            let result = receive_result.expect("valid response");
-            match result {
-            	Ok(resp) => {return Ok(resp)},
-            	Err(str) => {return new_err(str, None)},
-            }
-		}
- //           recv(err_rx) -> err => {return new_err(err.expect("valid error"), None)},
-    );
+	let receive_result = rx.recv();
+	let result = receive_result.expect("valid response");
+	match result {
+		Ok(resp) => { return Ok(resp) },
+		Err(str) => { return new_err(str, None) },
+	}
 }
 
 fn get_uri(host: String) -> http::Uri{
