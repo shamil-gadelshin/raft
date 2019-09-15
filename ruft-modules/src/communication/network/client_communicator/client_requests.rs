@@ -4,8 +4,8 @@ use tower_util::MakeService;
 use futures::{Future};
 use tower_grpc::{Request};
 
-use crate::network::client_communicator::grpc::generated::gprc_client_communicator::{AddServerRequest, NewDataRequest};
-use crate::network::client_communicator::grpc::generated::gprc_client_communicator::client::ClientRequestHandler;
+use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{AddServerRequest, NewDataRequest};
+use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::client::ClientRequestHandler;
 
 use ruft::ClientResponseStatus;
 

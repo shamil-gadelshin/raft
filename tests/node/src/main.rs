@@ -24,10 +24,8 @@ use ruft_modules::MemoryFsm;
 use ruft_modules::MemoryLogStorage;
 use ruft_modules::{InProcClientCommunicator};
 use ruft_modules::{InProcPeerCommunicator};
-use crate::network::client_communicator::network_client_communicator::NetworkClientCommunicator;
+use ruft_modules::NetworkClientCommunicator;
 
-mod network;
-mod errors;
 
 
 fn init_logger() {

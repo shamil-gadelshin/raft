@@ -14,7 +14,7 @@ use tower_hyper::server::{Http, Server};
 use ruft::{ ClientRequestHandler};
 use ruft::{ ClientRequestChannels};
 
-use crate::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
+use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
 use super::client_requests::{new_data_request};
 use super::duplex_channel::DuplexChannel;
 
