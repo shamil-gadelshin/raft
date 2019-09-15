@@ -62,8 +62,8 @@ pub fn add_server_request(host : String, _timeout: Duration, request : raft::Add
 	let receive_result = rx.recv();
 	let result = receive_result.expect("valid response");
 	match result {
-		Ok(resp) => { return Ok(resp) },
-		Err(str) => { return new_err(str, None) },
+		Ok(resp) => {Ok(resp) },
+		Err(str) => { new_err(str, None) },
 	}
 
 }
@@ -117,8 +117,8 @@ pub fn new_data_request(host: String, _timeout: Duration, request : raft::NewDat
 	let receive_result = rx.recv();
 	let result = receive_result.expect("valid response");
 	match result {
-		Ok(resp) => { return Ok(resp) },
-		Err(str) => { return new_err(str, None) },
+		Ok(resp) => { Ok(resp) },
+		Err(str) => { new_err(str, None) },
 	}
 }
 

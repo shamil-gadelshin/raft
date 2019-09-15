@@ -169,7 +169,7 @@ where Log: Sized + Sync + LogStorage,
 
         //TODO extract fn
         let (mut prev_log_term, mut prev_log_index) = (0,0);
-        if entries.len() > 0 {
+        if !entries.is_empty() {
             let new_entry = &entries[0];
             let new_entry_index = new_entry.index;
             if new_entry_index > 1{
@@ -180,7 +180,7 @@ where Log: Sized + Sync + LogStorage,
                 prev_log_term  = prev_entry.term;
                 prev_log_index=  prev_entry.index;
             }
-        } else if entries.len() == 0{
+        } else if entries.is_empty(){
             let last_index = self.log.get_last_entry_index();
             if last_index > 1 {
                 let last_entry = self.log.get_entry(last_index).expect("valid last entry");
@@ -190,16 +190,14 @@ where Log: Sized + Sync + LogStorage,
             }
         };
 
-        let append_entry_request = AppendEntriesRequest {
+        AppendEntriesRequest {
             term: self.get_current_term(),
             leader_id: self.id,
             prev_log_term,
             prev_log_index: prev_log_index as u64,
             leader_commit: self.commit_index,
             entries
-        };
-
-        append_entry_request
+        }
     }
 
 
@@ -228,15 +226,11 @@ where Log: Sized + Sync + LogStorage,
     }
 
     pub fn get_next_index(&self, peer_id: u64) -> u64 {
-        let next_index = {
-            if !self.next_index.contains_key(&peer_id){
-                self.log.get_last_entry_index() as u64
-            } else {
-                self.next_index[&peer_id]
-            }
-        };
-
-        next_index
+        if !self.next_index.contains_key(&peer_id) {
+            self.log.get_last_entry_index() as u64
+        } else {
+            self.next_index[&peer_id]
+        }
     }
 
     pub fn set_next_index(&mut self, peer_id: u64, new_next_index : u64) {

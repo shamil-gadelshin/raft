@@ -22,7 +22,6 @@ pub use common::{LogEntry, DataEntryContent, EntryContent};
 pub use crate::communication::peers::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse};
 pub use crate::communication::peers::{PeerRequestHandler, PeerRequestChannels};
 
-
 use std::thread::JoinHandle;
 
 pub fn start_node<Log, FsmT,Cc, Pc >(node_config : NodeConfiguration<Cc,Pc>, log_storage : Log, fsm : FsmT ) -> JoinHandle<()>

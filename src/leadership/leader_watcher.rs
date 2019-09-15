@@ -38,7 +38,7 @@ pub fn watch_leader_status<Log, FsmT, Pc>(params : WatchLeaderStatusParams<Log, 
         if let NodeStatus::Follower = node.status {
             info!("Node {:?} Leader awaiting time elapsed. Starting new election.", node.id);
 
-            let current_leader_id = node.current_leader_id.clone();
+            let current_leader_id = node.current_leader_id;
 
             if current_leader_id.is_none() || current_leader_id.unwrap() != node.id {
                 let next_term = node.get_next_term();

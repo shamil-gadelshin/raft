@@ -2,7 +2,7 @@ use raft::{LogEntry, EntryContent};
 use raft::LogStorage;
 use std::error::Error;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MemoryLogStorage {
     last_index: u64, //TODO remove?
     entries : Vec<LogEntry>
@@ -46,12 +46,6 @@ impl LogStorage for MemoryLogStorage {
         }
 
         0 //Raft documentation demands zero as initial value
-    }
-}
-
-impl MemoryLogStorage {
-    pub fn new() -> MemoryLogStorage {
-        MemoryLogStorage {last_index:0, entries : Vec::new()}
     }
 }
 

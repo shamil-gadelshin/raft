@@ -53,7 +53,7 @@ where Requester: Fn(u64, Req) ->Result<Resp,Box<Error>>,
         }
 
         info!("Node {:?}: cannot get quorum for request. Vote count: {:?}", node_id, votes);
-        if errors.len() > 0 && votes == 1 { //no responses
+        if !errors.is_empty() && votes == 1 { //no responses
             return errors::new_multiple_err("Cannot get quorum for request".to_string(), errors)
         }
         return Ok(false)
