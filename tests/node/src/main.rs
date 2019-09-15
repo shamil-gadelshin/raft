@@ -26,7 +26,7 @@ use ruft_modules::{InProcClientCommunicator};
 use ruft_modules::{InProcPeerCommunicator};
 use crate::communication::network_client_communicator::NetworkClientCommunicator;
 
-mod gprc_client_communicator;
+mod network;
 mod errors;
 mod communication;
 

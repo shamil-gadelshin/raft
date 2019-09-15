@@ -16,11 +16,10 @@ use tower_grpc::{Request, Response, Streaming};
 use tower_hyper::server::{Http, Server};
 
 
-use crate::gprc_client_communicator::grpc::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
+use crate::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
+use crate::communication::comm_client::{new_data_request};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::iter::FromIterator;
-use std::path::Iter;
 use std::thread;
 
 
@@ -138,7 +137,7 @@ impl ClientRequestHandler for NetworkClientCommunicator{
 	fn new_data(&self, request: ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
 		trace!("New data request {:?}", request);
 
-		let resp = crate::gprc_client_communicator::comm_client::new_data_request(self.node_id, request);
+		let resp = new_data_request(self.node_id, request);
 
 		Ok(resp)
 	}

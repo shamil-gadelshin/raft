@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package gprc_client_communicator;
+
+service ClientRequestHandler {
+  rpc AddServer (AddServerRequest) returns (ClientRpcResponse) {}
+  rpc NewData (NewDataRequest) returns (ClientRpcResponse) {}
+}
+
+message NewDataRequest {
+  bytes data = 1;
+}
+
+message AddServerRequest {
+  uint64 new_server = 1;
+}
+
+enum ClientResponseStatus {
+  Unknown = 0;
+  Ok = 1;
+  NotLeader = 2;
+}
+
+message ClientRpcResponse {
+  ClientResponseStatus status = 1;
+  uint64 current_leader = 2;
+}
+
+
+/*
+pub struct NewDataRequest {
+    pub data : Arc<&'static [u8]>
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ClientRpcResponse {
+    pub status : ClientResponseStatus,
+    pub current_leader : Option<u64>
+}
+*/
