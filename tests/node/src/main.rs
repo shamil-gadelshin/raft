@@ -40,29 +40,15 @@ fn init_logger() {
         .init();
 }
 
-//static client_request_handler1 : NetworkClientCommunicator = NetworkClientCommunicator::new(1, Duration::from_millis(500));
-//static client_request_handler2 : NetworkClientCommunicator = NetworkClientCommunicator::new(2, Duration::from_millis(500));
 
 
 fn main() {
     init_logger();
 
-//    thread::spawn(gprc_client_communicator::comm_server::run_server);
-//    thread::sleep(Duration::from_secs(1));
-//    gprc_client_communicator::comm_client::add_server_request();
-////    thread::sleep(Duration::from_secs(700));
-//	return;
-
     let node_ids = vec![1, 2];
     let new_node_id = 3;
     let communication_timeout = Duration::from_millis(500);
     let main_cluster_configuration = ClusterConfiguration::new(node_ids);
-
-//    let client_request_handler1 = NetworkClientCommunicator::new(1, communication_timeout);
-//    client_request_handler1.run_server();
-
-//    let client_request_handler2 = NetworkClientCommunicator::new(2, communication_timeout);
-//    client_request_handler2.run_server();
 
     let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all(), communication_timeout);
     communicator.add_node_communication(new_node_id);
@@ -72,9 +58,7 @@ fn main() {
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
- //       let client_request_handler = InProcClientCommunicator::new(node_id, communication_timeout);
         let client_request_handler = NetworkClientCommunicator::new(node_id, communication_timeout);
- //       client_request_handler.run_server();
         let config = NodeConfiguration {
             node_id,
             cluster_configuration: protected_cluster_config.clone(),
@@ -113,42 +97,23 @@ fn main() {
 }
 
 
-//fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) -> u64{
-//    let bytes = "find a leader".as_bytes();
-//    let new_data_request = NewDataRequest{data : Arc::new(bytes)};
-//    for kv in client_handlers {
-//        let (_k, v) = kv;
-//
-//        let result = v.new_data(new_data_request.clone());
-//        if let Ok(resp) = result {
-//            if let ClientResponseStatus::Ok = resp.status {
-//                return resp.current_leader.expect("can get a leader");
-//            }
-//        }
-//    }
-//
-//    panic!("cannot get a leader!")
-//}
-
-
 fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) -> u64{
     let bytes = "find a leader".as_bytes();
     let new_data_request = NewDataRequest{data : Arc::new(bytes)};
-    for kv in client_handlers{
-        let (k, v) = kv;
-        println!("Here: {}", k);
+    for kv in client_handlers {
+        let (_k, v) = kv;
+
         let result = v.new_data(new_data_request.clone());
         if let Ok(resp) = result {
             if let ClientResponseStatus::Ok = resp.status {
                 return resp.current_leader.expect("can get a leader");
             }
         }
-        println!("here");
     }
 
-   return 1;
     panic!("cannot get a leader!")
 }
+
 
 fn add_thousands_of_data(client_handlers : HashMap<u64, InProcClientCommunicator>, leader_id : u64)
 {

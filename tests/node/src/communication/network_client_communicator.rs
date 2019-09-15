@@ -5,7 +5,24 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver, Sender};
 use std::error::Error;
 use crate::errors;
-use crate::gprc_client_communicator::comm_client::new_data_request;
+
+use futures::sync::mpsc;
+use futures::{future, stream, Future, Sink, Stream};
+use log::error;
+use std::hash::{Hash, Hasher};
+use std::time::Instant;
+use tokio::net::TcpListener;
+use tower_grpc::{Request, Response, Streaming};
+use tower_hyper::server::{Http, Server};
+
+
+use crate::gprc_client_communicator::grpc::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::iter::FromIterator;
+use std::path::Iter;
+use std::thread;
+
 
 #[derive(Clone)]
 pub struct NetworkClientCommunicator {
@@ -121,32 +138,11 @@ impl ClientRequestHandler for NetworkClientCommunicator{
 	fn new_data(&self, request: ruft::NewDataRequest) -> Result<ruft::ClientRpcResponse, Box<Error>> {
 		trace!("New data request {:?}", request);
 
-		let resp = new_data_request(self.node_id, request);
+		let resp = crate::gprc_client_communicator::comm_client::new_data_request(self.node_id, request);
 
 		Ok(resp)
 	}
 }
-
-
-use futures::sync::mpsc;
-use futures::{future, stream, Future, Sink, Stream};
-use log::error;
-use std::hash::{Hash, Hasher};
-use std::time::Instant;
-use tokio::net::TcpListener;
-use tower_grpc::{Request, Response, Streaming};
-use tower_hyper::server::{Http, Server};
-
-#[derive(Clone, Debug)]
-struct ClientRequester;
-
-
-use crate::gprc_client_communicator::grpc::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::iter::FromIterator;
-use std::path::Iter;
-use std::thread;
 
 
 impl server::ClientRequestHandler for NetworkClientCommunicator {
@@ -167,12 +163,6 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 		let mut vec = request.into_inner().data;
 
 		let mut data = vec.into_boxed_slice();
-		//let mut iter = vec.drain(..).collect();
-	//	let mut part = Vec::from_iter(vec[..].iter().cloned());
-	//	let mut vec2 : Vec<u8> = Vec::from_iter::<Iterator<Item=u8>>(vec.drain(..).collect());
-
-		//let data = part.as_slice() ;
-	//	let data = request.get_ref().clone().data.as_slice();
 		let ruft_req = ruft::NewDataRequest{data: Arc::new(Box::leak(data))};
 		let send_result = self.new_data_duplex_channel.request_tx.send_timeout(ruft_req, self.timeout);
 		if let Err(err) = send_result {
