@@ -6,7 +6,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
-use crate::configuration::node::{NodeConfiguration};
+use crate::configuration::node::{NodeConfiguration, ElectionTimer};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams, run_node_status_watcher};
 use crate::operation_log::OperationLog;
 use crate::fsm::{FiniteStateMachine};
@@ -21,12 +21,22 @@ use crate::communication::client::ClientRequestChannels;
 
 
 //TODO refactor to generic worker
-pub fn start<Log: OperationLog, Fsm: FiniteStateMachine, Cc : ClientRequestChannels, Pc : PeerRequestHandler + PeerRequestChannels>(node_config : NodeConfiguration<Cc, Pc>, log_storage : Log, fsm : Fsm) -> JoinHandle<()>{
+pub fn start<Log, Fsm, Cc, Pc, Et>(node_config : NodeConfiguration<Cc, Pc, Et>, log_storage : Log, fsm : Fsm) -> JoinHandle<()>
+    where Log: OperationLog ,
+          Fsm: FiniteStateMachine,
+          Cc : ClientRequestChannels,
+          Pc : PeerRequestHandler + PeerRequestChannels,
+          Et : ElectionTimer {
     thread::spawn(move || node::start_node(node_config, log_storage, fsm))
 }
 
 //TODO check clones number - consider borrowing &
-fn start_node<Log: OperationLog, Fsm: FiniteStateMachine, Cc :ClientRequestChannels, Pc : PeerRequestHandler + PeerRequestChannels>(node_config : NodeConfiguration<Cc, Pc>, log_storage : Log, fsm : Fsm) {
+fn start_node<Log, Fsm, Cc, Pc, Et>(node_config : NodeConfiguration<Cc, Pc, Et>, log_storage : Log, fsm : Fsm)
+    where Log: OperationLog ,
+          Fsm: FiniteStateMachine,
+          Cc : ClientRequestChannels,
+          Pc : PeerRequestHandler + PeerRequestChannels,
+          Et : ElectionTimer{
     add_this_node_to_cluster(&node_config);
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
@@ -66,7 +76,8 @@ fn start_node<Log: OperationLog, Fsm: FiniteStateMachine, Cc :ClientRequestChann
         WatchLeaderStatusParams {
             protected_node: protected_node.clone(),
             leader_election_event_tx: leader_election_tx.clone(),
-            watchdog_event_rx: reset_leadership_watchdog_rx
+            watchdog_event_rx: reset_leadership_watchdog_rx,
+            election_timer: node_config.election_timer
         });
 
     let peer_request_processor_thread = common::run_worker_thread(
@@ -123,7 +134,10 @@ fn start_node<Log: OperationLog, Fsm: FiniteStateMachine, Cc :ClientRequestChann
 
 
 //TODO check cluster configuration functionality
-fn add_this_node_to_cluster<Cc : ClientRequestChannels, Pc : Clone + PeerRequestHandler + PeerRequestChannels>(node_config: &NodeConfiguration<Cc, Pc>) {
+fn add_this_node_to_cluster<Cc, Pc, Et>(node_config: &NodeConfiguration<Cc, Pc, Et>)
+where Cc : ClientRequestChannels,
+      Pc : Clone + PeerRequestHandler + PeerRequestChannels,
+      Et : ElectionTimer{
     let cluster_configuration = node_config.cluster_configuration.clone();
     let mut cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
 

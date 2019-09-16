@@ -22,14 +22,16 @@ pub use common::{LogEntry, DataEntryContent, EntryContent};
 pub use communication::peers::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse};
 pub use communication::peers::{PeerRequestHandler, PeerRequestChannels};
 pub use state::NodeState;
+pub use configuration::node::ElectionTimer;
 
 use std::thread::JoinHandle;
 
-pub fn start_node<Log, FsmT,Cc, Pc >(node_config : NodeConfiguration<Cc,Pc>, log_storage : Log, fsm : FsmT ) -> JoinHandle<()>
-where Log: Sync + Send + OperationLog + 'static,
-	  FsmT:  Sync + Send + FiniteStateMachine + 'static,
-	  Cc : Sync + Send + 'static + Clone  +  ClientRequestChannels,
-	  Pc : Sync + Send + 'static + PeerRequestHandler + PeerRequestChannels + Clone{
+pub fn start_node<Log, Fsm,Cc, Pc, Et >(node_config : NodeConfiguration<Cc,Pc, Et>, log_storage : Log, fsm : Fsm ) -> JoinHandle<()>
+where Log: OperationLog ,
+	  Fsm: FiniteStateMachine,
+	  Cc : ClientRequestChannels,
+	  Pc : PeerRequestHandler + PeerRequestChannels,
+	  Et : ElectionTimer{
 	node::start(node_config, log_storage, fsm)
 }
 

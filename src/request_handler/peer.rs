@@ -62,7 +62,6 @@ fn handle_vote_request<Log, Fsm,Pc>(node_id: u64, request : VoteRequest, params 
 		let timeout = Duration::from_secs(1);
 		params.peer_communicator.vote_response_tx(node_id).send_timeout(vote_response, timeout)
 	};
-	//let resp_result = params.peer_communicator.send_vote_response(node_id, vote_response);
 	info!("Node {:?} voted {:?}", node_id, resp_result);
 }
 

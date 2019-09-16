@@ -8,6 +8,7 @@ edition = "2018"
 raft = { package = "raft", path = "../"}
 log = "0.4"
 crossbeam-channel = "0.3"
+rand = "0.6.5"
 
 futures = "0.1"
 bytes = "0.4"

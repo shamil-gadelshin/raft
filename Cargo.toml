@@ -5,7 +5,6 @@ authors = ["Shamil Gadelshin <shamilgadelshin@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rand = "0.6.5"
 crossbeam-channel = "0.3"
 log = "0.4"
 

@@ -20,7 +20,7 @@ use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
 
-use raft_modules::MemoryFsm;
+use raft_modules::{MemoryFsm, RandomizedElectionTimer};
 use raft_modules::MemoryLogStorage;
 use raft_modules::{InProcClientCommunicator};
 use raft_modules::{InProcPeerCommunicator};
@@ -65,6 +65,7 @@ fn main() {
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_communicator: client_request_handler.clone(),
+            election_timer: RandomizedElectionTimer::new(1000, 4000)
         };
         let fsm = MemoryFsm::new(protected_cluster_config.clone());
         let thread_handle = raft::start_node(config, MemoryLogStorage::default(), fsm);
@@ -152,6 +153,7 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_communicator: InProcClientCommunicator::new(new_node_id,communication_timeout),
+            election_timer: RandomizedElectionTimer::new(1000, 4000)
         };
     }
 

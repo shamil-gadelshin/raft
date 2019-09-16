@@ -1,5 +1,3 @@
-use std::time::{Duration};
-use rand::Rng;
 use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender, Receiver};
@@ -10,24 +8,28 @@ use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::OperationLog;
 use crate::fsm::FiniteStateMachine;
 use crate::communication::peers::PeerRequestHandler;
+use crate::configuration::node::ElectionTimer;
 
 
-pub struct WatchLeaderStatusParams<Log, Fsm, Pc>
+pub struct WatchLeaderStatusParams<Log, Fsm, Pc, Et>
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
-          Pc : PeerRequestHandler {
+          Pc : PeerRequestHandler,
+          Et : ElectionTimer{
     pub protected_node: Arc<Mutex<Node<Log,Fsm, Pc>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub watchdog_event_rx : Receiver<LeaderConfirmationEvent>,
+    pub election_timer: Et,
 }
 
 
-pub fn watch_leader_status<Log,Fsm, Pc>(params : WatchLeaderStatusParams<Log, Fsm, Pc>)
+pub fn watch_leader_status<Log,Fsm, Pc, Et>(params : WatchLeaderStatusParams<Log, Fsm, Pc, Et>)
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
-          Pc : PeerRequestHandler{
+          Pc : PeerRequestHandler,
+          Et : ElectionTimer{
     loop {
-        let timeout = crossbeam_channel::after(random_awaiting_leader_duration_ms());
+        let timeout = crossbeam_channel::after(params.election_timer.get_next_elections_timeout());
         select!(
             recv(timeout) -> _  => {
                 propose_node_election(&params) //TODO check err
@@ -41,7 +43,11 @@ pub fn watch_leader_status<Log,Fsm, Pc>(params : WatchLeaderStatusParams<Log, Fs
     }
 }
 
-fn propose_node_election<Log, FsmT, Pc>(params: &WatchLeaderStatusParams<Log, FsmT, Pc>) -> () where Log: Sync + Send + OperationLog + 'static, FsmT: Sync + Send + FiniteStateMachine + 'static, Pc: PeerRequestHandler + Clone {
+fn propose_node_election<Log, Fsm, Pc, Et>(params: &WatchLeaderStatusParams<Log, Fsm, Pc, Et>) -> ()
+    where Log: OperationLog,
+          Fsm: FiniteStateMachine,
+          Pc : PeerRequestHandler,
+          Et : ElectionTimer{
     let node = params.protected_node.lock().expect("node lock is not poisoned");
     if let NodeStatus::Follower = node.status {
         info!("Node {:?} Leader awaiting time elapsed. Starting new election.", node.id);
@@ -57,11 +63,3 @@ fn propose_node_election<Log, FsmT, Pc>(params: &WatchLeaderStatusParams<Log, Fs
 }
 
 
-//TODO move out to separate trait
-fn random_awaiting_leader_duration_ms() -> Duration{
-    let range_start = 1000;
-    let range_stop = 4000;
-    let mut rng = rand::thread_rng();
-
-    Duration::from_millis(rng.gen_range(range_start, range_stop))
-}
