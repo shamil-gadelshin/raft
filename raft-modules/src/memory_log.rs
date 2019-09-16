@@ -1,5 +1,5 @@
 use raft::{LogEntry, EntryContent};
-use raft::LogStorage;
+use raft::OperationLog;
 use std::error::Error;
 
 #[derive(Clone, Debug, Default)]
@@ -8,7 +8,7 @@ pub struct MemoryLogStorage {
     entries : Vec<LogEntry>
 }
 
-impl LogStorage for MemoryLogStorage {
+impl OperationLog for MemoryLogStorage {
     fn create_next_entry(&mut self,  term : u64, entry_content : EntryContent) -> LogEntry {
         LogEntry { index: self.last_index + 1, term, entry_content }
     }

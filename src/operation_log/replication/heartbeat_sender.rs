@@ -7,12 +7,14 @@ use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::peer_notifier::notify_peers;
 use crate::configuration::cluster::{ClusterConfiguration};
-use crate::operation_log::LogStorage;
-use crate::fsm::Fsm;
+use crate::operation_log::OperationLog;
+use crate::fsm::FiniteStateMachine;
 
-pub struct SendHeartbeatAppendEntriesParams<Log, FsmT, Pc>
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
-    pub protected_node: Arc<Mutex<Node<Log, FsmT, Pc>>>,
+pub struct SendHeartbeatAppendEntriesParams<Log, Fsm, Pc>
+    where Log: OperationLog,
+          Fsm: FiniteStateMachine,
+          Pc : PeerRequestHandler{
+    pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc>>>,
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     pub communicator : Pc,
     pub leader_initial_heartbeat_rx : Receiver<bool>,
@@ -20,8 +22,10 @@ pub struct SendHeartbeatAppendEntriesParams<Log, FsmT, Pc>
 
 //TODO remove clone-values
 //TODO park-unpark the thread
-pub fn send_heartbeat_append_entries<Log, FsmT, Pc : PeerRequestHandler + Clone>(params : SendHeartbeatAppendEntriesParams<Log, FsmT, Pc>)
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static {
+pub fn send_heartbeat_append_entries<Log, Fsm, Pc : PeerRequestHandler + Clone>(params : SendHeartbeatAppendEntriesParams<Log, Fsm, Pc>)
+    where Log: OperationLog,
+          Fsm: FiniteStateMachine,
+          Pc : PeerRequestHandler{
     loop {
         let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
         select!(
@@ -36,9 +40,9 @@ pub fn send_heartbeat_append_entries<Log, FsmT, Pc : PeerRequestHandler + Clone>
     }
 }
 
-fn send_heartbeat<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm, Pc : PeerRequestHandler + Clone>(protected_node : Arc<Mutex<Node<Log, FsmT, Pc>>>,
-                                                 cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-                                                 communicator : &Pc) {
+fn send_heartbeat<Log: Sync + Send + OperationLog, FsmT:  Sync + Send + FiniteStateMachine, Pc : PeerRequestHandler + Clone>(protected_node : Arc<Mutex<Node<Log, FsmT, Pc>>>,
+                                                                                                                             cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+                                                                                                                             communicator : &Pc) {
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     if let NodeStatus::Leader = node.status {
@@ -60,6 +64,7 @@ fn send_heartbeat<Log: Sync + Send + LogStorage, FsmT:  Sync + Send + Fsm, Pc : 
     }
 }
 
+//TODO move to node_config
 fn leader_heartbeat_duration_ms() -> Duration{
     Duration::from_millis(1000)
 }

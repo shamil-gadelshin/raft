@@ -6,8 +6,8 @@ use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{PeerRequestHandler};
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::common;
-use crate::operation_log::LogStorage;
-use crate::fsm::Fsm;
+use crate::operation_log::OperationLog;
+use crate::fsm::FiniteStateMachine;
 use crate::leadership::election::{StartElectionParams, start_election};
 
 pub enum LeaderElectionEvent {
@@ -22,9 +22,11 @@ pub struct ElectionNotice {
 }
 
 
-pub struct ElectionManagerParams<Log, FsmT,Pc>
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc :  Sync + Send + 'static  + PeerRequestHandler + Clone {
-    pub protected_node: Arc<Mutex<Node<Log, FsmT, Pc>>>,
+pub struct ElectionManagerParams<Log, Fsm,Pc>
+    where Log: OperationLog,
+          Fsm: FiniteStateMachine,
+          Pc : PeerRequestHandler{
+    pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub leader_election_event_rx : Receiver<LeaderElectionEvent>,
     pub leader_initial_heartbeat_tx : Sender<bool>,
@@ -34,8 +36,10 @@ pub struct ElectionManagerParams<Log, FsmT,Pc>
 }
 
 
-pub fn run_node_status_watcher<Log, FsmT, Pc>(params : ElectionManagerParams<Log, FsmT, Pc>)
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : Sync + Send + 'static  + PeerRequestHandler + Clone {
+pub fn run_node_status_watcher<Log, Fsm, Pc>(params : ElectionManagerParams<Log, Fsm, Pc>)
+    where Log: OperationLog,
+          Fsm: FiniteStateMachine,
+          Pc : PeerRequestHandler{
     loop {
         let event_result = params.leader_election_event_rx.recv();
 
@@ -93,34 +97,3 @@ pub fn run_node_status_watcher<Log, FsmT, Pc>(params : ElectionManagerParams<Log
         }
     }
 }
-//
-//fn run_election(node_id: u64,
-//                actual_current_term: u64,
-//                next_term: u64,
-//                last_log_index: u64,
-//                last_log_term: u64,
-//                leader_election_event_tx : Sender<LeaderElectionEvent>,
-//                cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-//                peer_communicator: InProcPeerCommunicator) {
-//
-//    let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
-//
-//    let (peers_copy, quorum_size) =
-//        (cluster.get_peers(node_id), cluster.get_quorum_size());
-//
-//    let vote_request = VoteRequest {
-//        candidate_id: node_id,
-//        term:next_term,
-//        last_log_index,
-//        last_log_term};
-//
-//    //TODO spawn a worker
-//    thread::spawn(move || election::start_election(
-//        actual_current_term,
-//        leader_election_event_tx,
-//        node_id,
-//        peer_communicator,
-//         peers_copy,
-//        quorum_size,
-//        vote_request));
-//}

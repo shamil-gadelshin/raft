@@ -4,13 +4,14 @@ use crossbeam_channel::{Sender};
 use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
 use crate::communication::peers::{VoteRequest, VoteResponse, PeerRequestHandler};
 use crate::state::{Node};
-use crate::operation_log::LogStorage;
-use crate::fsm::Fsm;
+use crate::operation_log::OperationLog;
+use crate::fsm::FiniteStateMachine;
 
 
-pub fn process_vote_request<Log, FsmT,Pc>(request: VoteRequest,protected_node : Arc<Mutex<Node<Log, FsmT, Pc>>>,
-                                                                                 leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+pub fn process_vote_request<Log, Fsm,Pc>(request: VoteRequest,
+                                         protected_node : Arc<Mutex<Node<Log, Fsm, Pc>>>,
+                                         leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
+    where Log: OperationLog, Fsm: FiniteStateMachine, Pc : PeerRequestHandler{
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     let mut vote_granted = false;

@@ -2,21 +2,23 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::Receiver;
 
-use crate::operation_log::LogStorage;
-use crate::fsm::{Fsm};
+use crate::operation_log::OperationLog;
+use crate::fsm::{FiniteStateMachine};
 use crate::common::LogEntry;
 use crate::state::Node;
 use crate::communication::peers::PeerRequestHandler;
 
-pub struct FsmUpdaterParams<Log, FsmT,Pc>
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
-	pub protected_node : Arc<Mutex<Node<Log,FsmT,Pc>>>,
+pub struct FsmUpdaterParams<Log, Fsm,Pc>
+	where Log: OperationLog, Fsm:FiniteStateMachine, Pc : PeerRequestHandler {
+	pub protected_node : Arc<Mutex<Node<Log,Fsm,Pc>>>,
 	pub commit_index_updated_rx : Receiver<u64>
 }
 
 
-pub fn update_fsm<Log, FsmT,Pc>(params : FsmUpdaterParams<Log,FsmT,Pc>)
-	where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone{
+pub fn update_fsm<Log, Fsm,Pc>(params : FsmUpdaterParams<Log,Fsm,Pc>)
+	where Log: OperationLog,
+		  Fsm: FiniteStateMachine,
+		  Pc : PeerRequestHandler{
 	loop {
 		let new_commit_index = params.commit_index_updated_rx.recv().expect("valid receive of commit index"); //fsm should be updated
 		let mut node = params.protected_node.lock().expect("node lock is not poisoned");

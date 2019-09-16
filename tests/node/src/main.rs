@@ -15,7 +15,7 @@ use chrono::prelude::{DateTime, Local};
 extern crate raft;
 extern crate raft_modules;
 
-use raft::{ ClientResponseStatus, ClientRequestHandler};
+use raft::{ClientResponseStatus, ClientRequestHandler, NodeState};
 use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
@@ -57,7 +57,11 @@ fn main() {
 
         let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout);
         let config = NodeConfiguration {
-            node_id,
+            node_state: NodeState {
+                node_id,
+                current_term: 0,
+                vote_for_id : None
+            },
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_communicator: client_request_handler.clone(),
@@ -140,7 +144,11 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
     let new_server_config;
     {
         new_server_config = NodeConfiguration {
-            node_id: new_node_id,
+            node_state: NodeState {
+                node_id: new_node_id,
+                current_term: 0,
+                vote_for_id : None
+            },
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_communicator: InProcClientCommunicator::new(new_node_id,communication_timeout),

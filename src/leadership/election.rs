@@ -18,8 +18,7 @@ pub struct StartElectionParams<Pc : PeerRequestHandler> {
 }
 
 
-//TODO refactor to DuplexChannel.send_request. Watch out for election timeout
-//TODO refactor to generic peer_notifier
+//TODO Watch out for election timeout
 pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionParams<Pc>) {
 	let vote_request = VoteRequest {
 		candidate_id: params.node_id,

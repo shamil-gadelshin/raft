@@ -4,15 +4,17 @@ use crossbeam_channel::{Sender};
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler};
-use crate::operation_log::{LogStorage};
+use crate::operation_log::{OperationLog};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
-use crate::fsm::Fsm;
+use crate::fsm::FiniteStateMachine;
 
 
-pub fn process_append_entries_request<Log, FsmT,Pc>(request : AppendEntriesRequest,  protected_node: Arc<Mutex<Node<Log, FsmT,Pc>>>,
+pub fn process_append_entries_request<Log, Fsm,Pc>(request : AppendEntriesRequest,  protected_node: Arc<Mutex<Node<Log, Fsm,Pc>>>,
                                                  leader_election_event_tx: Sender<LeaderElectionEvent>,
                                                  reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>) -> AppendEntriesResponse
-    where Log: Sync + Send + LogStorage + 'static, FsmT: Sync + Send + Fsm + 'static, Pc : PeerRequestHandler + Clone {
+    where Log: OperationLog,
+          Fsm: FiniteStateMachine,
+          Pc : PeerRequestHandler{
     let mut node = protected_node.lock().expect("node lock is not poisoned");
 
     //TODO process equals terms!!

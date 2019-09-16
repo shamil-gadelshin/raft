@@ -8,8 +8,8 @@ use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus};
 use crate::configuration::node::{NodeConfiguration};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams, run_node_status_watcher};
-use crate::operation_log::LogStorage;
-use crate::fsm::{Fsm};
+use crate::operation_log::OperationLog;
+use crate::fsm::{FiniteStateMachine};
 use crate::{node, common, PeerRequestChannels, PeerRequestHandler};
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEntriesParams, send_heartbeat_append_entries};
@@ -21,18 +21,19 @@ use crate::communication::client::ClientRequestChannels;
 
 
 //TODO refactor to generic worker
-pub fn start<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send + Fsm+ 'static, Cc : Sync + Send + Clone+ 'static + ClientRequestChannels, Pc : Sync + Send + Clone+ 'static + PeerRequestHandler + PeerRequestChannels>(node_config : NodeConfiguration<Cc, Pc>, log_storage : Log, fsm : FsmT) -> JoinHandle<()>{
+pub fn start<Log: OperationLog, Fsm: FiniteStateMachine, Cc : ClientRequestChannels, Pc : PeerRequestHandler + PeerRequestChannels>(node_config : NodeConfiguration<Cc, Pc>, log_storage : Log, fsm : Fsm) -> JoinHandle<()>{
     thread::spawn(move || node::start_node(node_config, log_storage, fsm))
 }
 
 //TODO check clones number - consider borrowing &
-fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm+ 'static, Cc : Sync + Send + Clone+ 'static + ClientRequestChannels, Pc : Sync + Send + Clone+ 'static + PeerRequestHandler + PeerRequestChannels>(node_config : NodeConfiguration<Cc, Pc>, log_storage : Log, fsm : FsmT) {
+fn start_node<Log: OperationLog, Fsm: FiniteStateMachine, Cc :ClientRequestChannels, Pc : PeerRequestHandler + PeerRequestChannels>(node_config : NodeConfiguration<Cc, Pc>, log_storage : Log, fsm : Fsm) {
     add_this_node_to_cluster(&node_config);
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
     let (commit_index_updated_tx, commit_index_updated_rx ): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
-    let node = Node::new(node_config.node_id,
-                         None,
+    let node = Node::new(node_config.node_state.node_id,
+                         node_config.node_state.current_term,
+                         node_config.node_state.vote_for_id,
                          NodeStatus::Follower,
                          log_storage,
                          fsm,
@@ -109,7 +110,7 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
             commit_index_updated_rx
         });
 
-    info!("Node {:?} started", node_config.node_id);
+    info!("Node {:?} started", node_config.node_state.node_id);
 
     let _ = client_request_handler_thread.join();
     let _ = send_heartbeat_append_entries_thread.join();
@@ -120,11 +121,13 @@ fn start_node<Log: Sync + Send + LogStorage + 'static, FsmT:  Sync + Send +  Fsm
     let _ = fsm_updater_thread.join();
 }
 
+
+//TODO check cluster configuration functionality
 fn add_this_node_to_cluster<Cc : ClientRequestChannels, Pc : Clone + PeerRequestHandler + PeerRequestChannels>(node_config: &NodeConfiguration<Cc, Pc>) {
     let cluster_configuration = node_config.cluster_configuration.clone();
     let mut cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
 
-    cluster.add_peer(node_config.node_id);
+    cluster.add_peer(node_config.node_state.node_id);
 }
 
 
