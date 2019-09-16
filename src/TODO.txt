@@ -5,7 +5,6 @@ Main algorithm:
     .append sync on entry-commit
 - operation_log replication
     .enforce elections timeout
-    .persist server's current term and vote and cluster configuration (state persistence)
     .operation_log forcing from the leader (clear entries with invalid terms and indices
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
@@ -20,7 +19,7 @@ Details:
     .project timeouts
     .investigate channels faults
 - investigate
-   .Arc<dyn Log> to get rid of &static + Send ...
+   .timouts to NodeConfig as separate struct
    .futures
    .election trait?
    .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
@@ -37,6 +36,7 @@ Details:
     .increase log coverage
 - error handling
     .communication timeouts
+    .de-box errors to RaftError
 - project structure
     .separate client?
     .exe-project
@@ -104,12 +104,12 @@ Future Features:
 Done:
 - investigate
     .'static in the 'Log : LogStorage + Sync + Send+ 'static'
+    .Arc<dyn Log> to get rid of &static + Send ...
     .worker thread structure: all peer-request thread, client-thread?
-   .extract communicator trait
+    .extract communicator trait
 - fsm support
 - leader election
     .check log on votes
-
 - communication
     .channel communication
     .tarpc (won't do)
@@ -124,6 +124,7 @@ Done:
     .introduce logging system (remove print_event())
         .response to the client after majority of the servers responses
 - operation_log
+    .persist server's current term and vote and cluster configuration (state persistence)
     .response to the client after majority of the servers responses
     .memory snapshot
     .empty (heartbeat) AppendEntries on node's current operation_log index evaluating

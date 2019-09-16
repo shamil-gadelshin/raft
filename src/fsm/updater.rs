@@ -18,7 +18,7 @@ pub struct FsmUpdaterParams<Log, Fsm,Pc, Ns>
 }
 
 
-pub fn update_fsm<Log, Fsm,Pc, Ns>(params : FsmUpdaterParams<Log,Fsm,Pc, Ns>)
+pub fn update_fsm<Log, Fsm,Pc, Ns>(params : FsmUpdaterParams<Log,Fsm,Pc, Ns>, terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestHandler,

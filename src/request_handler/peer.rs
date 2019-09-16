@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use crossbeam_channel::{Sender};
+use crossbeam_channel::{Sender, Receiver};
 
 use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::leadership::vote_request_processor::process_vote_request;
@@ -23,7 +23,8 @@ pub struct PeerRequestHandlerParams<Log, Fsm,Pc, Ns>
 	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>
 }
 
-pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<Log, Fsm,Pc, Ns>)
+pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<Log, Fsm,Pc, Ns>,
+											 terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,

@@ -37,7 +37,8 @@ pub struct ElectionManagerParams<Log, Fsm,Pc, Ns>
 }
 
 
-pub fn run_node_status_watcher<Log, Fsm, Pc, Ns>(params : ElectionManagerParams<Log, Fsm, Pc, Ns>)
+pub fn run_node_status_watcher<Log, Fsm, Pc, Ns>(params : ElectionManagerParams<Log, Fsm, Pc, Ns>,
+                                                 terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,

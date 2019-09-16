@@ -23,7 +23,8 @@ pub struct SendHeartbeatAppendEntriesParams<Log, Fsm, Pc,Ns>
 
 //TODO remove clone-values
 //TODO park-unpark the thread
-pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatAppendEntriesParams<Log, Fsm, Pc, Ns>)
+pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatAppendEntriesParams<Log, Fsm, Pc, Ns>,
+                                                       terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,

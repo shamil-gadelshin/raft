@@ -20,7 +20,8 @@ pub struct LogReplicatorParams<Log, Fsm, Pc, Ns>
 }
 
 
-pub fn replicate_log_to_peer<Log, Fsm, Pc, Ns>(params : LogReplicatorParams<Log, Fsm, Pc, Ns>)
+pub fn replicate_log_to_peer<Log, Fsm, Pc, Ns>(params : LogReplicatorParams<Log, Fsm, Pc, Ns>,
+											   terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestHandler,

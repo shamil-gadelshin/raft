@@ -24,15 +24,23 @@ pub struct WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>
 }
 
 
-pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>)
+pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>,
+                                                terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
           Ns : NodeStateSaver{
+    info!("Watch leader worker started");
     loop {
         let timeout = crossbeam_channel::after(params.election_timer.get_next_elections_timeout());
         select!(
+            recv(terminate_worker_rx) -> res  => {
+                if let Err(_) = res {
+                    error!("Abnormal exit for watch leader worker");
+                }
+                break
+            },
             recv(timeout) -> _  => {
                 propose_node_election(&params) //TODO check err
             },
@@ -43,6 +51,7 @@ pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams
             },
         );
     }
+    info!("Watch leader worker stopped");
 }
 
 fn propose_node_election<Log, Fsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>) -> ()

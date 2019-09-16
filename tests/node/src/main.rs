@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::collections::HashMap;
 use std::io::Write;
-use std::thread::JoinHandle;
 use std::thread;
 
 use chrono::prelude::{DateTime, Local};
@@ -15,7 +14,7 @@ use chrono::prelude::{DateTime, Local};
 extern crate raft;
 extern crate raft_modules;
 
-use raft::{ClientResponseStatus, ClientRequestHandler, NodeState};
+use raft::{ClientResponseStatus, ClientRequestHandler, NodeState, Worker};
 use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
@@ -25,7 +24,6 @@ use raft_modules::MemoryLogStorage;
 use raft_modules::{InProcClientCommunicator};
 use raft_modules::{InProcPeerCommunicator};
 use raft_modules::NetworkClientCommunicator;
-
 
 
 fn init_logger() {
@@ -51,7 +49,7 @@ fn main() {
     communicator.add_node_communication(new_node_id);
 
     let mut client_handlers  = HashMap::new(); //: HashMap<u64, ClientRequestHandler>
-    let mut node_threads = Vec::new();
+    let mut node_workers = Vec::new();
     for node_id in main_cluster_configuration.get_all() {
         let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(main_cluster_configuration.get_all())));
 
@@ -68,8 +66,8 @@ fn main() {
             election_timer: RandomizedElectionTimer::new(1000, 4000)
         };
         let fsm = MemoryFsm::new(protected_cluster_config.clone());
-        let thread_handle = raft::start_node(config, MemoryLogStorage::default(), fsm, MockNodeStateSaver::default());
-        node_threads.push(thread_handle);
+        let node_worker = raft::start_node(config, MemoryLogStorage::default(), fsm, MockNodeStateSaver::default());
+        node_workers.push(node_worker);
 
         client_handlers.insert(node_id, client_request_handler);
     }
@@ -83,15 +81,26 @@ fn main() {
                                                          client_handlers.clone(),
                                                          new_node_id);
 
-    node_threads.push(thread_handle);
+    node_workers.push(thread_handle);
 
 
     let leader_id = find_a_leader(client_handlers.clone());
-    add_thousands_of_data(client_handlers.clone(), leader_id);
+
+    thread::spawn(    move ||add_thousands_of_data(client_handlers.clone(), leader_id));
+
+    let mut handles = Vec::new();
+    for node_worker in node_workers {
+        let handle = node_worker.join_handle;
+        handles.push(handle);
+        let thread = node_worker.terminate_worker_tx.send(());
+        if thread.is_err(){
+            panic!("worker panicked!")
+        }
+    }
 
 
-    for node_thread in node_threads {
-        let thread = node_thread.join();
+    for node_worker in handles {
+        let thread = node_worker.join();
         if thread.is_err(){
             panic!("worker panicked!")
         }
@@ -123,7 +132,7 @@ fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) 
 
 fn add_thousands_of_data<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>, leader_id : u64)
 {
-    thread::sleep(Duration::from_secs(7));
+  //  thread::sleep(Duration::from_secs(7));
 
     let bytes = "find a leader".as_bytes();
     let data_request = NewDataRequest{data : Arc::new(bytes)};
@@ -135,7 +144,7 @@ fn add_thousands_of_data<Cc : ClientRequestHandler>(client_handlers : HashMap<u6
 fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communicator : InProcPeerCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
                                     client_handlers : HashMap<u64, Cc>,
-                                    new_node_id : u64) -> JoinHandle<()>{
+                                    new_node_id : u64) -> Worker{
 //return;
 
     let communication_timeout = Duration::from_millis(500);
@@ -158,7 +167,8 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
     }
 
     let fsm = MemoryFsm::new(protected_cluster_config.clone());
-    let thread_handle = raft::start_node(new_server_config, MemoryLogStorage::default(), fsm, MockNodeStateSaver::default());
+
+    let thread_worker = raft::start_node(new_server_config, MemoryLogStorage::default(), fsm, MockNodeStateSaver::default());
 
     let add_server_request = raft::AddServerRequest{new_server : new_node_id};
     for kv in client_handlers.clone() {
@@ -181,5 +191,5 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
         info!("New Data request sent for NodeId = {:?}. Response = {:?}", k, resp);
     }
 
-    thread_handle
+    thread_worker
 }

@@ -8,6 +8,7 @@ use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
 use crate::{errors};
 use crate::fsm::FiniteStateMachine;
 use crate::communication::peers::PeerRequestHandler;
+use crossbeam_channel::Receiver;
 
 
 pub struct ClientRequestHandlerParams<Log, Fsm, Cc,Pc, Ns>
@@ -21,7 +22,8 @@ pub struct ClientRequestHandlerParams<Log, Fsm, Cc,Pc, Ns>
 }
 
 
-pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandlerParams<Log,Fsm, Cc, Pc, Ns>)
+pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandlerParams<Log,Fsm, Cc, Pc, Ns>,
+													terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestHandler,

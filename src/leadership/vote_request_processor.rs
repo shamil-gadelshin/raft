@@ -9,8 +9,8 @@ use crate::fsm::FiniteStateMachine;
 
 
 pub fn process_vote_request<Log, Fsm, Pc, Ns>(request: VoteRequest,
-                                         protected_node : Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
-                                         leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
+                                              protected_node : Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
+                                              leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,
