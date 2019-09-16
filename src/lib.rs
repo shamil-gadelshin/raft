@@ -24,17 +24,14 @@ pub use communication::peers::{PeerRequestHandler, PeerRequestChannels};
 pub use state::NodeState;
 pub use configuration::node::ElectionTimer;
 pub use state::NodeStateSaver;
-pub use common::Worker;
 
-use crossbeam_channel::{Receiver, Sender};
-
-
+pub type NodeWorker = common::RaftWorker;
 
 pub fn start_node<Log, Fsm,Cc, Pc, Et, Ns >(node_config : NodeConfiguration<Cc,Pc, Et>,
-											log_storage : Log,
+											operation_log : Log,
 											fsm : Fsm,
 											state_saver : Ns
-) -> Worker
+) -> NodeWorker
 where Log: OperationLog ,
 	  Fsm: FiniteStateMachine,
 	  Cc : ClientRequestChannels,
@@ -42,9 +39,11 @@ where Log: OperationLog ,
 	  Et : ElectionTimer,
 	  Ns : NodeStateSaver{
 
-	let (terminate_worker_tx, terminate_worker_rx): (Sender<()>, Receiver<()>) = crossbeam_channel::unbounded();
-	let join_handle = node::start(node_config, log_storage, fsm, state_saver, terminate_worker_rx);
-
-	Worker{join_handle, terminate_worker_tx}
+	common::run_worker(node::start, node::NodeStartingParams{
+		node_config,
+		operation_log,
+		fsm,
+		state_saver
+	})
 }
 

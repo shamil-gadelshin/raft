@@ -43,25 +43,25 @@ pub fn run_worker_thread<T: Send + 'static, F: Fn(T) + Send + 'static>(worker : 
     thread::spawn(move || worker(params))
 }
 
-pub struct Worker {
+pub struct RaftWorker {
     pub join_handle : JoinHandle<()>,
     pub terminate_worker_tx : Sender<()>
 }
-pub fn run_worker<T: Send + 'static, F: Fn(T, Receiver<()>) + Send + 'static>(worker : F, params : T) -> Worker {
+pub fn run_worker<T: Send + 'static, F: Fn(T, Receiver<()>) + Send + 'static>(worker : F, params : T) -> RaftWorker {
     let (terminate_worker_tx, terminate_worker_rx): (Sender<()>, Receiver<()>) = crossbeam_channel::unbounded();
 
     let join_handle = thread::spawn(move|| worker (params, terminate_worker_rx));
 
-    Worker{join_handle, terminate_worker_tx}
+    RaftWorker {join_handle, terminate_worker_tx}
 }
 
-pub struct WorkerPool {
-    workers : Vec<Worker>
+pub struct RaftWorkerPool {
+    workers : Vec<RaftWorker>
 }
 
-impl WorkerPool {
-    pub fn new(workers : Vec<Worker>) -> WorkerPool {
-        WorkerPool{workers}
+impl RaftWorkerPool {
+    pub fn new(workers : Vec<RaftWorker>) -> RaftWorkerPool {
+        RaftWorkerPool {workers}
     }
 
     pub fn terminate(&self) {

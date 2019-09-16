@@ -14,7 +14,7 @@ use chrono::prelude::{DateTime, Local};
 extern crate raft;
 extern crate raft_modules;
 
-use raft::{ClientResponseStatus, ClientRequestHandler, NodeState, Worker};
+use raft::{ClientResponseStatus, ClientRequestHandler, NodeState, NodeWorker};
 use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
@@ -144,7 +144,7 @@ fn add_thousands_of_data<Cc : ClientRequestHandler>(client_handlers : HashMap<u6
 fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communicator : InProcPeerCommunicator,
                                     protected_cluster_config : Arc<Mutex<ClusterConfiguration>>,
                                     client_handlers : HashMap<u64, Cc>,
-                                    new_node_id : u64) -> Worker{
+                                    new_node_id : u64) -> NodeWorker{
 //return;
 
     let communication_timeout = Duration::from_millis(500);
