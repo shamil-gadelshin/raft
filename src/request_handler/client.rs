@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
-
-use crossbeam_channel::Sender;
+use std::error::Error;
 
 use crate::state::{Node, NodeStatus};
 use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, ClientRequestChannels};
@@ -8,7 +7,6 @@ use crate::operation_log::{LogStorage};
 use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
 use crate::errors;
 use crate::fsm::Fsm;
-use std::error::Error;
 use crate::communication::peers::PeerRequestHandler;
 
 
@@ -44,7 +42,12 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage, FsmT:  Sync + Send
 
 		let process_request_result = match client_rpc_response_result {
 			Ok(client_rpc_response) => {
-				send_client_response(client_rpc_response, response_tx)
+				let send_result = response_tx.send(client_rpc_response);
+				if let Err(err) = send_result {
+					errors::new_err("cannot send clientRpcResponse".to_string(), Some(Box::new(err)))
+				} else {
+					Ok(())
+				}
 			},
 			Err(err) => {
 				error!("Process client request error: {}", err.description());
@@ -54,17 +57,6 @@ pub fn process_client_requests<Log: Sync + Send + LogStorage, FsmT:  Sync + Send
 
 		trace!("Client request processed: {:?}", process_request_result)
 	}
-}
-
-
-//TODO inline
-fn send_client_response(client_rpc_response: ClientRpcResponse, response_tx: Sender<ClientRpcResponse>) -> Result<(), Box<Error>> {
-	let send_result = response_tx.send(client_rpc_response);
-	if let Err(err) = send_result {
-		return errors::new_err("cannot send clientRpcResponse".to_string(), Some(Box::new(err)))
-	}
-
-	Ok(())
 }
 
 fn process_client_request_internal<Log, FsmT, Pc>(protected_node: Arc<Mutex<Node<Log, FsmT,Pc>>>, entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
