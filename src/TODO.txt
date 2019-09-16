@@ -29,6 +29,7 @@ Details:
     .libp2p
     .grpc
     .change client and node response patterns (after committing to the operation_log)
+    .service discovery for network-communication (peer)
 - system events logging
     .remove requests from log messages
     .increase log coverage
@@ -47,6 +48,7 @@ Details:
     .clippy
 - release
     .consensus
+    .graceful-shutdown
     .implement Display
     .configuration
         .cmd params
