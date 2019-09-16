@@ -5,27 +5,29 @@ use crossbeam_channel::{Sender};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::leadership::vote_request_processor::process_vote_request;
 use crate::communication::peers::{VoteRequest, AppendEntriesRequest, PeerRequestHandler, PeerRequestChannels};
-use crate::state::{Node};
+use crate::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
 use crate::fsm::FiniteStateMachine;
 use crate::common::LeaderConfirmationEvent;
 use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
 
 
-pub struct PeerRequestHandlerParams<Log, Fsm,Pc>
+pub struct PeerRequestHandlerParams<Log, Fsm,Pc, Ns>
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
-		  Pc : PeerRequestChannels + PeerRequestHandler{
-	pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc>>>,
+		  Pc : PeerRequestChannels + PeerRequestHandler,
+		  Ns : NodeStateSaver{
+	pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
 	pub peer_communicator: Pc,
 	pub leader_election_event_tx: Sender<LeaderElectionEvent>,
 	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>
 }
 
-pub fn process_peer_request<Log, Fsm,Pc>(params : PeerRequestHandlerParams<Log, Fsm,Pc>)
+pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<Log, Fsm,Pc, Ns>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
-		  Pc : PeerRequestChannels + PeerRequestHandler{
+		  Pc : PeerRequestChannels + PeerRequestHandler,
+		  Ns : NodeStateSaver{
 	let node_id = {params.protected_node.lock().expect("node lock is not poisoned").id};
 	let vote_request_rx = params.peer_communicator.vote_request_rx(node_id).clone();
 	let append_entries_request_rx = params.peer_communicator.append_entries_request_rx(node_id);
@@ -47,10 +49,11 @@ pub fn process_peer_request<Log, Fsm,Pc>(params : PeerRequestHandlerParams<Log, 
 	}
 }
 
-fn handle_vote_request<Log, Fsm,Pc>(node_id: u64, request : VoteRequest, params : &PeerRequestHandlerParams<Log, Fsm,Pc>)
+fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64, request : VoteRequest, params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
-		  Pc : PeerRequestChannels + PeerRequestHandler{
+		  Pc : PeerRequestChannels + PeerRequestHandler,
+		  Ns : NodeStateSaver{
 	info!("Node {:?} Received  vote request {:?}", node_id, request);
 
 	let vote_response = process_vote_request(request,
@@ -66,10 +69,11 @@ fn handle_vote_request<Log, Fsm,Pc>(node_id: u64, request : VoteRequest, params 
 }
 
 
-pub fn handle_append_entries_request<Log, Fsm,Pc>(node_id : u64, request : AppendEntriesRequest, params : &PeerRequestHandlerParams<Log, Fsm, Pc>)
+pub fn handle_append_entries_request<Log, Fsm, Pc, Ns>(node_id : u64, request : AppendEntriesRequest, params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
-		  Pc : PeerRequestChannels + PeerRequestHandler{
+		  Pc : PeerRequestChannels + PeerRequestHandler,
+		  Ns : NodeStateSaver{
 	let append_entries_response_tx = params.peer_communicator.append_entries_response_tx(node_id);
 	trace!("Node {:?} Received 'Append Entries Request' {:?}", node_id, request);
 

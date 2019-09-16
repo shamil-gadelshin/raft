@@ -3,26 +3,28 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::operation_log::OperationLog;
-use crate::state::{Node, NodeStatus, AppendEntriesRequestType};
+use crate::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
 use crate::communication::peers::{PeerRequestHandler};
 use crate::fsm::FiniteStateMachine;
 
 
-pub struct LogReplicatorParams<Log, Fsm, Pc>
+pub struct LogReplicatorParams<Log, Fsm, Pc, Ns>
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
-		  Pc : PeerRequestHandler{
-	pub protected_node : Arc<Mutex<Node<Log, Fsm,Pc>>>,
+		  Pc : PeerRequestHandler,
+		  Ns : NodeStateSaver{
+	pub protected_node : Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>,
 	pub replicate_log_to_peer_rx: Receiver<u64>,
 	pub replicate_log_to_peer_tx: Sender<u64>,
 	pub communicator : Pc
 }
 
 
-pub fn replicate_log_to_peer<Log, Fsm, Pc>(params : LogReplicatorParams<Log, Fsm, Pc>)
+pub fn replicate_log_to_peer<Log, Fsm, Pc, Ns>(params : LogReplicatorParams<Log, Fsm, Pc, Ns>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
-		  Pc : PeerRequestHandler{
+		  Pc : PeerRequestHandler,
+		  Ns : NodeStateSaver{
 	loop {
 		let peer_id = params.replicate_log_to_peer_rx.recv()
 			.expect("can receive peer_id from replicate_log_to_peer_rx");

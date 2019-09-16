@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::error::Error;
 
-use crate::state::{Node, NodeStatus};
+use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, ClientRequestChannels};
 use crate::operation_log::{OperationLog};
 use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
@@ -10,21 +10,23 @@ use crate::fsm::FiniteStateMachine;
 use crate::communication::peers::PeerRequestHandler;
 
 
-pub struct ClientRequestHandlerParams<Log, Fsm, Cc,Pc>
+pub struct ClientRequestHandlerParams<Log, Fsm, Cc,Pc, Ns>
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestHandler,
-		  Cc : ClientRequestChannels
-{	pub protected_node : Arc<Mutex<Node<Log, Fsm,Pc>>>,
+		  Cc : ClientRequestChannels,
+		  Ns : NodeStateSaver
+{	pub protected_node : Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>,
 	pub client_communicator : Cc
 }
 
 
-pub fn process_client_requests<Log, Fsm, Cc,Pc>(params : ClientRequestHandlerParams<Log,Fsm, Cc,Pc>)
+pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandlerParams<Log,Fsm, Cc, Pc, Ns>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestHandler,
-		  Cc : ClientRequestChannels{
+		  Cc : ClientRequestChannels,
+		  Ns : NodeStateSaver{
 	let add_server_request_rx = params.client_communicator.add_server_request_rx();
 	let new_data_request_rx = params.client_communicator.new_data_request_rx();
 	loop {
@@ -66,10 +68,11 @@ pub fn process_client_requests<Log, Fsm, Cc,Pc>(params : ClientRequestHandlerPar
 	}
 }
 
-fn process_client_request_internal<Log, Fsm, Pc>(protected_node: Arc<Mutex<Node<Log, Fsm,Pc>>>, entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
+fn process_client_request_internal<Log, Fsm, Pc, Ns>(protected_node: Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>, entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
-		  Pc : PeerRequestHandler{
+		  Pc : PeerRequestHandler,
+		  Ns : NodeStateSaver{
 	let mut node = protected_node.lock().expect("node lock is not poisoned");
 
 	let client_rpc_response = match node.status {

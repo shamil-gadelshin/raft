@@ -7,6 +7,7 @@ mod memory_fsm;
 mod communication;
 mod errors;
 mod election;
+mod node;
 
 pub use memory_fsm::MemoryFsm;
 pub use memory_log::MemoryLogStorage;
@@ -14,3 +15,4 @@ pub use communication::inproc::inproc_client_communicator::InProcClientCommunica
 pub use communication::inproc::inproc_peer_communicator::InProcPeerCommunicator;
 pub use communication::network::client_communicator::network_client_communicator::NetworkClientCommunicator;
 pub use election::RandomizedElectionTimer;
+pub use node::MockNodeStateSaver;

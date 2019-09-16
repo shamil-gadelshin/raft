@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent};
-use crate::state::{Node, NodeStatus};
+use crate::state::{Node, NodeStatus, NodeStateSaver};
 use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::OperationLog;
 use crate::fsm::FiniteStateMachine;
@@ -11,23 +11,25 @@ use crate::communication::peers::PeerRequestHandler;
 use crate::configuration::node::ElectionTimer;
 
 
-pub struct WatchLeaderStatusParams<Log, Fsm, Pc, Et>
+pub struct WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,
-          Et : ElectionTimer{
-    pub protected_node: Arc<Mutex<Node<Log,Fsm, Pc>>>,
+          Et : ElectionTimer,
+          Ns : NodeStateSaver{
+    pub protected_node: Arc<Mutex<Node<Log,Fsm, Pc, Ns>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub watchdog_event_rx : Receiver<LeaderConfirmationEvent>,
     pub election_timer: Et,
 }
 
 
-pub fn watch_leader_status<Log,Fsm, Pc, Et>(params : WatchLeaderStatusParams<Log, Fsm, Pc, Et>)
+pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>)
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,
-          Et : ElectionTimer{
+          Et : ElectionTimer,
+          Ns : NodeStateSaver{
     loop {
         let timeout = crossbeam_channel::after(params.election_timer.get_next_elections_timeout());
         select!(
@@ -43,11 +45,12 @@ pub fn watch_leader_status<Log,Fsm, Pc, Et>(params : WatchLeaderStatusParams<Log
     }
 }
 
-fn propose_node_election<Log, Fsm, Pc, Et>(params: &WatchLeaderStatusParams<Log, Fsm, Pc, Et>) -> ()
+fn propose_node_election<Log, Fsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>) -> ()
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,
-          Et : ElectionTimer{
+          Et : ElectionTimer,
+          Ns : NodeStateSaver{
     let node = params.protected_node.lock().expect("node lock is not poisoned");
     if let NodeStatus::Follower = node.status {
         info!("Node {:?} Leader awaiting time elapsed. Starting new election.", node.id);

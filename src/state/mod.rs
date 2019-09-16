@@ -17,14 +17,15 @@ use crate::errors::new_err;
 #[derive(Debug, Clone)]
 //TODO decompose GOD object
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
-pub struct Node<Log,Fsm,Pc>
+pub struct Node<Log,Fsm,Pc, Ns>
 where Log: OperationLog,
       Fsm: FiniteStateMachine,
-      Pc : PeerRequestHandler, {
+      Pc : PeerRequestHandler,
+      Ns : NodeStateSaver{
     pub id : u64,
     current_term: u64,
     pub current_leader_id: Option<u64>,
-    pub voted_for_id: Option<u64>,
+    voted_for_id: Option<u64>,
     pub status : NodeStatus,
     next_index : HashMap<u64, u64>,
     match_index : HashMap<u64, u64>, //TODO support match_index
@@ -35,7 +36,7 @@ where Log: OperationLog,
     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     replicate_log_to_peer_tx: Sender<u64> ,//TODO split god object
     commit_index_updated_tx : Sender<u64>,
-//    state_saver: Ns
+    state_saver: Ns
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -45,14 +46,15 @@ pub enum NodeStatus {
     Leader
 }
 
+#[derive(Debug)]
 pub struct NodeState {
     pub node_id: u64,
     pub current_term: u64,
     pub vote_for_id: Option<u64>,
 }
 
-pub trait NodeStateSaver {
-    fn save_node_state(state : NodeState) -> Result<(), Box<Error>>;
+pub trait NodeStateSaver : Send + 'static{
+    fn save_node_state(&self, state : NodeState) -> Result<(), Box<Error>>;
 }
 
 pub enum AppendEntriesRequestType {
@@ -61,21 +63,23 @@ pub enum AppendEntriesRequestType {
     UpdateNode(u64)
 }
 
-impl <Log, FsmT,Pc> Node<Log, FsmT,Pc>
-where Log: Sized + Sync + OperationLog,
-      FsmT: FiniteStateMachine,
-      Pc : PeerRequestHandler + Clone,{
-//     Ns : NodeStateSaver{
+//TODO refactor to node_config
+impl <Log, Fsm,Pc, Ns> Node<Log, Fsm,Pc, Ns>
+where Log: OperationLog,
+      Fsm: FiniteStateMachine,
+      Pc : PeerRequestHandler,
+      Ns : NodeStateSaver{
     pub fn new(id: u64,
                current_term: u64,
                voted_for_id: Option<u64>,
                status: NodeStatus,
                log: Log,
-               fsm: FsmT,
+               fsm: Fsm,
                communicator: Pc,
                cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
                replicate_log_to_peer_tx: Sender<u64>,
-               commit_index_updated_tx: Sender<u64>) -> Node<Log, FsmT, Pc> {
+               commit_index_updated_tx: Sender<u64>,
+               state_saver : Ns) -> Node<Log, Fsm, Pc, Ns> {
         Node {
             id,
             current_term,
@@ -90,7 +94,8 @@ where Log: Sized + Sync + OperationLog,
             communicator,
             cluster_configuration,
             replicate_log_to_peer_tx,
-            commit_index_updated_tx
+            commit_index_updated_tx,
+            state_saver
         }
     }
 
@@ -119,12 +124,28 @@ where Log: Sized + Sync + OperationLog,
         self.save_node_state();
     }
 
+    pub fn get_voted_for_id(&self) -> Option<u64> {
+        self.voted_for_id
+    }
+    pub fn set_voted_for_id(&mut self, voted_for_id: Option<u64>) {
+        self.voted_for_id = voted_for_id;
+        self.save_node_state();
+    }
+
     fn save_node_state(&self){
-        NodeState{
+        let state = NodeState{
             node_id: self.id,
             current_term: self.current_term,
             vote_for_id: self.voted_for_id
         };
+
+        let result = self.state_saver.save_node_state(state);
+
+        if let Err(err) = result {
+            let msg = format!("Node state save failed:{}", err.description());
+
+            error!("{}", msg);
+        }
     }
 
     pub fn get_next_index(&self, peer_id: u64) -> u64 {

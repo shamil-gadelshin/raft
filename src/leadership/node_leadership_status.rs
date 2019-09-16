@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent};
-use crate::state::{Node, NodeStatus};
+use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::peers::{PeerRequestHandler};
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::common;
@@ -22,11 +22,12 @@ pub struct ElectionNotice {
 }
 
 
-pub struct ElectionManagerParams<Log, Fsm,Pc>
+pub struct ElectionManagerParams<Log, Fsm,Pc, Ns>
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
-          Pc : PeerRequestHandler{
-    pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc>>>,
+          Pc : PeerRequestHandler,
+          Ns : NodeStateSaver{
+    pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub leader_election_event_rx : Receiver<LeaderElectionEvent>,
     pub leader_initial_heartbeat_tx : Sender<bool>,
@@ -36,10 +37,11 @@ pub struct ElectionManagerParams<Log, Fsm,Pc>
 }
 
 
-pub fn run_node_status_watcher<Log, Fsm, Pc>(params : ElectionManagerParams<Log, Fsm, Pc>)
+pub fn run_node_status_watcher<Log, Fsm, Pc, Ns>(params : ElectionManagerParams<Log, Fsm, Pc, Ns>)
     where Log: OperationLog,
           Fsm: FiniteStateMachine,
-          Pc : PeerRequestHandler{
+          Pc : PeerRequestHandler,
+          Ns : NodeStateSaver{
     loop {
         let event_result = params.leader_election_event_rx.recv();
 
@@ -50,7 +52,7 @@ pub fn run_node_status_watcher<Log, Fsm, Pc>(params : ElectionManagerParams<Log,
                 let mut node = params.protected_node.lock().expect("node lock is not poisoned");
 
                 let node_id = node.id;
-                node.voted_for_id = Some(node_id);
+                node.set_voted_for_id(Some(node_id));
                 node.current_leader_id = None;
                 node.status = NodeStatus::Candidate;
                 info!("Node {:?} Status changed to Candidate", node.id);
@@ -77,7 +79,7 @@ pub fn run_node_status_watcher<Log, Fsm, Pc>(params : ElectionManagerParams<Log,
 
                 node.current_leader_id = Some(node.id);
                 node.set_current_term(term);
-                node.voted_for_id = None;
+                node.set_voted_for_id(None);
                 node.status = NodeStatus::Leader;
                 info!("Node {:?} Status changed to Leader", node.id);
 
@@ -89,7 +91,7 @@ pub fn run_node_status_watcher<Log, Fsm, Pc>(params : ElectionManagerParams<Log,
 
                 node.set_current_term(vr.term);
                 node.status = NodeStatus::Follower;
-                node.voted_for_id = None;
+                node.set_voted_for_id(None);
                 info!("Node {:?} Status changed to Follower", node.id);
 
                 params. watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");

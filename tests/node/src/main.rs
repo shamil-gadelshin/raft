@@ -20,7 +20,7 @@ use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
 
-use raft_modules::{MemoryFsm, RandomizedElectionTimer};
+use raft_modules::{MemoryFsm, RandomizedElectionTimer, MockNodeStateSaver};
 use raft_modules::MemoryLogStorage;
 use raft_modules::{InProcClientCommunicator};
 use raft_modules::{InProcPeerCommunicator};
@@ -68,7 +68,7 @@ fn main() {
             election_timer: RandomizedElectionTimer::new(1000, 4000)
         };
         let fsm = MemoryFsm::new(protected_cluster_config.clone());
-        let thread_handle = raft::start_node(config, MemoryLogStorage::default(), fsm);
+        let thread_handle = raft::start_node(config, MemoryLogStorage::default(), fsm, MockNodeStateSaver::default());
         node_threads.push(thread_handle);
 
         client_handlers.insert(node_id, client_request_handler);
@@ -158,7 +158,7 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
     }
 
     let fsm = MemoryFsm::new(protected_cluster_config.clone());
-    let thread_handle = raft::start_node(new_server_config, MemoryLogStorage::default(), fsm);
+    let thread_handle = raft::start_node(new_server_config, MemoryLogStorage::default(), fsm, MockNodeStateSaver::default());
 
     let add_server_request = raft::AddServerRequest{new_server : new_node_id};
     for kv in client_handlers.clone() {

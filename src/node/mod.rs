@@ -5,7 +5,7 @@ use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent};
-use crate::state::{Node, NodeStatus};
+use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::configuration::node::{NodeConfiguration, ElectionTimer};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams, run_node_status_watcher};
 use crate::operation_log::OperationLog;
@@ -21,22 +21,24 @@ use crate::communication::client::ClientRequestChannels;
 
 
 //TODO refactor to generic worker
-pub fn start<Log, Fsm, Cc, Pc, Et>(node_config : NodeConfiguration<Cc, Pc, Et>, log_storage : Log, fsm : Fsm) -> JoinHandle<()>
+pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Cc, Pc, Et>, log_storage : Log, fsm : Fsm, state_saver : Ns) -> JoinHandle<()>
     where Log: OperationLog ,
           Fsm: FiniteStateMachine,
           Cc : ClientRequestChannels,
           Pc : PeerRequestHandler + PeerRequestChannels,
-          Et : ElectionTimer {
-    thread::spawn(move || node::start_node(node_config, log_storage, fsm))
+          Et : ElectionTimer,
+          Ns : NodeStateSaver {
+    thread::spawn(move || node::start_node(node_config, log_storage, fsm, state_saver))
 }
 
 //TODO check clones number - consider borrowing &
-fn start_node<Log, Fsm, Cc, Pc, Et>(node_config : NodeConfiguration<Cc, Pc, Et>, log_storage : Log, fsm : Fsm)
+fn start_node<Log, Fsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Cc, Pc, Et>, log_storage : Log, fsm : Fsm, state_saver : Ns)
     where Log: OperationLog ,
           Fsm: FiniteStateMachine,
           Cc : ClientRequestChannels,
           Pc : PeerRequestHandler + PeerRequestChannels,
-          Et : ElectionTimer{
+          Et : ElectionTimer,
+          Ns : NodeStateSaver{
     add_this_node_to_cluster(&node_config);
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
@@ -50,7 +52,8 @@ fn start_node<Log, Fsm, Cc, Pc, Et>(node_config : NodeConfiguration<Cc, Pc, Et>,
                          node_config.peer_communicator.clone(),
                          node_config.cluster_configuration.clone(),
                          replicate_log_to_peer_tx.clone(),
-        commit_index_updated_tx
+        commit_index_updated_tx,
+        state_saver
     );
 
     let protected_node = Arc::new(Mutex::new(node));

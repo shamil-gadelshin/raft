@@ -48,7 +48,7 @@ impl QuorumResponse for AppendEntriesResponse {
     }
 }
 
-pub trait PeerRequestHandler: Sync + Send + 'static + Clone {
+pub trait PeerRequestHandler: Send + 'static + Clone {
     fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, Box<Error>>;
     fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>;
 }
