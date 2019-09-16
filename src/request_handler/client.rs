@@ -29,12 +29,19 @@ pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandle
 		  Pc : PeerRequestHandler,
 		  Cc : ClientRequestChannels,
 		  Ns : NodeStateSaver{
+	info!("Client request processor worker started");
 	let add_server_request_rx = params.client_communicator.add_server_request_rx();
 	let new_data_request_rx = params.client_communicator.new_data_request_rx();
 	loop {
 		let response_tx;
 		let entry_content;
 		select!(
+			recv(terminate_worker_rx) -> res  => {
+                if let Err(_) = res {
+                    error!("Abnormal exit for client request processor worker");
+                }
+                break
+            },
             recv(add_server_request_rx) -> res => {
 				let request = res.expect("can get add server request");
 				entry_content = EntryContent::AddServer(AddServerEntryContent { new_server: request.new_server });
@@ -68,6 +75,7 @@ pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandle
 
 		trace!("Client request processed: {:?}", process_request_result)
 	}
+	info!("Client request processor worker stopped");
 }
 
 fn process_client_request_internal<Log, Fsm, Pc, Ns>(protected_node: Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>, entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>

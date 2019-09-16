@@ -10,7 +10,7 @@ use crate::configuration::node::{NodeConfiguration, ElectionTimer};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams, run_node_status_watcher};
 use crate::operation_log::OperationLog;
 use crate::fsm::{FiniteStateMachine};
-use crate::{node, common, PeerRequestChannels, PeerRequestHandler, Worker};
+use crate::{node, common, PeerRequestChannels, PeerRequestHandler};
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEntriesParams, send_heartbeat_append_entries};
 use crate::leadership::leader_watcher::{WatchLeaderStatusParams, watch_leader_status};
@@ -144,7 +144,10 @@ fn start_node<Log, Fsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Cc, Pc, 
 
     info!("Node {:?} started", node_config.node_state.node_id);
 
-    let terminate_result = terminate_worker_rx.recv(); //TODO Check result
+    let terminate_result = terminate_worker_rx.recv();
+    if let Err(e) = terminate_result {
+        error!("Abnormal exit for node: {}", e);
+    }
 
     info!("Node {:?} termination requested", node_config.node_state.node_id);
 

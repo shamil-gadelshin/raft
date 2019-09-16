@@ -31,13 +31,13 @@ pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
           Ns : NodeStateSaver{
-    info!("Watch leader worker started");
+    info!("Watch leader expiration status worker started");
     loop {
         let timeout = crossbeam_channel::after(params.election_timer.get_next_elections_timeout());
         select!(
             recv(terminate_worker_rx) -> res  => {
                 if let Err(_) = res {
-                    error!("Abnormal exit for watch leader worker");
+                    error!("Abnormal exit for watch leader expiration status worker");
                 }
                 break
             },
@@ -51,7 +51,7 @@ pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams
             },
         );
     }
-    info!("Watch leader worker stopped");
+    info!("Watch leader expiration status worker stopped");
 }
 
 fn propose_node_election<Log, Fsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>) -> ()

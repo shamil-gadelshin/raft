@@ -26,7 +26,6 @@ pub use configuration::node::ElectionTimer;
 pub use state::NodeStateSaver;
 pub use common::Worker;
 
-use std::thread::JoinHandle;
 use crossbeam_channel::{Receiver, Sender};
 
 

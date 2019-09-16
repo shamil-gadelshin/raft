@@ -29,12 +29,19 @@ pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<L
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
 		  Ns : NodeStateSaver{
+	info!("Peer request processor worker started");
 	let node_id = {params.protected_node.lock().expect("node lock is not poisoned").id};
 	let vote_request_rx = params.peer_communicator.vote_request_rx(node_id).clone();
 	let append_entries_request_rx = params.peer_communicator.append_entries_request_rx(node_id);
 
 	loop {
 		select!(
+			recv(terminate_worker_rx) -> res  => {
+                if let Err(_) = res {
+                    error!("Abnormal exit for client request processor worker");
+                }
+                break
+            },
 			recv(vote_request_rx) -> res => {
 				let request = res.expect("can get request from vote_request_rx");
 
@@ -48,6 +55,7 @@ pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<L
 		);
 
 	}
+	info!("Peer request processor worker stopped");
 }
 
 fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64, request : VoteRequest, params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)

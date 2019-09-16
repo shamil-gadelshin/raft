@@ -29,18 +29,26 @@ pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatApp
           Fsm: FiniteStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver{
+    info!("Heartbeat sender worker started");
     loop {
         let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
         select!(
+            recv(terminate_worker_rx) -> res  => {
+                if let Err(_) = res {
+                    error!("Abnormal exit for heartbeat sender worker");
+                }
+                break
+            },
             recv(heartbeat_timeout) -> _  => {
                 send_heartbeat(params.protected_node.clone(), params.cluster_configuration.clone(), &params.communicator)
                 },
-            recv(params.leader_initial_heartbeat_rx) -> _  => {
+            recv(params.leader_initial_heartbeat_rx) -> _  => { //TODO check err
                 trace!("Sending initial heartbeat...");
                 send_heartbeat(params.protected_node.clone(), params.cluster_configuration.clone(), &params.communicator)
                 },
         );
     }
+    info!("Heartbeat sender worker stopped");
 }
 
 fn send_heartbeat<Log, Fsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,

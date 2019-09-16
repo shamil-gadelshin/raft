@@ -23,35 +23,50 @@ pub fn update_fsm<Log, Fsm,Pc, Ns>(params : FsmUpdaterParams<Log,Fsm,Pc, Ns>, te
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestHandler,
 		  Ns : NodeStateSaver{
+	info!("FSM updater worker started");
 	loop {
-		let new_commit_index = params.commit_index_updated_rx.recv().expect("valid receive of commit index"); //fsm should be updated
-		let mut node = params.protected_node.lock().expect("node lock is not poisoned");
-		trace!("Update Fsm request for Node {}, Commit index ={}", node.id, new_commit_index);
-		loop {
-			let last_applied = node.fsm.get_last_applied_entry_index();
-
-			let mut entry_index= 0;
-			let entry_result : Option<LogEntry>  = {
-				if new_commit_index > last_applied {
-					entry_index = last_applied + 1;
-
-					node.log.get_entry(entry_index)
-				} else {
-					None
+		select!(
+			recv(terminate_worker_rx) -> res  => {
+				if let Err(_) = res {
+					error!("Abnormal exit for FSM updater worker");
 				}
-			};
+				break
+			},
+			recv(params.commit_index_updated_rx) -> new_commit_index_result => {
+				let new_commit_index = new_commit_index_result.expect("valid receive of commit index"); //fsm should be updated
+				process_update_fsm_request(&params, new_commit_index)
+			}
+		);
+	}
+	info!("FSM updater worker stopped");
+}
 
-			if let Some(entry) = entry_result {
-				let fsm_apply_result = node.fsm.apply_entry(entry);
+fn process_update_fsm_request<Log, Fsm, Pc, Ns>(params: &FsmUpdaterParams<Log, Fsm, Pc, Ns>, new_commit_index: u64) -> () where Log: OperationLog, Fsm: FiniteStateMachine, Pc: PeerRequestHandler, Ns: NodeStateSaver {
+	let mut node = params.protected_node.lock().expect("node lock is not poisoned");
+	trace!("Update Fsm request for Node {}, Commit index ={}", node.id, new_commit_index);
+	loop {
+		let last_applied = node.fsm.get_last_applied_entry_index();
 
-				if let Err(err) = fsm_apply_result {
-					error!("Fsm Apply error. Entry = {}: {}", entry_index, err.description());
-					break;
-            	}
+		let mut entry_index = 0;
+		let entry_result: Option<LogEntry> = {
+			if new_commit_index > last_applied {
+				entry_index = last_applied + 1;
+
+				node.log.get_entry(entry_index)
 			} else {
+				None
+			}
+		};
+
+		if let Some(entry) = entry_result {
+			let fsm_apply_result = node.fsm.apply_entry(entry);
+
+			if let Err(err) = fsm_apply_result {
+				error!("Fsm Apply error. Entry = {}: {}", entry_index, err.description());
 				break;
 			}
+		} else {
+			break;
 		}
 	}
-
 }
