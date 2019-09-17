@@ -90,7 +90,8 @@ pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(params : NodeStartingParams<Log, Fsm, Cc,
             protected_node: protected_node.clone(),
             leader_election_event_tx: leader_election_tx.clone(),
             reset_leadership_watchdog_tx: reset_leadership_watchdog_tx.clone(),
-            peer_communicator: params.node_config.peer_communicator.clone()
+            peer_communicator: params.node_config.peer_communicator.clone(),
+            communication_timeout: params.node_config.timings.communication_timeout
         });
 
     let send_heartbeat_append_entries_worker = common::run_worker(
@@ -99,7 +100,8 @@ pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(params : NodeStartingParams<Log, Fsm, Cc,
             protected_node: protected_node.clone(),
             cluster_configuration: params.node_config.cluster_configuration.clone(),
             communicator: params.node_config.peer_communicator.clone(),
-            leader_initial_heartbeat_rx
+            leader_initial_heartbeat_rx,
+            heartbeat_timeout: params.node_config.timings.heartbeat_timeout
         });
 
     let client_request_handler_worker = common::run_worker(
@@ -135,19 +137,19 @@ pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(params : NodeStartingParams<Log, Fsm, Cc,
 
     let worker_pool = RaftWorkerPool::new(workers);
 
-    info!("Node {:?} started", params.node_config.node_state.node_id);
+    info!("Node {} started", params.node_config.node_state.node_id);
 
     let terminate_result = terminate_worker_rx.recv();
     if let Err(e) = terminate_result {
         error!("Abnormal exit for node: {}", e);
     }
 
-    info!("Node {:?} termination requested", params.node_config.node_state.node_id);
+    info!("Node {} termination requested", params.node_config.node_state.node_id);
 
     worker_pool.terminate();
     worker_pool.join();
 
-    info!("Node {:?} shutting down", params.node_config.node_state.node_id);
+    info!("Node {} shutting down", params.node_config.node_state.node_id);
 }
 
 

@@ -20,7 +20,8 @@ pub struct PeerRequestHandlerParams<Log, Fsm,Pc, Ns>
 	pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
 	pub peer_communicator: Pc,
 	pub leader_election_event_tx: Sender<LeaderElectionEvent>,
-	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>
+	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>,
+	pub communication_timeout: Duration
 }
 
 pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<Log, Fsm,Pc, Ns>,
@@ -63,7 +64,7 @@ fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64, request : VoteRequest, pa
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
 		  Ns : NodeStateSaver{
-	info!("Node {:?} Received  vote request {:?}", node_id, request);
+	info!("Node {} Received  vote request {:?}", node_id, request);
 
 	let vote_response = process_vote_request(request,
 											 params.protected_node.clone(),
@@ -74,7 +75,7 @@ fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64, request : VoteRequest, pa
 		let timeout = Duration::from_secs(1);
 		params.peer_communicator.vote_response_tx(node_id).send_timeout(vote_response, timeout)
 	};
-	info!("Node {:?} voted {:?}", node_id, resp_result);
+	info!("Node {} voted {:?}", node_id, resp_result);
 }
 
 
@@ -84,14 +85,22 @@ pub fn handle_append_entries_request<Log, Fsm, Pc, Ns>(node_id : u64, request : 
 		  Pc : PeerRequestChannels + PeerRequestHandler,
 		  Ns : NodeStateSaver{
 	let append_entries_response_tx = params.peer_communicator.append_entries_response_tx(node_id);
-	trace!("Node {:?} Received 'Append Entries Request' {:?}", node_id, request);
+	trace!("Node {} Received 'Append Entries Request' {:?}", node_id, request);
 
 	let append_entry_response = process_append_entries_request(request, params.protected_node.clone(),
 	params.leader_election_event_tx.clone(), params.reset_leadership_watchdog_tx.clone());
 
-	//TODO outer communication timeouts
-	let send_result = append_entries_response_tx.send_timeout(append_entry_response, Duration::from_secs(1));
-	trace!("Node {:?} AppendEntriesResponse: {:?}", node_id, send_result);
+	let send_result = append_entries_response_tx.send_timeout(append_entry_response, params.communication_timeout);
+
+	match send_result {
+		Ok(resp) => {
+			trace!("Node {} AppendEntriesResponse: {:?}", node_id, resp);
+		},
+		Err(err) => {
+			error!("Failed append_request processing for Node {} Err: {}", node_id, err);
+		}
+	}
+
 }
 
 

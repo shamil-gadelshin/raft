@@ -19,9 +19,9 @@ pub struct SendHeartbeatAppendEntriesParams<Log, Fsm, Pc,Ns>
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     pub communicator : Pc,
     pub leader_initial_heartbeat_rx : Receiver<bool>,
+    pub heartbeat_timeout : Duration
 }
 
-//TODO remove clone-values
 //TODO park-unpark the thread
 pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatAppendEntriesParams<Log, Fsm, Pc, Ns>,
                                                        terminate_worker_rx : Receiver<()>)
@@ -31,7 +31,7 @@ pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatApp
           Ns : NodeStateSaver{
     info!("Heartbeat sender worker started");
     loop {
-        let heartbeat_timeout = crossbeam_channel::after(leader_heartbeat_duration_ms());
+        let heartbeat_timeout = crossbeam_channel::after(params.heartbeat_timeout);
         select!(
             recv(terminate_worker_rx) -> res  => {
                 if let Err(_) = res {
@@ -41,11 +41,14 @@ pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatApp
             },
             recv(heartbeat_timeout) -> _  => {
                 send_heartbeat(params.protected_node.clone(), params.cluster_configuration.clone(), &params.communicator)
-                },
-            recv(params.leader_initial_heartbeat_rx) -> _  => { //TODO check err
+            },
+            recv(params.leader_initial_heartbeat_rx) -> leader_initial_heartbeat_result  => {
+                if let Err(err) = leader_initial_heartbeat_result {
+                    error!("Invalid result from leader_initial_heartbeat_rx: {}", err);
+                }
                 trace!("Sending initial heartbeat...");
                 send_heartbeat(params.protected_node.clone(), params.cluster_configuration.clone(), &params.communicator)
-                },
+             },
         );
     }
     info!("Heartbeat sender worker stopped");
@@ -68,18 +71,13 @@ fn send_heartbeat<Log, Fsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Fsm, Pc
         let append_entries_heartbeat =
             node.create_append_entry_request(AppendEntriesRequestType::Heartbeat);
 
-        trace!("Node {:?} Send 'empty Append Entries Request(heartbeat)'.", node.id);
+        trace!("Node {} Send 'empty Append Entries Request(heartbeat)'.", node.id);
 
         let requester = |dest_node_id: u64, req: AppendEntriesRequest| communicator.send_append_entries_request(dest_node_id, req);
         let result = notify_peers(append_entries_heartbeat, node.id, peers_list_copy, None, requester);
 
         if result.is_err() {
-            error!("Node {:?} Send heartbeat failed: {}", node.id, result.unwrap_err().description())
+            error!("Node {} Send heartbeat failed: {}", node.id, result.unwrap_err().description())
         }
     }
-}
-
-//TODO move to node_config
-fn leader_heartbeat_duration_ms() -> Duration{
-    Duration::from_millis(1000)
 }
