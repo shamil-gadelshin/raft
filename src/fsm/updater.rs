@@ -47,7 +47,7 @@ fn process_update_fsm_request<Log, Fsm, Pc, Ns>(params: &FsmUpdaterParams<Log, F
 		  Pc: PeerRequestHandler,
 		  Ns: NodeStateSaver {
 	let mut node = params.protected_node.lock().expect("node lock is not poisoned");
-	trace!("Update Fsm request for Node {}, Commit index ={}", node.id, new_commit_index);
+	trace!("Update Fsm request for Node {}, Commit index = {}", node.id, new_commit_index);
 	loop {
 		let last_applied = node.fsm.get_last_applied_entry_index();
 

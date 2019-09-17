@@ -71,7 +71,7 @@ fn send_heartbeat<Log, Fsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Fsm, Pc
         let append_entries_heartbeat =
             node.create_append_entry_request(AppendEntriesRequestType::Heartbeat);
 
-        trace!("Node {} Send 'empty Append Entries Request(heartbeat)'.", node.id);
+        trace!("Node {} Send 'empty Append Entries Request(heartbeat)'", node.id);
 
         let requester = |dest_node_id: u64, req: AppendEntriesRequest| communicator.send_append_entries_request(dest_node_id, req);
         let result = request_peer_consensus(append_entries_heartbeat, node.id, peers_list_copy, None, requester);

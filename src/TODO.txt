@@ -1,6 +1,7 @@
 TODO: Features:
 
 Main algorithm:
+- support single node
 - fsm
     .append sync on entry-commit
 - operation_log replication
@@ -62,6 +63,7 @@ Details:
 - debug
     .tests
     .cases
+        .single node
         .cases description in file
         .election
             .invalid term (stale)

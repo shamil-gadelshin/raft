@@ -31,6 +31,9 @@ pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionPar
 
 	if !peers_exist {
 		warn!("Election with no peers");
+
+		let	election_event = LeaderElectionEvent::ResetNodeToFollower(params.actual_current_term);
+		params.leader_election_event_tx.send(election_event).expect("can promote to leader");
 		return;
 	}
 

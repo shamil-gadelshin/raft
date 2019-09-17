@@ -65,7 +65,7 @@ fn propose_node_election<Log, Fsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<
           Ns : NodeStateSaver{
     let node = params.protected_node.lock().expect("node lock is not poisoned");
     if let NodeStatus::Follower = node.status {
-        info!("Node {} Leader awaiting time elapsed. Starting new election.", node.id);
+        info!("Node {} Leader awaiting time elapsed. Starting new election", node.id);
 
         let current_leader_id = node.current_leader_id;
 
