@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender};
 
-use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
+use super::node_leadership_status::{LeaderElectionEvent};
 use crate::communication::peers::{VoteRequest, VoteResponse, PeerRequestHandler};
 use crate::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
@@ -26,12 +26,11 @@ pub fn process_vote_request<Log, Fsm, Pc, Ns>(request: VoteRequest,
             && node.get_voted_for_id().expect("vote_id_result") == request.candidate_id;
 
         if (node.get_current_term() < request.term || is_same_term_and_candidate) &&
-            node.check_log_for_last_entry(request.last_log_term, request.last_log_index) {
+            node.check_candidate_last_log_entry(request.last_log_term, request.last_log_index) {
             vote_granted = true;
             response_current_term = request.term;
 
-            let follower_event = ElectionNotice { term: request.term, candidate_id: request.candidate_id };
-            leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(follower_event)).expect("can send LeaderElectionEvent");
+            leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(request.term)).expect("can send LeaderElectionEvent");
         }
     }
 

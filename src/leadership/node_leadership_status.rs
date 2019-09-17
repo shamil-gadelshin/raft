@@ -12,13 +12,13 @@ use crate::leadership::election::{StartElectionParams, start_election};
 
 pub enum LeaderElectionEvent {
     PromoteNodeToCandidate(ElectionNotice),
-    PromoteNodeToLeader(u64),
-    ResetNodeToFollower(ElectionNotice),
+    PromoteNodeToLeader(u64), //term
+    ResetNodeToFollower(u64), //term
 }
 
 pub struct ElectionNotice {
     pub term: u64,
-    pub candidate_id : u64 //TODO introduce options Candidate, Leader
+    pub candidate_id : u64
 }
 
 
@@ -47,7 +47,7 @@ pub fn run_node_status_watcher<Log, Fsm, Pc, Ns>(params : ElectionManagerParams<
     loop {
         select!(
             recv(terminate_worker_rx) -> res  => {
-                if let Err(_) = res {
+                if res.is_err() {
                     error!("Abnormal exit for leader election status watcher worker");
                 }
                 break
@@ -61,7 +61,11 @@ pub fn run_node_status_watcher<Log, Fsm, Pc, Ns>(params : ElectionManagerParams<
     info!("Leader election status watcher worker stopped");
 }
 
-fn change_node_leadership_state<Log, Fsm, Pc, Ns>(params: &ElectionManagerParams<Log, Fsm, Pc, Ns>, event: LeaderElectionEvent) -> () where Log: OperationLog, Fsm: FiniteStateMachine, Pc: PeerRequestHandler, Ns: NodeStateSaver {
+fn change_node_leadership_state<Log, Fsm, Pc, Ns>(params: &ElectionManagerParams<Log, Fsm, Pc, Ns>, event: LeaderElectionEvent)
+    where Log: OperationLog,
+          Fsm: FiniteStateMachine,
+          Pc: PeerRequestHandler,
+          Ns: NodeStateSaver {
     match event {
         LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
             let mut node = params.protected_node.lock().expect("node lock is not poisoned");
@@ -103,10 +107,10 @@ fn change_node_leadership_state<Log, Fsm, Pc, Ns>(params: &ElectionManagerParams
             params.watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderElectedEvent");
             params.leader_initial_heartbeat_tx.send(true).expect("can send leader initial heartbeat");
         },
-        LeaderElectionEvent::ResetNodeToFollower(vr) => {
+        LeaderElectionEvent::ResetNodeToFollower(term) => {
             let mut node = params.protected_node.lock().expect("node lock is poisoned");
 
-            node.set_current_term(vr.term);
+            node.set_current_term(term);
             node.status = NodeStatus::Follower;
             node.set_voted_for_id(None);
             info!("Node {} Status changed to Follower", node.id);

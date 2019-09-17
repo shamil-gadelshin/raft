@@ -37,7 +37,7 @@ pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandle
 		let entry_content;
 		select!(
 			recv(terminate_worker_rx) -> res  => {
-                if let Err(_) = res {
+                if res.is_err() {
                     error!("Abnormal exit for client request processor worker");
                 }
                 break

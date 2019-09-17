@@ -38,7 +38,7 @@ pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<L
 	loop {
 		select!(
 			recv(terminate_worker_rx) -> res  => {
-                if let Err(_) = res {
+                if res.is_err() {
                     error!("Abnormal exit for client request processor worker");
                 }
                 break
@@ -93,8 +93,8 @@ pub fn handle_append_entries_request<Log, Fsm, Pc, Ns>(node_id : u64, request : 
 	let send_result = append_entries_response_tx.send_timeout(append_entry_response, params.communication_timeout);
 
 	match send_result {
-		Ok(resp) => {
-			trace!("Node {} AppendEntriesResponse: {:?}", node_id, resp);
+		Ok(_) => {
+			trace!("Node {} AppendEntriesResponse sent successfully", node_id);
 		},
 		Err(err) => {
 			error!("Failed append_request processing for Node {} Err: {}", node_id, err);

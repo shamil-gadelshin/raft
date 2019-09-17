@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LeaderConfirmationEvent, RaftWorkerPool};
-use crate::state::{Node, NodeStatus, NodeStateSaver};
+use crate::state::{Node, NodeStateSaver};
 use crate::configuration::node::{NodeConfiguration, ElectionTimer};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams, run_node_status_watcher};
 use crate::operation_log::OperationLog;
@@ -31,7 +31,6 @@ pub struct NodeStartingParams<Log, Fsm, Cc, Pc, Et, Ns>
 }
 
 
-//TODO check clones number - consider borrowing &
 pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(params : NodeStartingParams<Log, Fsm, Cc, Pc, Et, Ns>,
                                         terminate_worker_rx : Receiver<()>)
     where Log: OperationLog ,
@@ -40,14 +39,12 @@ pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(params : NodeStartingParams<Log, Fsm, Cc,
           Pc : PeerRequestHandler + PeerRequestChannels,
           Et : ElectionTimer,
           Ns : NodeStateSaver {
-    add_this_node_to_cluster(&params.node_config);
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
     let (commit_index_updated_tx, commit_index_updated_rx): (Sender<u64>, Receiver<u64>) = crossbeam_channel::unbounded();
     let node = Node::new(params.node_config.node_state.node_id,
                          params.node_config.node_state.current_term,
                          params.node_config.node_state.vote_for_id,
-                         NodeStatus::Follower,
                          params.operation_log,
                          params.fsm,
                          params.node_config.peer_communicator.clone(),
@@ -151,19 +148,6 @@ pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(params : NodeStartingParams<Log, Fsm, Cc,
 
     info!("Node {} shutting down", params.node_config.node_state.node_id);
 }
-
-
-//TODO check cluster configuration functionality
-fn add_this_node_to_cluster<Cc, Pc, Et>(node_config: &NodeConfiguration<Cc, Pc, Et>)
-where Cc : ClientRequestChannels,
-      Pc : Clone + PeerRequestHandler + PeerRequestChannels,
-      Et : ElectionTimer{
-    let cluster_configuration = node_config.cluster_configuration.clone();
-    let mut cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
-
-    cluster.add_peer(node_config.node_state.node_id);
-}
-
 
 
 

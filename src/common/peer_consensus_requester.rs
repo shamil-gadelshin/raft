@@ -8,12 +8,11 @@ use super::QuorumResponse;
 
 
 
-//TODO rename
-pub fn notify_peers<Req, Resp, Requester>(request: Req,
-    node_id : u64,
-    peers : Vec<u64>,
-    quorum: Option<u32>,
-    requester : Requester) -> Result<bool, Box<Error>>
+pub fn request_peer_consensus<Req, Resp, Requester>(request: Req,
+                                                    node_id : u64,
+                                                    peers : Vec<u64>,
+                                                    quorum: Option<u32>,
+                                                    requester : Requester) -> Result<bool, Box<Error>>
 where Requester: Fn(u64, Req) ->Result<Resp, Box<Error>>,
       Req: Clone,
       Resp: QuorumResponse {
@@ -21,7 +20,7 @@ where Requester: Fn(u64, Req) ->Result<Resp, Box<Error>>,
         return Ok(true)
     }
 
-    //TODO communicator timeout handling
+    //TODO communicator result & timeout handling
     //TODO rayon parallel-foreach
     let mut responses = Vec::new();
     for peer_id in peers {

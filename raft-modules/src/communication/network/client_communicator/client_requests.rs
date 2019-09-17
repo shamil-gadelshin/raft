@@ -13,7 +13,7 @@ use std::time::Duration;
 use crate::errors::new_err;
 
 
-pub fn add_server_request(host : String, _timeout: Duration, request : raft::AddServerRequest) -> Result<raft::ClientRpcResponse, Box<Error>>{
+pub fn add_server_request(host : String, timeout: Duration, request : raft::AddServerRequest) -> Result<raft::ClientRpcResponse, Box<Error>>{
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -59,7 +59,7 @@ pub fn add_server_request(host : String, _timeout: Duration, request : raft::Add
 
 	tokio::run(response);
 
-	let receive_result = rx.recv();
+	let receive_result = rx.recv_timeout(timeout);
 	let result = receive_result.expect("valid response");
 	match result {
 		Ok(resp) => {Ok(resp) },
@@ -68,7 +68,7 @@ pub fn add_server_request(host : String, _timeout: Duration, request : raft::Add
 
 }
 
-pub fn new_data_request(host: String, _timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
+pub fn new_data_request(host: String, timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -114,7 +114,7 @@ pub fn new_data_request(host: String, _timeout: Duration, request : raft::NewDat
 
 	tokio::run(response);
 
-	let receive_result = rx.recv();
+	let receive_result = rx.recv_timeout(timeout);
 	let result = receive_result.expect("valid response");
 	match result {
 		Ok(resp) => { Ok(resp) },

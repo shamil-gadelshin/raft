@@ -152,6 +152,11 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
 
     thread::sleep(Duration::from_secs(5));
 
+    {
+        let mut cluster = protected_cluster_config.lock().expect("cluster lock is not poisoned");
+
+        cluster.add_peer(new_node_id);
+    }
     let new_server_config;
     {
         new_server_config = NodeConfiguration {

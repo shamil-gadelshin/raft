@@ -1,8 +1,8 @@
 use crossbeam_channel::{Sender};
 
-use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
+use super::node_leadership_status::{LeaderElectionEvent};
 use crate::communication::peers::{VoteRequest, PeerRequestHandler};
-use crate::common::peer_notifier::notify_peers;
+use crate::common::peer_consensus_requester::request_peer_consensus;
 
 
 pub struct StartElectionParams<Pc : PeerRequestHandler> {
@@ -37,13 +37,19 @@ pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionPar
 	let peer_communicator = params.peer_communicator.clone();
 	let requester = |dest_node_id: u64, req: VoteRequest| {
 		let resp_result = peer_communicator.send_vote_request(dest_node_id, req);
-		let resp = resp_result.expect("can get append_entries response"); //TODO check timeout
-
-		trace!("Destination Node {} vote requested. Result={}", dest_node_id, resp.vote_granted);
-		Ok(resp)
+		match resp_result{
+			Ok(resp) => {
+				trace!("Destination Node {} vote requested. Result={}", dest_node_id, resp.vote_granted);
+				Ok(resp)
+			},
+			Err(err) => {
+				error!("Destination Node {} vote request failed:{}", dest_node_id, err.description());
+				Err(err)
+			}
+		}
 	};
 
-	let notify_peers_result = notify_peers(vote_request, params.node_id, params.peers, Some(params.quorum_size), requester);
+	let notify_peers_result = request_peer_consensus(vote_request, params.node_id, params.peers, Some(params.quorum_size), requester);
 
 	match notify_peers_result {
 		Ok(won_election) => {
@@ -53,7 +59,7 @@ pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionPar
 				election_event = LeaderElectionEvent::PromoteNodeToLeader(vote_request.term);
 			} else {
 				info!("Leader election failed for Node {} ", params.node_id);
-				election_event = LeaderElectionEvent::ResetNodeToFollower(ElectionNotice { candidate_id: params.node_id, term: params.actual_current_term })
+				election_event = LeaderElectionEvent::ResetNodeToFollower(params.actual_current_term)
 			}
 			params.leader_election_event_tx.send(election_event).expect("can promote to leader");
 		},

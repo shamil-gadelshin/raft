@@ -8,8 +8,9 @@ Main algorithm:
     .operation_log forcing from the leader (clear entries with invalid terms and indices
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
-    .append_entries: process equal terms
     .append_entries: respond for no quorum
+    .transmit full cluster configuration on AddServer Rpc
+    .log (instead of Fsm) is responsible for cluster_configuration apply
 
 Details:
 - stability
@@ -19,10 +20,12 @@ Details:
     .project timeouts
     .investigate channels faults
 - investigate
-   .timeouts to NodeConfig as separate struct
-   .futures
-   .election trait?
-   .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
+    .Replicate State Machine or Fsm?
+    .detect faster split votes by counting votes??
+    .Check commit index on restart with existing log, should be safe with 0(zero)
+    .futures
+    .election trait?
+    .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - identity
     .generic
     .libp2p
@@ -37,10 +40,14 @@ Details:
 - error handling
     .communication timeouts
     .de-box errors to RaftError
-- project structure
-    .separate client?
-    .exe-project
-        .remove node_id from log
+- node example
+    .remove node_id from log
+    .implement peer network communicator
+        .implement service discovery
+    .graceful-shutdown for KILL signals
+    .configuration
+        .cmd params
+        .file (toml?)
 - code style
     .clear #[allow(dead_code)]
     .investigate & remove use crate::
@@ -50,11 +57,7 @@ Details:
     .clippy
 - release
     .consensus
-    .graceful-shutdown
     .implement Display
-    .configuration
-        .cmd params
-        .file (toml?)
     .travis-ci
 - debug
     .tests
@@ -90,6 +93,8 @@ Future Features:
 - cluster membership changes
     .remove server
         .shutdown self
+    .add_server
+        .TIMEOUT response: replicate log in rounds
 - log compaction
     .file snapshot
         .load on start
@@ -101,6 +106,7 @@ Future Features:
         .load on start
 - operation-log
     .add failure reason to AppendEntryResponse
+    .park-unpark the send_heartbeat_append_entries thread - remove unnecessary mutex-lock
 
 Done:
 - investigate
@@ -108,6 +114,7 @@ Done:
     .Arc<dyn Log> to get rid of &static + Send ...
     .worker thread structure: all peer-request thread, client-thread?
     .extract communicator trait
+    .timeouts to NodeConfig as separate struct
 - fsm support
 - leader election
     .check log on votes
@@ -138,4 +145,5 @@ Done:
     .dev-dependencies
         .env-logger
     .raft vs infrastructure module(code) separation
-
+- release
+    .graceful-shutdown

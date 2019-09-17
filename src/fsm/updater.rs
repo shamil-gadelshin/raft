@@ -27,7 +27,7 @@ pub fn update_fsm<Log, Fsm,Pc, Ns>(params : FsmUpdaterParams<Log,Fsm,Pc, Ns>, te
 	loop {
 		select!(
 			recv(terminate_worker_rx) -> res  => {
-				if let Err(_) = res {
+                if res.is_err() {
 					error!("Abnormal exit for FSM updater worker");
 				}
 				break
@@ -41,7 +41,11 @@ pub fn update_fsm<Log, Fsm,Pc, Ns>(params : FsmUpdaterParams<Log,Fsm,Pc, Ns>, te
 	info!("FSM updater worker stopped");
 }
 
-fn process_update_fsm_request<Log, Fsm, Pc, Ns>(params: &FsmUpdaterParams<Log, Fsm, Pc, Ns>, new_commit_index: u64) -> () where Log: OperationLog, Fsm: FiniteStateMachine, Pc: PeerRequestHandler, Ns: NodeStateSaver {
+fn process_update_fsm_request<Log, Fsm, Pc, Ns>(params: &FsmUpdaterParams<Log, Fsm, Pc, Ns>, new_commit_index: u64)
+	where Log: OperationLog,
+		  Fsm: FiniteStateMachine,
+		  Pc: PeerRequestHandler,
+		  Ns: NodeStateSaver {
 	let mut node = params.protected_node.lock().expect("node lock is not poisoned");
 	trace!("Update Fsm request for Node {}, Commit index ={}", node.id, new_commit_index);
 	loop {

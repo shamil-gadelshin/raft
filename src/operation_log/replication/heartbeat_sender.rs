@@ -5,7 +5,7 @@ use crossbeam_channel::{Receiver};
 
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
-use crate::common::peer_notifier::notify_peers;
+use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::OperationLog;
 use crate::fsm::FiniteStateMachine;
@@ -34,7 +34,7 @@ pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatApp
         let heartbeat_timeout = crossbeam_channel::after(params.heartbeat_timeout);
         select!(
             recv(terminate_worker_rx) -> res  => {
-                if let Err(_) = res {
+                if res.is_err() {
                     error!("Abnormal exit for heartbeat sender worker");
                 }
                 break
@@ -74,7 +74,7 @@ fn send_heartbeat<Log, Fsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Fsm, Pc
         trace!("Node {} Send 'empty Append Entries Request(heartbeat)'.", node.id);
 
         let requester = |dest_node_id: u64, req: AppendEntriesRequest| communicator.send_append_entries_request(dest_node_id, req);
-        let result = notify_peers(append_entries_heartbeat, node.id, peers_list_copy, None, requester);
+        let result = request_peer_consensus(append_entries_heartbeat, node.id, peers_list_copy, None, requester);
 
         if result.is_err() {
             error!("Node {} Send heartbeat failed: {}", node.id, result.unwrap_err().description())

@@ -7,7 +7,7 @@ use crossbeam_channel::{Sender};
 use crate::configuration::cluster::ClusterConfiguration;
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::{LogEntry,EntryContent};
-use crate::common::peer_notifier::notify_peers;
+use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::fsm::{FiniteStateMachine};
 use crate::operation_log::{OperationLog};
 use crate::errors;
@@ -28,13 +28,13 @@ where Log: OperationLog,
     voted_for_id: Option<u64>,
     pub status : NodeStatus,
     next_index : HashMap<u64, u64>,
-    match_index : HashMap<u64, u64>, //TODO support match_index
+    match_index : HashMap<u64, u64>, //TODO support match_index (client session support required)
     commit_index: u64,
     pub log : Log,
     pub fsm : Fsm,
     communicator : Pc,
     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
-    replicate_log_to_peer_tx: Sender<u64> ,//TODO split god object
+    replicate_log_to_peer_tx: Sender<u64>,
     commit_index_updated_tx : Sender<u64>,
     state_saver: Ns
 }
@@ -72,7 +72,6 @@ where Log: OperationLog,
     pub fn new(id: u64,
                current_term: u64,
                voted_for_id: Option<u64>,
-               status: NodeStatus,
                log: Log,
                fsm: Fsm,
                communicator: Pc,
@@ -85,7 +84,7 @@ where Log: OperationLog,
             current_term,
             current_leader_id: None,
             voted_for_id,
-            status,
+            status: NodeStatus::Follower,
             next_index: HashMap::new(),
             match_index: HashMap::new(),
             commit_index: 0,
@@ -179,26 +178,30 @@ where Log: OperationLog,
         false
     }
 
-    //TODO comment
-    pub fn check_log_for_last_entry(&self, log_term: u64, log_index: u64) -> bool {
-        if self.log.get_last_entry_term() > log_term {
+    //Check last log entry for voting purpose. Compares first term, index afterwards.
+    //To grant vote - candidate log should contain entries same term or greater
+    pub fn check_candidate_last_log_entry(&self,
+                                          candidate_last_log_entry_term: u64,
+                                          candidate_last_log_entry_index: u64) -> bool {
+        if self.log.get_last_entry_term() > candidate_last_log_entry_term {
             return false
         }
-        if self.log.get_last_entry_term() < log_term {
+        if self.log.get_last_entry_term() < candidate_last_log_entry_term {
             return true
         }
-
-        if self.log.get_last_entry_index() >= log_index {
-            return true
+        //equal terms
+        if self.log.get_last_entry_index() >  candidate_last_log_entry_index {
+            return false
         }
-        false
+        //last log entry of same or lesser term and same or lesser index
+        true
     }
 
     pub fn append_entry_to_log(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
         let entry_index = entry.index;
 
         if self.log.get_last_entry_index() < entry_index {
-            let log_append_result = self.log.append_entry(entry.clone()); //TODO error handling
+            let log_append_result = self.log.append_entry(entry.clone());
             if let Err(err) = log_append_result {
                 return errors::new_err(format!("cannot append entry to log, index = {}", entry_index), Some(err));
             }
@@ -207,15 +210,23 @@ where Log: OperationLog,
     }
 
 
-    pub fn append_content_to_log(&mut self, content: EntryContent) -> Result<(), Box<Error>> {
+    pub fn append_content_to_log(&mut self, content: EntryContent) -> Result<bool, Box<Error>> {
         let entry = self.log.create_next_entry(self.get_current_term(), content);
 
         let send_result = self.send_append_entries(entry.clone());
-        if let Err(err) = send_result {
-            let msg = format!("Entry replication failed:{}", err.description());
+        match send_result {
+            Err(err) => {
+                let msg = format!("Entry replication failed:{}", err.description());
 
-            error!("{}", msg);
-            return new_err(msg, Some(err));
+                error!("{}", msg);
+                return new_err(msg, Some(err));
+            },
+            Ok(quorum_gathered) => {
+                if !quorum_gathered {
+                    warn!("send_append_entries unsuccessful: no quorum gathered");
+                    return Ok(false)
+                }
+            }
         }
 
         let add_to_entry_result = self.append_entry_to_log(entry.clone());
@@ -228,7 +239,7 @@ where Log: OperationLog,
 
         self.set_commit_index(entry.index);
 
-        Ok(())
+        Ok(true)
     }
 
     pub fn create_append_entry_request(&self, request_type : AppendEntriesRequestType) -> AppendEntriesRequest {
@@ -246,7 +257,7 @@ where Log: OperationLog,
         }
     }
 
-    fn get_prev_term_index(&self, entries: &Vec<LogEntry>) -> (u64, u64) {
+    fn get_prev_term_index(&self, entries: &[LogEntry]) -> (u64, u64) {
         let (mut prev_log_term, mut prev_log_index) = (0, 0);
         if !entries.is_empty() {
             let new_entry = &entries[0];
@@ -297,8 +308,7 @@ where Log: OperationLog,
     }
 
 
-    //TODO Result = bool quorum-no-quorum
-    fn send_append_entries(&self, entry : LogEntry) -> Result<(), Box<Error>>{
+    fn send_append_entries(&self, entry : LogEntry) -> Result<bool, Box<Error>>{
         if let NodeStatus::Leader = self.status {
             let cluster = self.cluster_configuration.lock()
                 .expect("cluster lock is not poisoned");
@@ -313,19 +323,24 @@ where Log: OperationLog,
             let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();
             let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
                 let resp_result = self.communicator.send_append_entries_request(dest_node_id, req);
-                let resp = resp_result.expect("can get append_entries response"); //TODO check timeout
-
-                trace!("Destination Node {} Append Entry (index={}) result={}",dest_node_id,  entry_index, resp.success);
-                if !resp.success {
-                    replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
+                match resp_result {
+                    Ok(resp) => {
+                        trace!("Destination Node {} Append Entry (index={}) result={}",dest_node_id,  entry_index, resp.success);
+                        if !resp.success {
+                            replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
+                        }
+                        Ok(resp)
+                    },
+                    Err(err) => {
+                        trace!("Destination Node {} Append Entry (index={}) failed: {}",dest_node_id,  entry_index, err.description());
+                        Err(err)
+                    }
                 }
-
-                Ok(resp)
             };
 
-            let notify_peers_result = notify_peers(append_entries_request, self.id,peers_list_copy, Some(quorum_size), requester);
+            let notify_peers_result = request_peer_consensus(append_entries_request, self.id, peers_list_copy, Some(quorum_size), requester);
             return match notify_peers_result {
-                Ok(_)=> Ok(()),
+                Ok(quorum_gathered)=> Ok(quorum_gathered),
                 Err(err) => Err(err)
             };
         }

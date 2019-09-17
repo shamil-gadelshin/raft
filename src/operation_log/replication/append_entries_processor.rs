@@ -5,7 +5,7 @@ use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler};
 use crate::operation_log::{OperationLog};
-use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
+use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::fsm::FiniteStateMachine;
 
 
@@ -18,7 +18,6 @@ pub fn process_append_entries_request<Log, Fsm, Pc, Ns>(request : AppendEntriesR
           Ns : NodeStateSaver{
     let mut node = protected_node.lock().expect("node lock is not poisoned");
 
-    //TODO process equals terms!!
     if request.term < node.get_current_term() {
         warn!("Node {} Stale 'Append Entries Request'. Old term: {}", node.id, request.term);
 
@@ -29,8 +28,7 @@ pub fn process_append_entries_request<Log, Fsm, Pc, Ns>(request : AppendEntriesR
     match node.status {
         NodeStatus::Leader | NodeStatus::Candidate => {
             if request.term > node.get_current_term() {
-                let election_notice = ElectionNotice { candidate_id: request.leader_id, term: request.term };
-                leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(election_notice))
+                leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(request.term))
                     .expect("can send LeaderElectionEvent");
             }
         },

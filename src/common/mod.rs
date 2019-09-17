@@ -3,13 +3,12 @@ use std::thread::JoinHandle;
 use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
-pub mod peer_notifier;
+pub mod peer_consensus_requester;
 
 pub trait QuorumResponse {
     fn get_result(&self) -> bool;
 }
 
-//TODO downgrade to bool
 pub enum LeaderConfirmationEvent {
     ResetWatchdogCounter
 }
@@ -65,7 +64,7 @@ impl RaftWorkerPool {
     pub fn terminate(&self) {
         for worker in &self.workers {
             let send_result = worker.terminate_worker_tx.send(());
-            if let Err(_) = send_result {
+            if send_result.is_err() {
                 error!("Cannot send termination signal")
             }
         }
@@ -74,7 +73,7 @@ impl RaftWorkerPool {
     pub fn join(self) {
         for worker in self.workers {
             let join_result = worker.join_handle.join();
-            if let Err(_) = join_result {
+            if join_result.is_err() {
                 error!("Worker returned an error")
             }
         }
