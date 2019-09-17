@@ -20,7 +20,7 @@ pub fn process_append_entries_request<Log, Fsm, Pc, Ns>(request : AppendEntriesR
 
     //TODO process equals terms!!
     if request.term < node.get_current_term() {
-        warn!("Node {:?} Stale 'Append Entries Request'. Old term: {:?}", node.id, request);
+        warn!("Node {} Stale 'Append Entries Request'. Old term: {}", node.id, request.term);
 
         return AppendEntriesResponse { term: node.get_current_term(), success: false };
     }
@@ -45,7 +45,7 @@ pub fn process_append_entries_request<Log, Fsm, Pc, Ns>(request : AppendEntriesR
     let previous_entry_exist = node.check_log_for_previous_entry(request.prev_log_term, request.prev_log_index);
 
     if !previous_entry_exist {
-        warn!("Node {:?} no previous entry 'Append Entries Request'. Prev term: {:?},Prev index: {:?}", node.id, request.prev_log_term, request.prev_log_index);
+        warn!("Node {} no previous entry 'Append Entries Request'. Prev term: {},Prev index: {}", node.id, request.prev_log_term, request.prev_log_index);
 
         return AppendEntriesResponse { term: node.get_current_term(), success: false };
     }

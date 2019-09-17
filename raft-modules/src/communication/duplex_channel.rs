@@ -5,7 +5,6 @@ use std::time::Duration;
 use crate::errors;
 use std::error::Error;
 
-//TODO add name for logging purpose
 #[derive(Clone, Debug)]
 pub struct DuplexChannel<Request, Response> {
     name : String,
@@ -47,7 +46,6 @@ where Request: Send + 'static{
         self.response_rx.clone()
     }
 
-    //TODO consider & change result error type
     pub fn send_request(&self, request: Request) -> Result<Response, Box<Error>> {
         let send_result = self.request_tx.send_timeout(request, self.timeout_duration);
         if let Err(err) = send_result {

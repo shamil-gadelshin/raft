@@ -49,7 +49,7 @@ fn process_replication_request<Log, Fsm, Pc, Ns>(params: &LogReplicatorParams<Lo
 
 	let mut node = params.protected_node.lock().expect("node lock is not poisoned");
 	if node.status != NodeStatus::Leader {
-		warn!("Obsolete (Not a Leader) replicate log request - Node ({:?}) to peer ({:?}) ", node.id, peer_id);
+		warn!("Obsolete (Not a Leader) replicate log request - Node {} to peer {} ", node.id, peer_id);
 		return;;
 	}
 
@@ -68,7 +68,7 @@ fn process_replication_request<Log, Fsm, Pc, Ns>(params: &LogReplicatorParams<Lo
 				node.set_next_index(peer_id, modified_next_index);
 			} else {
 				//TODO delete warning?
-				warn!("Unsuccessful replicate log request and next_index <= 1  - Node ({:?}) to peer ({:?}) ", node.id, peer_id);
+				warn!("Unsuccessful replicate log request and next_index <= 1  - Node {} to peer {} ", node.id, peer_id);
 			}
 
 			params.replicate_log_to_peer_tx.send(peer_id).expect("can send update peer log request")

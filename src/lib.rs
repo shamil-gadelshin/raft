@@ -24,6 +24,7 @@ pub use communication::peers::{PeerRequestHandler, PeerRequestChannels};
 pub use state::NodeState;
 pub use configuration::node::ElectionTimer;
 pub use state::NodeStateSaver;
+pub use configuration::node::NodeTimings;
 
 pub type NodeWorker = common::RaftWorker;
 

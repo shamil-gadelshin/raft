@@ -35,7 +35,6 @@ pub struct AppendEntriesRequest {
     pub entries : Vec<LogEntry>
 }
 
-//TODO add failure reason
 #[derive(Clone, Copy, Debug)]
 pub struct AppendEntriesResponse {
     pub term : u64,

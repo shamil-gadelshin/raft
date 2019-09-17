@@ -4,7 +4,7 @@ use std::error::Error;
 
 #[derive(Clone, Debug, Default)]
 pub struct MemoryLogStorage {
-    last_index: u64, //TODO remove?
+    last_index: u64,
     entries : Vec<LogEntry>
 }
 
@@ -13,7 +13,6 @@ impl OperationLog for MemoryLogStorage {
         LogEntry { index: self.last_index + 1, term, entry_content }
     }
 
-    //TODO check for duplicates
     fn append_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
         if self.last_index < entry.index {
             self.last_index = entry.index;
@@ -30,7 +29,6 @@ impl OperationLog for MemoryLogStorage {
         Some(self.entries[idx-1].clone())
     }
 
-    //TODO simplify to self.last_index?
     fn get_last_entry_index(&self) -> u64{
         let last = self.entries.last();
         if let Some(entry) = last {

@@ -70,7 +70,7 @@ fn change_node_leadership_state<Log, Fsm, Pc, Ns>(params: &ElectionManagerParams
             node.set_voted_for_id(Some(node_id));
             node.current_leader_id = None;
             node.status = NodeStatus::Candidate;
-            info!("Node {:?} Status changed to Candidate", node.id);
+            info!("Node {} Status changed to Candidate", node.id);
 
             let cluster = params.cluster_configuration.lock().expect("node lock is not poisoned");
 
@@ -98,7 +98,7 @@ fn change_node_leadership_state<Log, Fsm, Pc, Ns>(params: &ElectionManagerParams
             node.set_current_term(term);
             node.set_voted_for_id(None);
             node.status = NodeStatus::Leader;
-            info!("Node {:?} Status changed to Leader", node.id);
+            info!("Node {} Status changed to Leader", node.id);
 
             params.watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderElectedEvent");
             params.leader_initial_heartbeat_tx.send(true).expect("can send leader initial heartbeat");
@@ -109,7 +109,7 @@ fn change_node_leadership_state<Log, Fsm, Pc, Ns>(params: &ElectionManagerParams
             node.set_current_term(vr.term);
             node.status = NodeStatus::Follower;
             node.set_voted_for_id(None);
-            info!("Node {:?} Status changed to Follower", node.id);
+            info!("Node {} Status changed to Follower", node.id);
 
             params.watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");
         },

@@ -254,7 +254,7 @@ where Log: OperationLog,
             if new_entry_index > 1 {
                 let prev_entry_index = new_entry_index - 1;
                 let prev_entry = self.log.get_entry(prev_entry_index)
-                    .unwrap_or_else(|| panic!("entry exist, index =  {:?}", prev_entry_index));
+                    .unwrap_or_else(|| panic!("entry exist, index =  {}", prev_entry_index));
 
                 prev_log_term = prev_entry.term;
                 prev_log_index = prev_entry.index;
@@ -307,7 +307,7 @@ where Log: OperationLog,
                 (cluster.get_peers(self.id), cluster.get_quorum_size());
 
             let entry_index = entry.index;
-            trace!("Node {:?} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
+            trace!("Node {} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
             let append_entries_request =  self.create_append_entry_request(AppendEntriesRequestType::NewEntry(entry));
 
             let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();

@@ -8,14 +8,13 @@ use super::QuorumResponse;
 
 
 
-//TODO add proper error handling
 //TODO rename
 pub fn notify_peers<Req, Resp, Requester>(request: Req,
     node_id : u64,
     peers : Vec<u64>,
     quorum: Option<u32>,
-    requester : Requester) -> Result<bool,Box<Error>>
-where Requester: Fn(u64, Req) ->Result<Resp,Box<Error>>,
+    requester : Requester) -> Result<bool, Box<Error>>
+where Requester: Fn(u64, Req) ->Result<Resp, Box<Error>>,
       Req: Clone,
       Resp: QuorumResponse {
     if peers.is_empty() {
@@ -42,7 +41,7 @@ where Requester: Fn(u64, Req) ->Result<Resp,Box<Error>>,
                     }
 
                     if votes >= quorum_size {
-                        trace!("Node {:?} gathered quorum for request", node_id);
+                        trace!("Node {} gathered quorum for request", node_id);
                         return Ok(true);
                     }
                 },
@@ -52,7 +51,7 @@ where Requester: Fn(u64, Req) ->Result<Resp,Box<Error>>,
             }
         }
 
-        info!("Node {:?}: cannot get quorum for request. Vote count: {:?}", node_id, votes);
+        info!("Node {}: cannot get quorum for request. Vote count: {:?}", node_id, votes);
         if !errors.is_empty() && votes == 1 { //no responses
             return errors::new_multiple_err("Cannot get quorum for request".to_string(), errors)
         }

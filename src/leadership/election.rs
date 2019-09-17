@@ -49,7 +49,7 @@ pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionPar
 		Ok(won_election) => {
 			let election_event;
 			if won_election {
-				info!("Leader election - quorum ({:?}) gathered for NodeId = {:?} ", params.quorum_size, params.node_id);
+				info!("Leader election - quorum ({}) gathered for NodeId = {} ", params.quorum_size, params.node_id);
 				election_event = LeaderElectionEvent::PromoteNodeToLeader(vote_request.term);
 			} else {
 				info!("Leader election failed for Node {} ", params.node_id);

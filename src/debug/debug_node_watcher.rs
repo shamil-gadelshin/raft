@@ -19,7 +19,7 @@ fn debug_node_status<Log: OperationLog, Fsm:FiniteStateMachine >(protected_node:
 	sleep(Duration::from_secs(100000));
 	loop {
 		let _ = protected_node.lock().expect("node lock is not poisoned");
-//		trace!("Node {:?}. {:?}", node.id, node);
+//		trace!("Node {}. {:?}", node.id, node);
 		sleep(Duration::from_millis(1000));
 	}
 }

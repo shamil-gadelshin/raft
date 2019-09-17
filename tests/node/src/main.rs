@@ -14,7 +14,7 @@ use chrono::prelude::{DateTime, Local};
 extern crate raft;
 extern crate raft_modules;
 
-use raft::{ClientResponseStatus, ClientRequestHandler, NodeState, NodeWorker};
+use raft::{ClientResponseStatus, ClientRequestHandler, NodeState, NodeWorker, NodeTimings};
 use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
@@ -63,7 +63,8 @@ fn main() {
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_communicator: client_request_handler.clone(),
-            election_timer: RandomizedElectionTimer::new(1000, 4000)
+            election_timer: RandomizedElectionTimer::new(1000, 4000),
+            timings : NodeTimings::default()
         };
         let fsm = MemoryFsm::new(protected_cluster_config.clone());
         let node_worker = raft::start_node(config, MemoryLogStorage::default(), fsm, MockNodeStateSaver::default());
@@ -162,7 +163,8 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
             cluster_configuration: protected_cluster_config.clone(),
             peer_communicator: communicator.clone(),
             client_communicator: InProcClientCommunicator::new(new_node_id,communication_timeout),
-            election_timer: RandomizedElectionTimer::new(1000, 4000)
+            election_timer: RandomizedElectionTimer::new(1000, 4000),
+            timings : NodeTimings::default()
         };
     }
 
@@ -176,7 +178,7 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
 
         let resp = v.add_server(add_server_request);
 
-        info!("Add server request sent for NodeId = {:?}. Response = {:?}", k, resp);
+        info!("Add server request sent for Node {}. Response = {:?}", k, resp);
     }
 
     thread::sleep(Duration::from_secs(2));
@@ -188,7 +190,7 @@ fn run_add_server_thread_with_delay<Cc : ClientRequestHandler + Clone>(communica
 
         let resp = v.new_data(new_data_request.clone());
 
-        info!("New Data request sent for NodeId = {:?}. Response = {:?}", k, resp);
+        info!("New Data request sent for Node {}. Response = {:?}", k, resp);
     }
 
     thread_worker

@@ -19,7 +19,7 @@ Details:
     .project timeouts
     .investigate channels faults
 - investigate
-   .timouts to NodeConfig as separate struct
+   .timeouts to NodeConfig as separate struct
    .futures
    .election trait?
    .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
@@ -99,7 +99,8 @@ Future Features:
 - fsm
     .persistent
         .load on start
-
+- operation-log
+    .add failure reason to AppendEntryResponse
 
 Done:
 - investigate

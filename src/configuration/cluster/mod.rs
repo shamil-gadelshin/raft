@@ -3,7 +3,7 @@ use std::collections::HashMap;
 #[derive(Clone, Debug)]
 //TODO save changes to cluster configuration
 pub struct ClusterConfiguration{
-    nodes_id_map : HashMap<u64, bool>,
+    nodes_id_map : HashMap<u64, ()>,
 }
 
 impl ClusterConfiguration {
@@ -37,8 +37,10 @@ impl ClusterConfiguration {
     }
 
     pub fn add_peer(&mut self, peer : u64) {
-        //TODO warn duplicate
-        self.nodes_id_map.insert(peer, true);
+        if self.nodes_id_map.contains_key(&peer) {
+            warn!("Cluster configuration - add duplicate peer:{}", peer)
+        }
+        self.nodes_id_map.insert(peer, ());
     }
 
     pub fn get_all(&self)-> Vec<u64> {

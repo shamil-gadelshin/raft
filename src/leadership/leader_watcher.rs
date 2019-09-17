@@ -42,11 +42,14 @@ pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams
                 break
             },
             recv(timeout) -> _  => {
-                propose_node_election(&params) //TODO check err
+                propose_node_election(&params)
             },
-            recv(params.watchdog_event_rx) -> _ => { //TODO check err
+            recv(params.watchdog_event_rx) -> watchdog_event_result => {
+                if let Err(err) = watchdog_event_result {
+                    error!("Invalid result from watchdog_event_rx: {}", err);
+                }
                 let node = params.protected_node.lock().expect("node lock is not poisoned");
-                trace!("Node {:?} Received reset watchdog ", node.id);
+                trace!("Node {} Received reset watchdog ", node.id);
                 continue
             },
         );
@@ -62,7 +65,7 @@ fn propose_node_election<Log, Fsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<
           Ns : NodeStateSaver{
     let node = params.protected_node.lock().expect("node lock is not poisoned");
     if let NodeStatus::Follower = node.status {
-        info!("Node {:?} Leader awaiting time elapsed. Starting new election.", node.id);
+        info!("Node {} Leader awaiting time elapsed. Starting new election.", node.id);
 
         let current_leader_id = node.current_leader_id;
 
