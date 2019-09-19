@@ -28,11 +28,7 @@ pub use configuration::node::NodeTimings;
 
 pub type NodeWorker = common::RaftWorker;
 
-pub fn start_node<Log, Fsm,Cc, Pc, Et, Ns >(node_config : NodeConfiguration<Cc,Pc, Et>,
-											operation_log : Log,
-											fsm : Fsm,
-											state_saver : Ns
-) -> NodeWorker
+pub fn start_node<Log, Fsm,Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Fsm,Cc, Pc, Et, Ns>) -> NodeWorker
 where Log: OperationLog ,
 	  Fsm: FiniteStateMachine,
 	  Cc : ClientRequestChannels,
@@ -40,11 +36,6 @@ where Log: OperationLog ,
 	  Et : ElectionTimer,
 	  Ns : NodeStateSaver{
 
-	common::run_worker(node::start, node::NodeStartingParams{
-		node_config,
-		operation_log,
-		fsm,
-		state_saver
-	})
+	common::run_worker(node::start, node_config)
 }
 

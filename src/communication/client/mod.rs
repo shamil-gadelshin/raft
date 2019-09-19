@@ -25,7 +25,7 @@ pub struct ClientRpcResponse {
     pub current_leader : Option<u64>
 }
 
-pub trait ClientRequestHandler:  Send + 'static  {
+pub trait ClientRequestHandler: Sync + Send + 'static  {
     fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, Box<dyn Error>>;
     fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, Box<dyn Error>>;
 }

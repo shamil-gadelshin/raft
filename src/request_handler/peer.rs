@@ -4,7 +4,8 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::leadership::vote_request_processor::process_vote_request;
-use crate::communication::peers::{VoteRequest, AppendEntriesRequest, PeerRequestHandler, PeerRequestChannels};
+use crate::communication::peers::{PeerRequestHandler, PeerRequestChannels};
+use crate::communication::peers::{VoteRequest, AppendEntriesRequest};
 use crate::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
 use crate::fsm::FiniteStateMachine;
@@ -59,7 +60,9 @@ pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<L
 	info!("Peer request processor worker stopped");
 }
 
-fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64, request : VoteRequest, params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
+fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64,
+										 request : VoteRequest,
+										 params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
@@ -79,7 +82,9 @@ fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64, request : VoteRequest, pa
 }
 
 
-pub fn handle_append_entries_request<Log, Fsm, Pc, Ns>(node_id : u64, request : AppendEntriesRequest, params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
+pub fn handle_append_entries_request<Log, Fsm, Pc, Ns>(node_id : u64,
+													   request : AppendEntriesRequest,
+													   params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,

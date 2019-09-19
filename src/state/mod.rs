@@ -116,7 +116,8 @@ where Log: OperationLog,
     pub fn get_commit_index(&self) -> u64 {self.commit_index }
     pub fn set_commit_index(&mut self, new_commit_index: u64) {
         self.commit_index = new_commit_index;
-        self.commit_index_updated_tx.send(new_commit_index).expect("can send updated commit_index")
+        self.commit_index_updated_tx.send(new_commit_index)
+            .expect("can send updated commit_index")
     }
 
 
@@ -200,7 +201,8 @@ where Log: OperationLog,
         if self.log.get_last_entry_index() < entry_index {
             let log_append_result = self.log.append_entry(entry.clone());
             if let Err(err) = log_append_result {
-                return errors::new_err(format!("cannot append entry to log, index = {}", entry_index), Some(err));
+                return errors::new_err(
+                    format!("cannot append entry to log, index = {}", entry_index), Some(err));
             }
         }
         Ok(())
@@ -250,14 +252,17 @@ where Log: OperationLog,
 
             let entry_index = entry.index;
             trace!("Node {} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
-            let append_entries_request =  self.create_append_entry_request(AppendEntriesRequestType::NewEntry(entry));
+            let append_entries_request =  self.create_append_entry_request(
+                AppendEntriesRequestType::NewEntry(entry));
 
             let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();
             let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
                 let resp_result = self.communicator.send_append_entries_request(dest_node_id, req);
                 match resp_result {
                     Ok(resp) => {
-                        trace!("Destination Node {} Append Entry (index={}) result={}",dest_node_id,  entry_index, resp.success);
+                        trace!("Destination Node {} Append Entry (index={}) result={}",
+                               dest_node_id,  entry_index, resp.success);
+
                         //TODO bug: should replicate only if consensus gathered - no info at this point
                         if !resp.success {
                             replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
@@ -265,13 +270,19 @@ where Log: OperationLog,
                         Ok(resp)
                     },
                     Err(err) => {
-                        trace!("Destination Node {} Append Entry (index={}) failed: {}",dest_node_id,  entry_index, err.description());
+                        trace!("Destination Node {} Append Entry (index={}) failed: {}",
+                               dest_node_id,  entry_index, err.description());
                         Err(err)
                     }
                 }
             };
 
-            let notify_peers_result = request_peer_consensus(append_entries_request, self.id, peers_list_copy, Some(quorum_size), requester);
+            let notify_peers_result = request_peer_consensus(
+                append_entries_request,
+                self.id,
+                peers_list_copy,
+                Some(quorum_size), requester);
+
             return match notify_peers_result {
                 Ok(quorum_gathered)=> Ok(quorum_gathered),
                 Err(err) => Err(err)
@@ -280,7 +291,8 @@ where Log: OperationLog,
         errors::new_err("send_append_entries failed: Not a leader".to_string(), None)
     }
 
-    pub fn create_append_entry_request(&self, request_type : AppendEntriesRequestType) -> AppendEntriesRequest {
+    pub fn create_append_entry_request(&self, request_type : AppendEntriesRequestType)
+        -> AppendEntriesRequest {
         let entries = self.get_log_entries(request_type);
 
         let (prev_log_term, prev_log_index) = self.get_prev_term_index(&entries);

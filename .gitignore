@@ -4,6 +4,7 @@
 /tests/node/target
 /tests/client/target
 /tests/smoke/target
+/tests/cases/target
 /raft-modules/target
 
 .idea

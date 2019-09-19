@@ -44,7 +44,9 @@ pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandle
             },
             recv(add_server_request_rx) -> res => {
 				let request = res.expect("can get add server request");
-				entry_content = EntryContent::AddServer(AddServerEntryContent { new_server: request.new_server });
+				entry_content = EntryContent::AddServer(AddServerEntryContent {
+					 new_server: request.new_server
+				 });
 				response_tx = params.client_communicator.add_server_response_tx();
 
            },
@@ -78,7 +80,9 @@ pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandle
 	info!("Client request processor worker stopped");
 }
 
-fn process_client_request_internal<Log, Fsm, Pc, Ns>(protected_node: Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>, entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
+fn process_client_request_internal<Log, Fsm, Pc, Ns>(
+	protected_node: Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>,
+	entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
 	where Log: OperationLog,
 		  Fsm: FiniteStateMachine,
 		  Pc : PeerRequestHandler,
@@ -88,10 +92,16 @@ fn process_client_request_internal<Log, Fsm, Pc, Ns>(protected_node: Arc<Mutex<N
 	let client_rpc_response = match node.status {
 		NodeStatus::Leader => {
 			node.append_content_to_log(entry_content)?;
-			ClientRpcResponse { status: ClientResponseStatus::Ok, current_leader: node.current_leader_id }
+			ClientRpcResponse {
+				status: ClientResponseStatus::Ok,
+				current_leader: node.current_leader_id
+			}
 		},
 		NodeStatus::Candidate | NodeStatus::Follower => {
-			ClientRpcResponse { status: ClientResponseStatus::NotLeader, current_leader: node.current_leader_id }
+			ClientRpcResponse {
+				status: ClientResponseStatus::NotLeader,
+				current_leader: node.current_leader_id
+			}
 		}
 	};
 

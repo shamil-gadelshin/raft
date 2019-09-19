@@ -1,7 +1,6 @@
 TODO: Features:
 
 Main algorithm:
-- support single node
 - fsm
     .append sync on entry-commit
 - operation_log replication
@@ -19,7 +18,8 @@ Details:
     .check channels bounded-unbounded types
     .check channels overflows
     .project timeouts
-    .investigate channels faults
+    .on termination - shutdown communication workers first
+    .remove channel.send().expect - handle disconnection error (because of node termination)
 - investigate
     .Replicate State Machine or Fsm?
     .detect faster split votes by counting votes??
@@ -113,7 +113,9 @@ Future Features:
     .park-unpark the send_heartbeat_append_entries thread - remove unnecessary mutex-lock
 
 Done:
+- support single node
 - investigate
+    .investigate channels faults
     .'static in the 'Log : LogStorage + Sync + Send+ 'static'
     .Arc<dyn Log> to get rid of &static + Send ...
     .worker thread structure: all peer-request thread, client-thread?
