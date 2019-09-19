@@ -37,8 +37,8 @@ pub fn process_append_entries_request<Log, Fsm, Pc, Ns>(request : AppendEntriesR
                 .expect("can send LeaderConfirmationEvent");
         }
     }
-
     node.current_leader_id = Some(request.leader_id);
+
 
     let previous_entry_exist = node.check_log_for_previous_entry(request.prev_log_term, request.prev_log_index);
 
@@ -58,6 +58,7 @@ pub fn process_append_entries_request<Log, Fsm, Pc, Ns>(request : AppendEntriesR
         }
     }
 
+	//TODO bug: set_commit commit - lesser from leader_commit and log.length
     if request.leader_commit > node.get_commit_index() {
         node.set_commit_index(request.leader_commit);
     }

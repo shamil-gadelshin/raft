@@ -48,7 +48,12 @@ pub fn add_server_request(host : String, timeout: Duration, request : raft::AddS
 		.and_then(move |response| {
 			trace!("NewData RESPONSE = {:?}", response);
 
-			let resp = raft::ClientRpcResponse{current_leader:Some(response.get_ref().current_leader), status : ClientResponseStatus::Ok};
+			let mut current_leader : Option<u64> = None;
+			let response_current_leader =  response.get_ref().current_leader;
+			if response_current_leader > 0 {
+				current_leader = Some(response_current_leader);
+			}
+			let resp = raft::ClientRpcResponse {current_leader, status: ClientResponseStatus::Ok};
 			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})
@@ -102,8 +107,12 @@ pub fn new_data_request(host: String, timeout: Duration, request : raft::NewData
 	let response = request
 		.and_then(move |response| {
 			trace!("NewData RESPONSE = {:?}", response);
-
-			let resp = raft::ClientRpcResponse { current_leader: Some(response.get_ref().current_leader), status: ClientResponseStatus::Ok };
+			let mut current_leader : Option<u64> = None;
+			let response_current_leader =  response.get_ref().current_leader;
+			if response_current_leader > 0 {
+				current_leader = Some(response_current_leader);
+			}
+			let resp = raft::ClientRpcResponse {current_leader, status: ClientResponseStatus::Ok};
 			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})

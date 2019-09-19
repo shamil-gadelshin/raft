@@ -43,7 +43,7 @@ fn main() {
     let cluster_configuration = ClusterConfiguration::new(vec![node_id]);
     let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(cluster_configuration.get_all())));
     let communication_timeout = Duration::from_millis(500);
-    let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout);
+    let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout, true);
 
     let node_config = NodeConfiguration {
         node_state: NodeState {

@@ -60,6 +60,7 @@ Details:
     .consensus
     .implement Display
     .travis-ci
+    .consider #![forbid(unsafe_code, missing_docs)]
 - debug
     .tests
     .cases
@@ -102,6 +103,7 @@ Future Features:
         .load on start
 - client RPC
     .sessions - for duplicate request handling
+    .support match_index for node state
     .read query
 - fsm
     .persistent

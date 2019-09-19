@@ -24,19 +24,22 @@ where Log: OperationLog,
       Ns : NodeStateSaver{
     pub id : u64,
     current_term: u64,
-    pub current_leader_id: Option<u64>,
     voted_for_id: Option<u64>,
+
+    pub current_leader_id: Option<u64>,
     pub status : NodeStatus,
     next_index : HashMap<u64, u64>,
-    match_index : HashMap<u64, u64>, //TODO support match_index (client session support required)
     commit_index: u64,
+
     pub log : Log,
     pub fsm : Fsm,
     communicator : Pc,
+    state_saver: Ns,
+
     cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+
     replicate_log_to_peer_tx: Sender<u64>,
     commit_index_updated_tx : Sender<u64>,
-    state_saver: Ns
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -86,18 +89,18 @@ where Log: OperationLog,
             voted_for_id,
             status: NodeStatus::Follower,
             next_index: HashMap::new(),
-            match_index: HashMap::new(),
             commit_index: 0,
             log,
             fsm,
             communicator,
+            state_saver,
             cluster_configuration,
             replicate_log_to_peer_tx,
             commit_index_updated_tx,
-            state_saver
         }
     }
 
+    pub fn get_next_term(&self) -> u64 {self.current_term + 1}
     pub fn get_current_term(&self) -> u64 {
         if self.status == NodeStatus::Candidate {
             self.current_term + 1
@@ -105,23 +108,17 @@ where Log: OperationLog,
             self.current_term
         }
     }
+    pub fn set_current_term(&mut self, new_term: u64) {
+        self.current_term = new_term;
+        self.save_node_state();
+    }
 
+    pub fn get_commit_index(&self) -> u64 {self.commit_index }
     pub fn set_commit_index(&mut self, new_commit_index: u64) {
         self.commit_index = new_commit_index;
         self.commit_index_updated_tx.send(new_commit_index).expect("can send updated commit_index")
     }
 
-    pub fn get_commit_index(&self) -> u64 {
-        self.commit_index
-    }
-
-    pub fn get_next_term(&self) -> u64 {
-        self.current_term + 1
-    }
-    pub fn set_current_term(&mut self, new_term: u64) {
-        self.current_term = new_term;
-        self.save_node_state();
-    }
 
     pub fn get_voted_for_id(&self) -> Option<u64> {
         self.voted_for_id
@@ -154,7 +151,6 @@ where Log: OperationLog,
             self.next_index[&peer_id]
         }
     }
-
     pub fn set_next_index(&mut self, peer_id: u64, new_next_index: u64) {
         let next_index_entry = self.next_index.entry(peer_id)
             .or_insert(new_next_index);
@@ -163,6 +159,7 @@ where Log: OperationLog,
     }
 
 
+    //TODO rename?
     ///Gets entry by index & compares terms.
     /// Special case index=0, term=0 returns true
     pub fn check_log_for_previous_entry(&self, prev_log_term: u64, prev_log_index: u64) -> bool {
@@ -242,6 +239,47 @@ where Log: OperationLog,
         Ok(true)
     }
 
+
+    fn send_append_entries(&self, entry : LogEntry) -> Result<bool, Box<Error>>{
+        if let NodeStatus::Leader = self.status {
+            let cluster = self.cluster_configuration.lock()
+                .expect("cluster lock is not poisoned");
+
+            let (peers_list_copy, quorum_size) =
+                (cluster.get_peers(self.id), cluster.get_quorum_size());
+
+            let entry_index = entry.index;
+            trace!("Node {} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
+            let append_entries_request =  self.create_append_entry_request(AppendEntriesRequestType::NewEntry(entry));
+
+            let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();
+            let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
+                let resp_result = self.communicator.send_append_entries_request(dest_node_id, req);
+                match resp_result {
+                    Ok(resp) => {
+                        trace!("Destination Node {} Append Entry (index={}) result={}",dest_node_id,  entry_index, resp.success);
+                        //TODO bug: should replicate only if consensus gathered - no info at this point
+                        if !resp.success {
+                            replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
+                        }
+                        Ok(resp)
+                    },
+                    Err(err) => {
+                        trace!("Destination Node {} Append Entry (index={}) failed: {}",dest_node_id,  entry_index, err.description());
+                        Err(err)
+                    }
+                }
+            };
+
+            let notify_peers_result = request_peer_consensus(append_entries_request, self.id, peers_list_copy, Some(quorum_size), requester);
+            return match notify_peers_result {
+                Ok(quorum_gathered)=> Ok(quorum_gathered),
+                Err(err) => Err(err)
+            };
+        }
+        errors::new_err("send_append_entries failed: Not a leader".to_string(), None)
+    }
+
     pub fn create_append_entry_request(&self, request_type : AppendEntriesRequestType) -> AppendEntriesRequest {
         let entries = self.get_log_entries(request_type);
 
@@ -305,46 +343,6 @@ where Log: OperationLog,
                 entries
             }
         }
-    }
-
-
-    fn send_append_entries(&self, entry : LogEntry) -> Result<bool, Box<Error>>{
-        if let NodeStatus::Leader = self.status {
-            let cluster = self.cluster_configuration.lock()
-                .expect("cluster lock is not poisoned");
-
-            let (peers_list_copy, quorum_size) =
-                (cluster.get_peers(self.id), cluster.get_quorum_size());
-
-            let entry_index = entry.index;
-            trace!("Node {} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
-            let append_entries_request =  self.create_append_entry_request(AppendEntriesRequestType::NewEntry(entry));
-
-            let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();
-            let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
-                let resp_result = self.communicator.send_append_entries_request(dest_node_id, req);
-                match resp_result {
-                    Ok(resp) => {
-                        trace!("Destination Node {} Append Entry (index={}) result={}",dest_node_id,  entry_index, resp.success);
-                        if !resp.success {
-                            replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
-                        }
-                        Ok(resp)
-                    },
-                    Err(err) => {
-                        trace!("Destination Node {} Append Entry (index={}) failed: {}",dest_node_id,  entry_index, err.description());
-                        Err(err)
-                    }
-                }
-            };
-
-            let notify_peers_result = request_peer_consensus(append_entries_request, self.id, peers_list_copy, Some(quorum_size), requester);
-            return match notify_peers_result {
-                Ok(quorum_gathered)=> Ok(quorum_gathered),
-                Err(err) => Err(err)
-            };
-        }
-        errors::new_err("send_append_entries failed: Not a leader".to_string(), None)
     }
 }
 

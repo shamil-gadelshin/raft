@@ -2,6 +2,7 @@
 **/*.rs.bk
 
 /tests/node/target
+/tests/client/target
 /tests/smoke/target
 /raft-modules/target
 

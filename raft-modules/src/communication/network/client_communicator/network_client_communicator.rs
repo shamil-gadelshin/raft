@@ -13,7 +13,6 @@ use raft::{ ClientRequestChannels};
 
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
 use super::client_requests::{new_data_request};
-use super::server::run_server;
 use crate::communication::duplex_channel::DuplexChannel;
 use crate::communication::network::client_communicator::client_requests::add_server_request;
 
@@ -27,7 +26,7 @@ pub struct NetworkClientCommunicator {
 }
 
 impl NetworkClientCommunicator {
-	pub fn new(host : String, node_id : u64, timeout : Duration) -> NetworkClientCommunicator {
+	pub fn new(host : String, node_id : u64, timeout : Duration, run_server: bool) -> NetworkClientCommunicator {
 		let comm = NetworkClientCommunicator {
 			node_id,
 			timeout,
@@ -36,10 +35,11 @@ impl NetworkClientCommunicator {
 			new_data_duplex_channel: DuplexChannel::new(format!("NewData channel NodeId={}", node_id), timeout)
 		};
 
-		let comm_clone = comm.clone();
-		let listen_address = comm_clone.get_address();
-		thread::spawn(move ||run_server(listen_address, comm_clone));
-
+		if run_server {
+			let comm_clone = comm.clone();
+			let listen_address = comm_clone.get_address();
+			thread::spawn(move || super::server::run_server(listen_address, comm_clone));
+		}
 		comm
 	}
 
@@ -101,8 +101,13 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 		}
 
 		if let Ok(resp) = receive_result {
+			let current_leader = {
+				match resp.current_leader {
+					Some(id)=> id,
+					None => 0
+				}};
 			let response = Response::new(ClientRpcResponse {
-				current_leader: resp.current_leader.unwrap(),
+				current_leader,
 				status: 1
 			});
 
@@ -129,8 +134,13 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 		}
 
 		if let Ok(resp) = receive_result {
+			let current_leader = {
+				match resp.current_leader {
+				Some(id)=> id,
+				None => 0
+			}};
 			let response = Response::new(ClientRpcResponse {
-				current_leader: resp.current_leader.unwrap(),
+				current_leader,
 				status: 1
 			});
 
