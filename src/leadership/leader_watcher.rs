@@ -6,28 +6,28 @@ use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus, NodeStateSaver};
 use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::OperationLog;
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
 use crate::configuration::node::ElectionTimer;
 
 
-pub struct WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>
+pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns>
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
           Ns : NodeStateSaver{
-    pub protected_node: Arc<Mutex<Node<Log,Fsm, Pc, Ns>>>,
+    pub protected_node: Arc<Mutex<Node<Log,Rsm, Pc, Ns>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub watchdog_event_rx : Receiver<LeaderConfirmationEvent>,
     pub election_timer: Et,
 }
 
 
-pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>,
+pub fn watch_leader_status<Log,Rsm, Pc, Et, Ns>(params : WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns>,
                                                 terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
           Ns : NodeStateSaver{
@@ -57,9 +57,9 @@ pub fn watch_leader_status<Log,Fsm, Pc, Et, Ns>(params : WatchLeaderStatusParams
     info!("Watch leader expiration status worker stopped");
 }
 
-fn propose_node_election<Log, Fsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<Log, Fsm, Pc, Et, Ns>)
+fn propose_node_election<Log, Rsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns>)
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
           Ns : NodeStateSaver{

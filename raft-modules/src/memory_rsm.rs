@@ -1,15 +1,15 @@
 use std::error::Error;
 
-use raft::{LogEntry, DataEntryContent, EntryContent, FiniteStateMachine};
+use raft::{LogEntry, DataEntryContent, EntryContent, ReplicatedStateMachine};
 
 #[derive(Debug, Clone, Default)]
-pub struct MemoryFsm {
+pub struct MemoryRsm {
 	data : Vec<DataEntryContent>,
 	last_applied_index: u64,
 }
 
 
-impl FiniteStateMachine for MemoryFsm {
+impl ReplicatedStateMachine for MemoryRsm {
 	fn apply_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
 		if self.get_last_applied_entry_index() >= entry.index {
 			warn!("Attempted to apply entry with existing index={}", entry.index);
@@ -20,7 +20,7 @@ impl FiniteStateMachine for MemoryFsm {
 			self.data.push(data_content);
 		}
 
-		trace!("Fsm applied entry: {}", entry.index);
+		trace!("Rsm applied entry: {}", entry.index);
 		self.last_applied_index = entry.index;
 
 		Ok(())

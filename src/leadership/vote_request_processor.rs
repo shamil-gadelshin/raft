@@ -5,14 +5,14 @@ use super::node_leadership_status::{LeaderElectionEvent};
 use crate::communication::peers::{VoteRequest, VoteResponse, PeerRequestHandler};
 use crate::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 
 
-pub fn process_vote_request<Log, Fsm, Pc, Ns>(request: VoteRequest,
-                                              protected_node : Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
+pub fn process_vote_request<Log, Rsm, Pc, Ns>(request: VoteRequest,
+                                              protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
                                               leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver{
     let node = protected_node.lock().expect("node lock is not poisoned");

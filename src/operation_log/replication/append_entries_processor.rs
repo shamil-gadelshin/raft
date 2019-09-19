@@ -6,14 +6,14 @@ use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler};
 use crate::operation_log::{OperationLog};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent};
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 
 
-pub fn process_append_entries_request<Log, Fsm, Pc, Ns>(request : AppendEntriesRequest,  protected_node: Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>,
+pub fn process_append_entries_request<Log, Rsm, Pc, Ns>(request : AppendEntriesRequest,  protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
                                                  leader_election_event_tx: Sender<LeaderElectionEvent>,
                                                  reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>) -> AppendEntriesResponse
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver{
     let mut node = protected_node.lock().expect("node lock is not poisoned");

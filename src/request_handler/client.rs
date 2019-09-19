@@ -6,26 +6,26 @@ use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, Clie
 use crate::operation_log::{OperationLog};
 use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
 use crate::{errors};
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
 use crossbeam_channel::Receiver;
 
 
-pub struct ClientRequestHandlerParams<Log, Fsm, Cc,Pc, Ns>
+pub struct ClientRequestHandlerParams<Log, Rsm, Cc,Pc, Ns>
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Cc : ClientRequestChannels,
 		  Ns : NodeStateSaver
-{	pub protected_node : Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>,
+{	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
 	pub client_communicator : Cc
 }
 
 
-pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandlerParams<Log,Fsm, Cc, Pc, Ns>,
+pub fn process_client_requests<Log, Rsm, Cc,Pc, Ns>(params : ClientRequestHandlerParams<Log,Rsm, Cc, Pc, Ns>,
 													terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Cc : ClientRequestChannels,
 		  Ns : NodeStateSaver{
@@ -80,11 +80,11 @@ pub fn process_client_requests<Log, Fsm, Cc,Pc, Ns>(params : ClientRequestHandle
 	info!("Client request processor worker stopped");
 }
 
-fn process_client_request_internal<Log, Fsm, Pc, Ns>(
-	protected_node: Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>,
+fn process_client_request_internal<Log, Rsm, Pc, Ns>(
+	protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
 	entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Ns : NodeStateSaver{
 	let mut node = protected_node.lock().expect("node lock is not poisoned");

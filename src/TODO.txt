@@ -1,7 +1,7 @@
 TODO: Features:
 
 Main algorithm:
-- fsm
+- rsm
     .append sync on entry-commit
 - operation_log replication
     .enforce elections timeout
@@ -10,7 +10,7 @@ Main algorithm:
     .support max AppendEntries size parameter & max AppendEntries number
     .append_entries: respond for no quorum
     .transmit full cluster configuration on AddServer Rpc
-    .log (instead of Fsm) is responsible for cluster_configuration apply
+    .log (instead of Rsm) is responsible for cluster_configuration apply
 
 Details:
 - stability
@@ -21,12 +21,12 @@ Details:
     .on termination - shutdown communication workers first
     .remove channel.send().expect - handle disconnection error (because of node termination)
 - investigate
-    .Replicate State Machine or Fsm?
+    .Replicate State Machine or Rsm?
     .detect faster split votes by counting votes??
     .Check commit index on restart with existing log, should be safe with 0(zero)
     .futures
     .election trait?
-    .rebuild raft election as fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
+    .rebuild raft election as rsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - identity
     .generic
     .libp2p
@@ -64,6 +64,7 @@ Details:
 - debug
     .tests
     .cases
+        .check commited only applied to rsm
         .single node
         .cases description in file
         .election
@@ -105,7 +106,7 @@ Future Features:
     .sessions - for duplicate request handling
     .support match_index for node state
     .read query
-- fsm
+- rsm
     .persistent
         .load on start
 - operation-log
@@ -121,7 +122,7 @@ Done:
     .worker thread structure: all peer-request thread, client-thread?
     .extract communicator trait
     .timeouts to NodeConfig as separate struct
-- fsm support
+- rsm support
 - leader election
     .check log on votes
 - communication

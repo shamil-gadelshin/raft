@@ -5,25 +5,25 @@ use crossbeam_channel::{Receiver, Sender};
 use crate::operation_log::OperationLog;
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
 use crate::communication::peers::{PeerRequestHandler};
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 
 
-pub struct LogReplicatorParams<Log, Fsm, Pc, Ns>
+pub struct LogReplicatorParams<Log, Rsm, Pc, Ns>
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Ns : NodeStateSaver{
-	pub protected_node : Arc<Mutex<Node<Log, Fsm,Pc, Ns>>>,
+	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
 	pub replicate_log_to_peer_rx: Receiver<u64>,
 	pub replicate_log_to_peer_tx: Sender<u64>,
 	pub communicator : Pc
 }
 
 
-pub fn replicate_log_to_peer<Log, Fsm, Pc, Ns>(params : LogReplicatorParams<Log, Fsm, Pc, Ns>,
+pub fn replicate_log_to_peer<Log, Rsm, Pc, Ns>(params : LogReplicatorParams<Log, Rsm, Pc, Ns>,
 											   terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Ns : NodeStateSaver{
 	info!("Peer log replicator worker started");
@@ -44,9 +44,9 @@ pub fn replicate_log_to_peer<Log, Fsm, Pc, Ns>(params : LogReplicatorParams<Log,
 	info!("Peer log replicator worker stopped");
 }
 
-fn process_replication_request<Log, Fsm, Pc, Ns>(params: &LogReplicatorParams<Log, Fsm, Pc, Ns>, peer_id: u64)
+fn process_replication_request<Log, Rsm, Pc, Ns>(params: &LogReplicatorParams<Log, Rsm, Pc, Ns>, peer_id: u64)
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc: PeerRequestHandler,
 		  Ns: NodeStateSaver {
 	trace!("Replicate request for peer {}", peer_id);

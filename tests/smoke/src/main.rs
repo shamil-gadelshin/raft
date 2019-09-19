@@ -18,7 +18,7 @@ use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
 
-use raft_modules::{MemoryFsm, RandomizedElectionTimer, MockNodeStateSaver, MemoryOperationLog};
+use raft_modules::{MemoryRsm, RandomizedElectionTimer, MockNodeStateSaver, MemoryOperationLog};
 use raft_modules::{InProcPeerCommunicator};
 use raft_modules::NetworkClientCommunicator;
 
@@ -79,7 +79,7 @@ fn main() {
     let data_resp = client_handler.new_data(new_data_request.clone());
     info!("New Data request sent for Node {}. Response = {:?}", leader_id, data_resp);
 
-	thread::sleep(Duration::from_secs(2));
+	thread::sleep(Duration::from_secs(5));
 
     terminate_workers(node_workers);
 }
@@ -111,7 +111,7 @@ fn terminate_workers(node_workers: Vec<NodeWorker>) {
 }
 
 fn create_node_configuration(node_id: u64, all_nodes: Vec<u64>, communication_timeout: Duration, communicator: InProcPeerCommunicator, )
-    -> (NetworkClientCommunicator, NodeConfiguration<MemoryOperationLog, MemoryFsm, NetworkClientCommunicator, InProcPeerCommunicator, RandomizedElectionTimer, MockNodeStateSaver>)
+    -> (NetworkClientCommunicator, NodeConfiguration<MemoryOperationLog, MemoryRsm, NetworkClientCommunicator, InProcPeerCommunicator, RandomizedElectionTimer, MockNodeStateSaver>)
 {
     let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(all_nodes)));
     let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout, true);
@@ -127,7 +127,7 @@ fn create_node_configuration(node_id: u64, all_nodes: Vec<u64>, communication_ti
         client_communicator: client_request_handler.clone(),
         election_timer: RandomizedElectionTimer::new(1000, 4000),
         operation_log,
-        fsm: MemoryFsm::default(),
+        rsm: MemoryRsm::default(),
         state_saver: MockNodeStateSaver::default(),
         timings: NodeTimings::default()
     };
@@ -140,16 +140,22 @@ pub fn get_address(node_id : u64) -> String{
     format!("127.0.0.1:{}", 50000 + node_id)
 }
 
-fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) -> (Box<ClientRequestHandler>, u64){
+fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) -> (Box<Cc>, u64){
     let bytes = "find a leader".as_bytes();
     let new_data_request = NewDataRequest{data : Arc::new(bytes)};
-    for kv in client_handlers {
-        let (_k, v) = kv;
+    for kv in &client_handlers {
+        let (k, v) = kv;
 
         let result = v.new_data(new_data_request.clone());
         if let Ok(resp) = result {
             if let ClientResponseStatus::Ok = resp.status {
-                return (Box::new(v), resp.current_leader.expect("can get a leader"));
+                let mut client_handler = Box::new(v.clone());
+                let leader_id = resp.current_leader.expect("can get a leader");
+
+                if *k != leader_id {
+                    client_handler = Box::new(client_handlers[&leader_id].clone());
+                }
+                return (client_handler, leader_id) ;
             }
         }
     }

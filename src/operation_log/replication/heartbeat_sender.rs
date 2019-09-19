@@ -8,14 +8,14 @@ use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::OperationLog;
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 
-pub struct SendHeartbeatAppendEntriesParams<Log, Fsm, Pc,Ns>
+pub struct SendHeartbeatAppendEntriesParams<Log, Rsm, Pc,Ns>
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver{
-    pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
+    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
     pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
     pub communicator : Pc,
     pub leader_initial_heartbeat_rx : Receiver<bool>,
@@ -23,10 +23,10 @@ pub struct SendHeartbeatAppendEntriesParams<Log, Fsm, Pc,Ns>
 }
 
 //TODO park-unpark the thread
-pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatAppendEntriesParams<Log, Fsm, Pc, Ns>,
+pub fn send_heartbeat_append_entries<Log, Rsm, Pc, Ns>(params : SendHeartbeatAppendEntriesParams<Log, Rsm, Pc, Ns>,
                                                        terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver{
     info!("Heartbeat sender worker started");
@@ -54,11 +54,11 @@ pub fn send_heartbeat_append_entries<Log, Fsm, Pc, Ns>(params : SendHeartbeatApp
     info!("Heartbeat sender worker stopped");
 }
 
-fn send_heartbeat<Log, Fsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
+fn send_heartbeat<Log, Rsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
                              cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
                              communicator : &Pc)
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver {
     let node = protected_node.lock().expect("node lock is not poisoned");

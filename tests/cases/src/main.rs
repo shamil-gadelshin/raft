@@ -19,8 +19,8 @@ use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
 
-use raft_modules::{MemoryFsm, RandomizedElectionTimer, MockNodeStateSaver};
-use raft_modules::MemoryLogStorage;
+use raft_modules::{MemoryRsm, RandomizedElectionTimer, MockNodeStateSaver};
+use raft_modules::MemoryOperationLog;
 use raft_modules::{InProcPeerCommunicator};
 use raft_modules::NetworkClientCommunicator;
 
@@ -118,11 +118,11 @@ fn terminate_workers(node_workers: Vec<NodeWorker>) {
 }
 
 fn create_node_configuration(node_id: u64, all_nodes: Vec<u64>, communication_timeout: Duration, communicator: InProcPeerCommunicator, )
-                             -> (NetworkClientCommunicator, NodeConfiguration<MemoryLogStorage, MemoryFsm, NetworkClientCommunicator, InProcPeerCommunicator, RandomizedElectionTimer, MockNodeStateSaver>)
+                             -> (NetworkClientCommunicator, NodeConfiguration<MemoryOperationLog, MemoryRsm, NetworkClientCommunicator, InProcPeerCommunicator, RandomizedElectionTimer, MockNodeStateSaver>)
 {
     let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(all_nodes)));
     let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout, true);
-    let fsm = MemoryFsm::new(protected_cluster_config.clone());
+    let operation_log = MemoryOperationLog::new(protected_cluster_config.clone());
     let config = NodeConfiguration {
         node_state: NodeState {
             node_id,
@@ -133,8 +133,8 @@ fn create_node_configuration(node_id: u64, all_nodes: Vec<u64>, communication_ti
         peer_communicator: communicator,
         client_communicator: client_request_handler.clone(),
         election_timer: RandomizedElectionTimer::new(1000, 4000),
-        operation_log: MemoryLogStorage::default(),
-        fsm,
+        operation_log,
+        rsm: MemoryRsm::default(),
         state_saver: MockNodeStateSaver::default(),
         timings: NodeTimings::default()
     };

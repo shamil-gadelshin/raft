@@ -8,7 +8,7 @@ use crate::configuration::node::{NodeConfiguration, ElectionTimer};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams};
 use crate::leadership::node_leadership_status::{run_node_status_watcher};
 use crate::operation_log::OperationLog;
-use crate::fsm::{FiniteStateMachine};
+use crate::rsm::{ReplicatedStateMachine};
 use crate::{common, PeerRequestChannels, PeerRequestHandler};
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::heartbeat_sender::{send_heartbeat_append_entries};
@@ -16,16 +16,16 @@ use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEnt
 use crate::leadership::leader_watcher::{WatchLeaderStatusParams, watch_leader_status};
 use crate::operation_log::replication::peer_log_replicator::{LogReplicatorParams};
 use crate::operation_log::replication::peer_log_replicator::{replicate_log_to_peer};
-use crate::fsm::updater::{update_fsm, FsmUpdaterParams};
+use crate::rsm::updater::{update_fsm, FsmUpdaterParams};
 use crate::request_handler::peer::{PeerRequestHandlerParams, process_peer_request};
 use crate::communication::client::ClientRequestChannels;
 
 
 
-pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Fsm, Cc, Pc, Et, Ns>,
+pub fn start<Log, Rsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns>,
                                         terminate_worker_rx : Receiver<()>)
     where Log: OperationLog ,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Cc : ClientRequestChannels,
           Pc : PeerRequestHandler + PeerRequestChannels,
           Et : ElectionTimer,
@@ -39,7 +39,7 @@ pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Fsm,
     let node = Node::new(
         node_config.node_state,
         node_config.operation_log,
-        node_config.fsm,
+        node_config.rsm,
         node_config.peer_communicator.clone(),
         node_config.cluster_configuration.clone(),
         node_config.state_saver,

@@ -7,7 +7,7 @@ use crate::communication::peers::{PeerRequestHandler};
 use crate::configuration::cluster::{ClusterConfiguration};
 use crate::common;
 use crate::operation_log::OperationLog;
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 use crate::leadership::election::{StartElectionParams, start_election};
 
 pub enum LeaderElectionEvent {
@@ -22,12 +22,12 @@ pub struct ElectionNotice {
 }
 
 
-pub struct ElectionManagerParams<Log, Fsm,Pc, Ns>
+pub struct ElectionManagerParams<Log, Rsm,Pc, Ns>
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver{
-    pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
+    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub leader_election_event_rx : Receiver<LeaderElectionEvent>,
     pub leader_initial_heartbeat_tx : Sender<bool>,
@@ -37,10 +37,10 @@ pub struct ElectionManagerParams<Log, Fsm,Pc, Ns>
 }
 
 
-pub fn run_node_status_watcher<Log, Fsm, Pc, Ns>(params : ElectionManagerParams<Log, Fsm, Pc, Ns>,
+pub fn run_node_status_watcher<Log, Rsm, Pc, Ns>(params : ElectionManagerParams<Log, Rsm, Pc, Ns>,
                                                  terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Ns : NodeStateSaver{
     info!("Leader election status watcher worker started");
@@ -61,9 +61,9 @@ pub fn run_node_status_watcher<Log, Fsm, Pc, Ns>(params : ElectionManagerParams<
     info!("Leader election status watcher worker stopped");
 }
 
-fn change_node_leadership_state<Log, Fsm, Pc, Ns>(params: &ElectionManagerParams<Log, Fsm, Pc, Ns>, event: LeaderElectionEvent)
+fn change_node_leadership_state<Log, Rsm, Pc, Ns>(params: &ElectionManagerParams<Log, Rsm, Pc, Ns>, event: LeaderElectionEvent)
     where Log: OperationLog,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Pc: PeerRequestHandler,
           Ns: NodeStateSaver {
     match event {

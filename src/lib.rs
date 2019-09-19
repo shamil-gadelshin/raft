@@ -7,7 +7,7 @@ mod communication;
 mod operation_log;
 mod configuration;
 mod state;
-mod fsm;
+mod rsm;
 mod request_handler;
 mod errors;
 mod node;
@@ -17,7 +17,7 @@ pub use communication::client::{AddServerRequest,NewDataRequest, ClientRpcRespon
 pub use operation_log::{OperationLog};
 pub use configuration::cluster::ClusterConfiguration;
 pub use configuration::node::NodeConfiguration;
-pub use fsm::FiniteStateMachine;
+pub use rsm::ReplicatedStateMachine;
 pub use common::{LogEntry, DataEntryContent, EntryContent};
 pub use communication::peers::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse};
 pub use communication::peers::{PeerRequestHandler, PeerRequestChannels};
@@ -28,9 +28,9 @@ pub use configuration::node::NodeTimings;
 
 pub type NodeWorker = common::RaftWorker;
 
-pub fn start_node<Log, Fsm,Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Fsm,Cc, Pc, Et, Ns>) -> NodeWorker
+pub fn start_node<Log, Rsm,Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Rsm,Cc, Pc, Et, Ns>) -> NodeWorker
 where Log: OperationLog ,
-	  Fsm: FiniteStateMachine,
+	  Rsm: ReplicatedStateMachine,
 	  Cc : ClientRequestChannels,
 	  Pc : PeerRequestHandler + PeerRequestChannels,
 	  Et : ElectionTimer,

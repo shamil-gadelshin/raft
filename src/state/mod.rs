@@ -8,7 +8,7 @@ use crate::configuration::cluster::ClusterConfiguration;
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::{LogEntry,EntryContent};
 use crate::common::peer_consensus_requester::request_peer_consensus;
-use crate::fsm::{FiniteStateMachine};
+use crate::rsm::{ReplicatedStateMachine};
 use crate::operation_log::{OperationLog};
 use crate::errors;
 use crate::errors::new_err;
@@ -17,9 +17,9 @@ use crate::errors::new_err;
 #[derive(Debug, Clone)]
 //TODO decompose GOD object
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
-pub struct Node<Log,Fsm,Pc, Ns>
+pub struct Node<Log,Rsm,Pc, Ns>
 where Log: OperationLog,
-      Fsm: FiniteStateMachine,
+      Rsm: ReplicatedStateMachine,
       Pc : PeerRequestHandler,
       Ns : NodeStateSaver{
     pub id : u64,
@@ -32,7 +32,7 @@ where Log: OperationLog,
     commit_index: u64,
 
     pub log : Log,
-    pub fsm : Fsm,
+    pub rsm : Rsm,
     communicator : Pc,
     state_saver: Ns,
 
@@ -67,19 +67,19 @@ pub enum AppendEntriesRequestType {
 }
 
 //TODO refactor to node_config
-impl <Log, Fsm,Pc, Ns> Node<Log, Fsm,Pc, Ns>
+impl <Log, Rsm,Pc, Ns> Node<Log, Rsm,Pc, Ns>
 where Log: OperationLog,
-      Fsm: FiniteStateMachine,
+      Rsm: ReplicatedStateMachine,
       Pc : PeerRequestHandler,
       Ns : NodeStateSaver{
     pub fn new(node_state: NodeState,
                log: Log,
-               fsm: Fsm,
+               rsm: Rsm,
                communicator: Pc,
                cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
                state_saver : Ns,
                replicate_log_to_peer_tx: Sender<u64>,
-               commit_index_updated_tx: Sender<u64>, ) -> Node<Log, Fsm, Pc, Ns> {
+               commit_index_updated_tx: Sender<u64>, ) -> Node<Log, Rsm, Pc, Ns> {
         Node {
             id: node_state.node_id,
             current_term: node_state.current_term,
@@ -89,7 +89,7 @@ where Log: OperationLog,
             next_index: HashMap::new(),
             commit_index: 0,
             log,
-            fsm,
+            rsm,
             communicator,
             state_saver,
             cluster_configuration,

@@ -8,27 +8,27 @@ use crate::communication::peers::{PeerRequestHandler, PeerRequestChannels};
 use crate::communication::peers::{VoteRequest, AppendEntriesRequest};
 use crate::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
-use crate::fsm::FiniteStateMachine;
+use crate::rsm::ReplicatedStateMachine;
 use crate::common::LeaderConfirmationEvent;
 use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
 
 
-pub struct PeerRequestHandlerParams<Log, Fsm,Pc, Ns>
+pub struct PeerRequestHandlerParams<Log, Rsm,Pc, Ns>
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
 		  Ns : NodeStateSaver{
-	pub protected_node: Arc<Mutex<Node<Log, Fsm, Pc, Ns>>>,
+	pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
 	pub peer_communicator: Pc,
 	pub leader_election_event_tx: Sender<LeaderElectionEvent>,
 	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>,
 	pub communication_timeout: Duration
 }
 
-pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<Log, Fsm,Pc, Ns>,
+pub fn process_peer_request<Log, Rsm,Pc, Ns>(params : PeerRequestHandlerParams<Log, Rsm,Pc, Ns>,
 											 terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
 		  Ns : NodeStateSaver{
 	info!("Peer request processor worker started");
@@ -60,11 +60,11 @@ pub fn process_peer_request<Log, Fsm,Pc, Ns>(params : PeerRequestHandlerParams<L
 	info!("Peer request processor worker stopped");
 }
 
-fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64,
+fn handle_vote_request<Log, Rsm, Pc, Ns>(node_id: u64,
 										 request : VoteRequest,
-										 params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
+										 params : &PeerRequestHandlerParams<Log, Rsm, Pc, Ns>)
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
 		  Ns : NodeStateSaver{
 	info!("Node {} Received  vote request {:?}", node_id, request);
@@ -82,11 +82,11 @@ fn handle_vote_request<Log, Fsm, Pc, Ns>(node_id: u64,
 }
 
 
-pub fn handle_append_entries_request<Log, Fsm, Pc, Ns>(node_id : u64,
+pub fn handle_append_entries_request<Log, Rsm, Pc, Ns>(node_id : u64,
 													   request : AppendEntriesRequest,
-													   params : &PeerRequestHandlerParams<Log, Fsm, Pc, Ns>)
+													   params : &PeerRequestHandlerParams<Log, Rsm, Pc, Ns>)
 	where Log: OperationLog,
-		  Fsm: FiniteStateMachine,
+		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
 		  Ns : NodeStateSaver{
 	let append_entries_response_tx = params.peer_communicator.append_entries_response_tx(node_id);

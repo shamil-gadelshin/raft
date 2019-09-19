@@ -16,8 +16,8 @@ use raft::{NodeState, NodeTimings};
 use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 
-use raft_modules::{MemoryFsm, RandomizedElectionTimer, MockNodeStateSaver};
-use raft_modules::MemoryLogStorage;
+use raft_modules::{MemoryRsm, RandomizedElectionTimer, MockNodeStateSaver};
+use raft_modules::MemoryOperationLog;
 use raft_modules::{InProcPeerCommunicator};
 use raft_modules::NetworkClientCommunicator;
 
@@ -52,16 +52,17 @@ fn main() {
             vote_for_id: None
         },
         cluster_configuration: protected_cluster_config.clone(),
-        peer_communicator:InProcPeerCommunicator::new(cluster_configuration.get_all(), communication_timeout),
+        peer_communicator: InProcPeerCommunicator::new(cluster_configuration.get_all(), communication_timeout),
         client_communicator: client_request_handler.clone(),
         election_timer: RandomizedElectionTimer::new(1000, 4000),
-        timings: NodeTimings::default()
+        timings: NodeTimings::default(),
+        operation_log: MemoryOperationLog::new(protected_cluster_config.clone()),
+        rsm: MemoryRsm::default(),
+        state_saver: MockNodeStateSaver::default()
     };
 
-    let node_worker = raft::start_node(node_config,
-                                       MemoryLogStorage::default(),
-                                       MemoryFsm::new(protected_cluster_config.clone()),
-                                       MockNodeStateSaver::default());
+    let node_worker = raft::start_node(node_config
+                                       );
 
     let thread = node_worker.join_handle.join();
     if thread.is_err() {

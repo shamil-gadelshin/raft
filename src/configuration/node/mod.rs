@@ -5,7 +5,7 @@ use crate::configuration::cluster::{ClusterConfiguration};
 use crate::communication::peers::{PeerRequestChannels};
 use crate::communication::client::{ClientRequestChannels};
 use crate::state::NodeState;
-use crate::{OperationLog, FiniteStateMachine, PeerRequestHandler, NodeStateSaver};
+use crate::{OperationLog, ReplicatedStateMachine, PeerRequestHandler, NodeStateSaver};
 
 
 pub trait ElectionTimer: Send + 'static {
@@ -26,9 +26,9 @@ impl Default for NodeTimings{
     }
 }
 
-pub struct NodeConfiguration<Log, Fsm, Cc, Pc, Et, Ns>
+pub struct NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns>
     where Log: OperationLog ,
-          Fsm: FiniteStateMachine,
+          Rsm: ReplicatedStateMachine,
           Cc : ClientRequestChannels,
           Pc : PeerRequestHandler + PeerRequestChannels,
           Et : ElectionTimer,
@@ -39,7 +39,7 @@ pub struct NodeConfiguration<Log, Fsm, Cc, Pc, Et, Ns>
     pub client_communicator: Cc,
     pub election_timer: Et,
     pub operation_log : Log,
-    pub fsm : Fsm,
+    pub rsm : Rsm,
     pub state_saver : Ns,
     pub timings: NodeTimings
 }
