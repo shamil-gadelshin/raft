@@ -1,0 +1,13 @@
+[package]
+name = "cases"
+version = "0.1.0"
+authors = ["Shamil Gadelshin <shamilgadelshin@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+chrono = "0.4"
+log = "0.4"
+env_logger = "0.6"
+crossbeam-channel = "0.3"
+raft = { package = "raft", path = "../../"}
+raft-modules = { path = "../../raft-modules"}
