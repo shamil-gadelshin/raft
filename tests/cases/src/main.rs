@@ -43,13 +43,13 @@ fn main() {
     let communication_timeout = Duration::from_millis(500);
     let main_cluster_configuration = ClusterConfiguration::new(node_ids);
 
-    let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all(), communication_timeout);
+    let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all_nodes(), communication_timeout);
     communicator.add_node_communication(new_node_id);
 
     let mut client_handlers  = HashMap::new(); //: HashMap<u64, ClientRequestHandler>
     let mut node_workers = Vec::new();
 
-    let all_nodes = main_cluster_configuration.get_all();
+    let all_nodes = main_cluster_configuration.get_all_nodes();
 
     //run initial cluster
     for node_id in all_nodes.clone() {
@@ -147,23 +147,29 @@ pub fn get_address(node_id : u64) -> String{
     format!("127.0.0.1:{}", 50000 + node_id)
 }
 
-fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) -> (Arc<ClientRequestHandler>, u64){
+
+fn find_a_leader<Cc : ClientRequestHandler>(client_handlers : HashMap<u64, Cc>) -> (Arc<Cc>, u64){
     let bytes = "find a leader".as_bytes();
     let new_data_request = NewDataRequest{data : Arc::new(bytes)};
-    for kv in client_handlers {
-        let (_k, v) = kv;
+    for kv in &client_handlers {
+        let (k, v) = kv;
 
         let result = v.new_data(new_data_request.clone());
         if let Ok(resp) = result {
             if let ClientResponseStatus::Ok = resp.status {
-                return (Arc::new(v), resp.current_leader.expect("can get a leader"));
+                let mut client_handler = Arc::new(v.clone());
+                let leader_id = resp.current_leader.expect("can get a leader");
+
+                if *k != leader_id {
+                    client_handler = Arc::new(client_handlers[&leader_id].clone());
+                }
+                return (client_handler, leader_id) ;
             }
         }
     }
 
     panic!("cannot get a leader!")
 }
-
 
 
 fn add_thousands_of_data<Cc : ClientRequestHandler + ?Sized + Sync>(client_handler : Arc<Cc>)

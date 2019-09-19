@@ -19,8 +19,8 @@ pub struct DataEntryContent {
 }
 
 #[derive(Clone, Debug)]
-pub struct AddServerEntryContent {
-    pub new_server : u64
+pub struct NewClusterConfigurationEntryContent {
+    pub new_cluster_configuration: Vec<u64>
 }
 
 #[derive(Clone, Debug)]
@@ -32,7 +32,7 @@ pub struct LogEntry {
 
 #[derive(Clone, Debug)]
 pub enum EntryContent {
-    AddServer(AddServerEntryContent),
+    AddServer(NewClusterConfigurationEntryContent),
     Data(DataEntryContent),
 }
 

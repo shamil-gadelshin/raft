@@ -20,7 +20,7 @@ impl ClusterConfiguration {
     }
 
     pub fn get_peers(&self, node_id : u64) -> Vec<u64>{
-        let mut peer_ids = self.get_all();
+        let mut peer_ids = self.get_all_nodes();
         peer_ids.retain(|&x| x != node_id);
 
         peer_ids
@@ -43,7 +43,7 @@ impl ClusterConfiguration {
         self.nodes_id_map.insert(peer, ());
     }
 
-    pub fn get_all(&self)-> Vec<u64> {
+    pub fn get_all_nodes(&self) -> Vec<u64> {
         self.nodes_id_map.keys().cloned().collect()
     }
 }

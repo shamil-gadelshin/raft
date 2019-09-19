@@ -19,10 +19,12 @@ impl MemoryOperationLog {
         }
     }
 
-    fn add_server_to_cluster(&self, new_server_id: u64) {
+    fn add_servers_to_cluster(&self, servers: Vec<u64>) {
         let mut cluster = self.cluster_configuration.lock().expect("cluster lock is not poisoned");
 
-        cluster.add_peer(new_server_id);
+        for new_server_id in servers {
+            cluster.add_peer(new_server_id);
+        }
     }
 }
 
@@ -36,8 +38,8 @@ impl OperationLog for MemoryOperationLog {
             self.entries.push(entry.clone());
 
             if let EntryContent::AddServer(add_server_request) =  entry.entry_content {
-                self.add_server_to_cluster(add_server_request.new_server);
-                trace!("New server added: {}", add_server_request.new_server);
+                trace!("New server configuration: {:?}", &add_server_request.new_cluster_configuration);
+                self.add_servers_to_cluster(add_server_request.new_cluster_configuration);
             }
 
             self.last_index = entry.index;

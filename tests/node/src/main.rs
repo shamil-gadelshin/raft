@@ -41,7 +41,7 @@ fn main() {
     info!("Server started");
 
     let cluster_configuration = ClusterConfiguration::new(vec![node_id]);
-    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(cluster_configuration.get_all())));
+    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(cluster_configuration.get_all_nodes())));
     let communication_timeout = Duration::from_millis(500);
     let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout, true);
 
@@ -52,7 +52,7 @@ fn main() {
             vote_for_id: None
         },
         cluster_configuration: protected_cluster_config.clone(),
-        peer_communicator: InProcPeerCommunicator::new(cluster_configuration.get_all(), communication_timeout),
+        peer_communicator: InProcPeerCommunicator::new(cluster_configuration.get_all_nodes(), communication_timeout),
         client_communicator: client_request_handler.clone(),
         election_timer: RandomizedElectionTimer::new(1000, 4000),
         timings: NodeTimings::default(),

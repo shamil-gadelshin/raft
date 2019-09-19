@@ -104,6 +104,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Rsm,
         process_client_requests,
         ClientRequestHandlerParams {
             protected_node: protected_node.clone(),
+            cluster_configuration: node_config.cluster_configuration.clone(),
             client_communicator: node_config.client_communicator.clone()
         });
 

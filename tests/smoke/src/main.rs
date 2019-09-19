@@ -39,13 +39,13 @@ fn main() {
     let communication_timeout = Duration::from_millis(500);
     let main_cluster_configuration = ClusterConfiguration::new(node_ids);
 
-    let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all(), communication_timeout);
+    let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all_nodes(), communication_timeout);
     communicator.add_node_communication(new_node_id);
 
     let mut client_handlers  = HashMap::new(); //: HashMap<u64, ClientRequestHandler>
     let mut node_workers = Vec::new();
 
-    let all_nodes = main_cluster_configuration.get_all();
+    let all_nodes = main_cluster_configuration.get_all_nodes();
 
     //run initial cluster
     for node_id in all_nodes.clone() {
@@ -65,7 +65,7 @@ fn main() {
     let (client_handler, leader_id) = find_a_leader(client_handlers);
 
 	// run new server
-	let new_node_worker = add_new_server(new_node_id, all_nodes, communication_timeout, communicator.clone());
+	let new_node_worker = add_new_server(new_node_id, vec![new_node_id], communication_timeout, communicator.clone());
     node_workers.push(new_node_worker);
 
     //add new server to the cluster

@@ -4,8 +4,8 @@ use std::error::Error;
 use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, ClientRequestChannels};
 use crate::operation_log::{OperationLog};
-use crate::common::{AddServerEntryContent, EntryContent, DataEntryContent};
-use crate::{errors};
+use crate::common::{NewClusterConfigurationEntryContent, EntryContent, DataEntryContent};
+use crate::{errors, ClusterConfiguration};
 use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
 use crossbeam_channel::Receiver;
@@ -18,7 +18,8 @@ pub struct ClientRequestHandlerParams<Log, Rsm, Cc,Pc, Ns>
 		  Cc : ClientRequestChannels,
 		  Ns : NodeStateSaver
 {	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
-	pub client_communicator : Cc
+	pub client_communicator : Cc,
+	pub cluster_configuration: Arc<Mutex<ClusterConfiguration>>
 }
 
 
@@ -44,8 +45,8 @@ pub fn process_client_requests<Log, Rsm, Cc,Pc, Ns>(params : ClientRequestHandle
             },
             recv(add_server_request_rx) -> res => {
 				let request = res.expect("can get add server request");
-				entry_content = EntryContent::AddServer(AddServerEntryContent {
-					 new_server: request.new_server
+				entry_content = EntryContent::AddServer(NewClusterConfigurationEntryContent {
+					 new_cluster_configuration: get_new_configuration(params.cluster_configuration.clone(), request.new_server)
 				 });
 				response_tx = params.client_communicator.add_server_response_tx();
 
@@ -106,4 +107,13 @@ fn process_client_request_internal<Log, Rsm, Pc, Ns>(
 	};
 
 	Ok(client_rpc_response)
+}
+
+fn get_new_configuration(cluster_configuration: Arc<Mutex<ClusterConfiguration>>, new_server: u64) -> Vec<u64> {
+	let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
+
+	let mut nodes = cluster.get_all_nodes();
+	nodes.push(new_server);
+
+	nodes
 }
