@@ -35,16 +35,16 @@ pub fn start<Log, Fsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Fsm,
         crossbeam_channel::unbounded();
     let (commit_index_updated_tx, commit_index_updated_rx): (Sender<u64>, Receiver<u64>) =
         crossbeam_channel::unbounded();
-    let node = Node::new(node_config.node_state.node_id,
-                         node_config.node_state.current_term,
-                         node_config.node_state.vote_for_id,
-                         node_config.operation_log,
-                         node_config.fsm,
-                         node_config.peer_communicator.clone(),
-                         node_config.cluster_configuration.clone(),
-                         replicate_log_to_peer_tx.clone(),
-                         commit_index_updated_tx,
-                         node_config.state_saver
+
+    let node = Node::new(
+        node_config.node_state,
+        node_config.operation_log,
+        node_config.fsm,
+        node_config.peer_communicator.clone(),
+        node_config.cluster_configuration.clone(),
+        node_config.state_saver,
+        replicate_log_to_peer_tx.clone(),
+        commit_index_updated_tx,
     );
 
     let protected_node = Arc::new(Mutex::new(node));

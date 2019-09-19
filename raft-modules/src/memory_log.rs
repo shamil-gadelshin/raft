@@ -1,22 +1,46 @@
-use raft::{LogEntry, EntryContent};
+use raft::{LogEntry, EntryContent, ClusterConfiguration};
 use raft::OperationLog;
 use std::error::Error;
+use std::sync::{Mutex, Arc};
 
-#[derive(Clone, Debug, Default)]
-pub struct MemoryLogStorage {
+#[derive(Clone, Debug)]
+pub struct MemoryOperationLog {
+    cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
     last_index: u64,
     entries : Vec<LogEntry>
 }
 
-impl OperationLog for MemoryLogStorage {
+impl MemoryOperationLog {
+    pub fn new(cluster_configuration: Arc<Mutex<ClusterConfiguration>>)-> MemoryOperationLog {
+        MemoryOperationLog {
+            cluster_configuration,
+            entries : Vec::new(),
+            last_index: 0,
+        }
+    }
+
+    fn add_server_to_cluster(&self, new_server_id: u64) {
+        let mut cluster = self.cluster_configuration.lock().expect("cluster lock is not poisoned");
+
+        cluster.add_peer(new_server_id);
+    }
+}
+
+impl OperationLog for MemoryOperationLog {
     fn create_next_entry(&mut self,  term : u64, entry_content : EntryContent) -> LogEntry {
         LogEntry { index: self.last_index + 1, term, entry_content }
     }
 
     fn append_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
         if self.last_index < entry.index {
+            self.entries.push(entry.clone());
+
+            if let EntryContent::AddServer(add_server_request) =  entry.entry_content {
+                self.add_server_to_cluster(add_server_request.new_server);
+                trace!("New server added: {}", add_server_request.new_server);
+            }
+
             self.last_index = entry.index;
-            self.entries.push(entry);
         }
 
         Ok(())

@@ -49,7 +49,7 @@ pub enum NodeStatus {
     Leader
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct NodeState {
     pub node_id: u64,
     pub current_term: u64,
@@ -72,21 +72,19 @@ where Log: OperationLog,
       Fsm: FiniteStateMachine,
       Pc : PeerRequestHandler,
       Ns : NodeStateSaver{
-    pub fn new(id: u64,
-               current_term: u64,
-               voted_for_id: Option<u64>,
+    pub fn new(node_state: NodeState,
                log: Log,
                fsm: Fsm,
                communicator: Pc,
                cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
+               state_saver : Ns,
                replicate_log_to_peer_tx: Sender<u64>,
-               commit_index_updated_tx: Sender<u64>,
-               state_saver : Ns) -> Node<Log, Fsm, Pc, Ns> {
+               commit_index_updated_tx: Sender<u64>, ) -> Node<Log, Fsm, Pc, Ns> {
         Node {
-            id,
-            current_term,
+            id: node_state.node_id,
+            current_term: node_state.current_term,
+            voted_for_id: node_state.vote_for_id,
             current_leader_id: None,
-            voted_for_id,
             status: NodeStatus::Follower,
             next_index: HashMap::new(),
             commit_index: 0,
