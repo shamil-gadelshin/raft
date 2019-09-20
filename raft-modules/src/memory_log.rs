@@ -1,6 +1,6 @@
 use raft::{LogEntry, EntryContent, ClusterConfiguration};
 use raft::OperationLog;
-use std::error::Error;
+use raft::{RaftError};
 use std::sync::{Mutex, Arc};
 
 #[derive(Clone, Debug)]
@@ -33,7 +33,7 @@ impl OperationLog for MemoryOperationLog {
         LogEntry { index: self.last_index + 1, term, entry_content }
     }
 
-    fn append_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
+    fn append_entry(&mut self, entry: LogEntry) -> Result<(), RaftError> {
         if self.last_index < entry.index {
             self.entries.push(entry.clone());
 

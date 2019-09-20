@@ -1,6 +1,5 @@
-use std::error::Error;
-
 use raft::{LogEntry, DataEntryContent, EntryContent, ReplicatedStateMachine};
+use raft::{RaftError};
 
 #[derive(Debug, Clone, Default)]
 pub struct MemoryRsm {
@@ -10,7 +9,7 @@ pub struct MemoryRsm {
 
 
 impl ReplicatedStateMachine for MemoryRsm {
-	fn apply_entry(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
+	fn apply_entry(&mut self, entry: LogEntry) -> Result<(), RaftError> {
 		if self.get_last_applied_entry_index() >= entry.index {
 			warn!("Attempted to apply entry with existing index={}", entry.index);
 			return Ok(())

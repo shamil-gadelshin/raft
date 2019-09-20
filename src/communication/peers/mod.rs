@@ -2,7 +2,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::common::{LogEntry};
 use crate::common::QuorumResponse;
-use std::error::Error;
+use crate::errors::RaftError;
 
 #[derive(Clone, Copy, Debug)]
 pub struct VoteRequest {
@@ -48,8 +48,8 @@ impl QuorumResponse for AppendEntriesResponse {
 }
 
 pub trait PeerRequestHandler: Send + 'static + Clone {
-    fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, Box<Error>>;
-    fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>;
+    fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, RaftError>;
+    fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, RaftError>;
 }
 
 pub trait PeerRequestChannels {

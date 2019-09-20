@@ -1,5 +1,6 @@
 #[macro_use] extern crate log;
 #[macro_use] extern crate crossbeam_channel;
+extern crate rayon;
 
 mod common;
 mod leadership;
@@ -9,8 +10,8 @@ mod configuration;
 mod state;
 mod rsm;
 mod request_handler;
-mod errors;
 mod node;
+mod errors;
 
 
 pub use communication::client::{AddServerRequest,NewDataRequest, ClientRpcResponse, ClientResponseStatus,ClientRequestHandler, ClientRequestChannels};
@@ -25,8 +26,9 @@ pub use state::NodeState;
 pub use configuration::node::ElectionTimer;
 pub use state::NodeStateSaver;
 pub use configuration::node::NodeTimings;
-
+pub use errors::{RaftError, new_err};
 pub type NodeWorker = common::RaftWorker;
+
 
 pub fn start_node<Log, Rsm,Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Rsm,Cc, Pc, Et, Ns>) -> NodeWorker
 where Log: OperationLog ,

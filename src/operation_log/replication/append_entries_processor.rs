@@ -53,7 +53,7 @@ pub fn process_append_entries_request<Log, Rsm, Pc, Ns>(request : AppendEntriesR
         let entry_index = entry.index;
         let append_entry_result = node.append_entry_to_log(entry);
         if let Err(err) = append_entry_result {
-            error!("Append entry to Log error. Entry = {}: {}", entry_index, err.description());
+            error!("Append entry to Log error. Entry = {}: {}", entry_index, err);
             return AppendEntriesResponse { term: node.get_current_term(), success: false };
         }
     }

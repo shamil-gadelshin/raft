@@ -1,7 +1,7 @@
 use std::sync::Arc;
-use std::error::Error;
 
 use crossbeam_channel::{Sender, Receiver};
+use crate::errors::RaftError;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ClientResponseStatus {
@@ -26,8 +26,8 @@ pub struct ClientRpcResponse {
 }
 
 pub trait ClientRequestHandler: Clone + Sync + Send + 'static  {
-    fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, Box<dyn Error>>;
-    fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, Box<dyn Error>>;
+    fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, RaftError>;
+    fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, RaftError>;
 }
 
 pub trait ClientRequestChannels:  Send + Clone+ 'static + {

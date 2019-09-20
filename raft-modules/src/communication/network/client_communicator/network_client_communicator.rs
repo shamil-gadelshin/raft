@@ -2,14 +2,14 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use std::error::Error;
 
 use crossbeam_channel::{Receiver, Sender};
 use futures::{future};
 use tower_grpc::{Request, Response};
 
-use raft::{ ClientRequestHandler};
-use raft::{ ClientRequestChannels};
+use raft::{ClientRequestHandler};
+use raft::{ClientRequestChannels};
+use raft::{RaftError};
 
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
 use super::client_requests::{new_data_request};
@@ -68,14 +68,14 @@ impl ClientRequestChannels for NetworkClientCommunicator {
 }
 
 impl ClientRequestHandler for NetworkClientCommunicator{
-	fn add_server(&self, request: raft::AddServerRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
+	fn add_server(&self, request: raft::AddServerRequest) -> Result<raft::ClientRpcResponse, RaftError> {
 		trace!("Add server request {:?}", request);
 
 		add_server_request(self.host.clone(), self.timeout, request)
 	}
 
 
-	fn new_data(&self, request: raft::NewDataRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
+	fn new_data(&self, request: raft::NewDataRequest) -> Result<raft::ClientRpcResponse, RaftError> {
 		trace!("New data request {:?}", request);
 
 		new_data_request(self.host.clone(),self.timeout, request)

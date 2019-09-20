@@ -5,7 +5,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 pub mod peer_consensus_requester;
 
-pub trait QuorumResponse {
+pub trait QuorumResponse : Send{
     fn get_result(&self) -> bool;
 }
 

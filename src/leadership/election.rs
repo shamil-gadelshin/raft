@@ -3,7 +3,8 @@ use crossbeam_channel::{Sender};
 use super::node_leadership_status::{LeaderElectionEvent};
 use crate::communication::peers::{VoteRequest, PeerRequestHandler};
 use crate::common::peer_consensus_requester::request_peer_consensus;
-
+use crate::errors;
+//use std::str::*;
 
 pub struct StartElectionParams<Pc : PeerRequestHandler> {
 	pub node_id: u64,
@@ -46,8 +47,10 @@ pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionPar
 				Ok(resp)
 			},
 			Err(err) => {
-				error!("Destination Node {} vote request failed:{}", dest_node_id, err.description());
-				Err(err)
+				let msg = format!("Destination Node {} vote request failed:{}", dest_node_id, err);
+				error!("{}", msg);
+
+				errors::new_err("Cannot get vote from peer".to_string(), msg)
 			}
 		}
 	};
@@ -67,7 +70,7 @@ pub fn start_election<Pc : PeerRequestHandler + Clone>(params : StartElectionPar
 			params.leader_election_event_tx.send(election_event).expect("can promote to leader");
 		},
 		Err(err) => {
-			error!("Leader election failed with errors for Node {}:{}", params.node_id, err.description());
+			error!("Leader election failed with errors for Node {}:{}", params.node_id, err);
 		}
 	};
 }

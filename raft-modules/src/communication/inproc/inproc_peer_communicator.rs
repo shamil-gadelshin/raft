@@ -2,9 +2,9 @@ use crate::communication::duplex_channel::DuplexChannel;
 
 use crossbeam_channel::{Receiver, Sender};
 use raft::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler, PeerRequestChannels};
+use raft::RaftError;
 
 use std::time::Duration;
-use std::error::Error;
 use std::collections::HashMap;
 
 #[derive(Clone,Debug)]
@@ -45,11 +45,11 @@ impl InProcPeerCommunicator {
 }
 
 impl PeerRequestHandler for InProcPeerCommunicator {
-	fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, Box<Error>>  {
+	fn send_vote_request(&self, destination_node_id: u64, request: VoteRequest)-> Result<VoteResponse, RaftError>  {
 		trace!("Destination Node {} Sending request {:?}",destination_node_id, request);
 		self.votes_channels[&destination_node_id].send_request(request)
 	}
-	fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, Box<Error>>  {
+	fn send_append_entries_request(&self, destination_node_id: u64, request: AppendEntriesRequest) -> Result<AppendEntriesResponse, RaftError>  {
 		trace!("Destination Node {} Sending request {:?}",destination_node_id, request);
 		self.append_entries_channels[&destination_node_id].send_request(request)
 	}

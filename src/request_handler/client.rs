@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use std::error::Error;
 
 use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, ClientRequestChannels};
@@ -9,6 +8,7 @@ use crate::{errors, ClusterConfiguration};
 use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
 use crossbeam_channel::Receiver;
+use crate::errors::RaftError;
 
 
 pub struct ClientRequestHandlerParams<Log, Rsm, Cc,Pc, Ns>
@@ -65,14 +65,15 @@ pub fn process_client_requests<Log, Rsm, Cc,Pc, Ns>(params : ClientRequestHandle
 			Ok(client_rpc_response) => {
 				let send_result = response_tx.send(client_rpc_response);
 				if let Err(err) = send_result {
-					errors::new_err("cannot send clientRpcResponse".to_string(), Some(Box::new(err)))
+					errors::new_err("cannot send clientRpcResponse".to_string(), err.to_string())
 				} else {
 					Ok(())
 				}
 			},
 			Err(err) => {
-				error!("Process client request error: {}", err.description());
-				Err(err)
+				let msg = format!("Process client request error: {}", err);
+				error!("{}", msg);
+				errors::new_err("Cannot send clientRpcResponse".to_string(), msg)
 			}
 		};
 
@@ -83,7 +84,7 @@ pub fn process_client_requests<Log, Rsm, Cc,Pc, Ns>(params : ClientRequestHandle
 
 fn process_client_request_internal<Log, Rsm, Pc, Ns>(
 	protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
-	entry_content: EntryContent) -> Result<ClientRpcResponse, Box<Error>>
+	entry_content: EntryContent) -> Result<ClientRpcResponse, RaftError>
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,

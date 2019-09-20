@@ -77,7 +77,7 @@ fn send_heartbeat<Log, Rsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Rsm, Pc
         let result = request_peer_consensus(append_entries_heartbeat, node.id, peers_list_copy, None, requester);
 
         if result.is_err() {
-            error!("Node {} Send heartbeat failed: {}", node.id, result.unwrap_err().description())
+            error!("Node {} Send heartbeat failed: {}", node.id, result.unwrap_err())
         }
     }
 }

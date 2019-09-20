@@ -8,12 +8,11 @@ use crate::communication::network::client_communicator::grpc::generated::gprc_cl
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::client::ClientRequestHandler;
 
 use raft::{ClientResponseStatus};
-use std::error::Error;
 use std::time::Duration;
-use crate::errors::new_err;
+use raft::{new_err, RaftError};
 
 
-pub fn add_server_request(host : String, timeout: Duration, request : raft::AddServerRequest) -> Result<raft::ClientRpcResponse, Box<Error>>{
+pub fn add_server_request(host : String, timeout: Duration, request : raft::AddServerRequest) -> Result<raft::ClientRpcResponse, RaftError>{
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -68,12 +67,12 @@ pub fn add_server_request(host : String, timeout: Duration, request : raft::AddS
 	let result = receive_result.expect("valid response");
 	match result {
 		Ok(resp) => {Ok(resp) },
-		Err(str) => { new_err(str, None) },
+		Err(str) => { new_err(str, String::new()) },
 	}
 
 }
 
-pub fn new_data_request(host: String, timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, Box<Error>> {
+pub fn new_data_request(host: String, timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, RaftError> {
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -127,7 +126,7 @@ pub fn new_data_request(host: String, timeout: Duration, request : raft::NewData
 	let result = receive_result.expect("valid response");
 	match result {
 		Ok(resp) => { Ok(resp) },
-		Err(str) => { new_err(str, None) },
+		Err(str) => { new_err(str, String::new()) },
 	}
 }
 

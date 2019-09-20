@@ -5,7 +5,6 @@ extern crate raft;
 mod memory_log;
 mod memory_rsm;
 mod communication;
-mod errors;
 mod election;
 mod node;
 

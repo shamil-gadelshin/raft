@@ -2,8 +2,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use std::time::Duration;
 
-use crate::errors;
-use std::error::Error;
+use raft::{RaftError, new_err};
 
 #[derive(Clone, Debug)]
 pub struct DuplexChannel<Request, Response> {
@@ -46,17 +45,17 @@ where Request: Send + 'static{
         self.response_rx.clone()
     }
 
-    pub fn send_request(&self, request: Request) -> Result<Response, Box<Error>> {
+    pub fn send_request(&self, request: Request) -> Result<Response, RaftError> {
         let send_result = self.request_tx.send_timeout(request, self.timeout_duration);
         if let Err(err) = send_result {
             return
-               errors::new_err( format!("Cannot send request. Channel : {} ", self.name),  Some(Box::new(err)))
+               new_err( format!("Cannot send request. Channel : {} ", self.name),  err.to_string())
 
         }
 
         let receive_result = self.response_rx.recv_timeout(self.timeout_duration);
         if let Err(err) = receive_result {
-            return errors::new_err(format!("Cannot receive response. Channel : {}", self.name), Some(Box::new(err)))
+            return new_err(format!("Cannot receive response. Channel : {}", self.name), err.to_string())
         }
         if let Ok(resp) = receive_result {
             let response = resp;

@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -11,7 +10,7 @@ use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::rsm::{ReplicatedStateMachine};
 use crate::operation_log::{OperationLog};
 use crate::errors;
-use crate::errors::new_err;
+use crate::errors::{new_err, RaftError};
 
 
 #[derive(Debug, Clone)]
@@ -57,7 +56,7 @@ pub struct NodeState {
 }
 
 pub trait NodeStateSaver : Send + 'static{
-    fn save_node_state(&self, state : NodeState) -> Result<(), Box<Error>>;
+    fn save_node_state(&self, state : NodeState) -> Result<(), RaftError>;
 }
 
 pub enum AppendEntriesRequestType {
@@ -137,7 +136,7 @@ where Log: OperationLog,
         let result = self.state_saver.save_node_state(state);
 
         if let Err(err) = result {
-            let msg = format!("Node state save failed:{}", err.description());
+            let msg = format!("Node state save failed:{}", err);
 
             error!("{}", msg);
         }
@@ -193,30 +192,30 @@ where Log: OperationLog,
         true
     }
 
-    pub fn append_entry_to_log(&mut self, entry: LogEntry) -> Result<(), Box<Error>> {
+    pub fn append_entry_to_log(&mut self, entry: LogEntry) -> Result<(), RaftError> {
         let entry_index = entry.index;
 
         if self.log.get_last_entry_index() < entry_index {
             let log_append_result = self.log.append_entry(entry.clone());
             if let Err(err) = log_append_result {
                 return errors::new_err(
-                    format!("cannot append entry to log, index = {}", entry_index), Some(err));
+                    format!("cannot append entry to log, index = {}", entry_index), err.to_string());
             }
         }
         Ok(())
     }
 
 
-    pub fn append_content_to_log(&mut self, content: EntryContent) -> Result<bool, Box<Error>> {
+    pub fn append_content_to_log(&mut self, content: EntryContent) -> Result<bool, RaftError> {
         let entry = self.log.create_next_entry(self.get_current_term(), content);
 
         let send_result = self.send_append_entries(entry.clone());
         match send_result {
             Err(err) => {
-                let msg = format!("Entry replication failed:{}", err.description());
+                let msg = format!("Entry replication failed:{}", err);
 
                 error!("{}", msg);
-                return new_err(msg, Some(err));
+                return new_err("Cannot append content to log".to_string(), msg);
             },
             Ok(quorum_gathered) => {
                 if !quorum_gathered {
@@ -228,10 +227,10 @@ where Log: OperationLog,
 
         let add_to_entry_result = self.append_entry_to_log(entry.clone());
         if let Err(err) = add_to_entry_result {
-            let msg = format!("Append entry failed:{}", err.description());
+            let msg = format!("Append entry failed:{}", err);
 
             error!("{}", msg);
-            return new_err(msg, Some(err));
+            return new_err("Cannot append content to log".to_string(), msg);
         }
 
         self.set_commit_index(entry.index);
@@ -240,7 +239,7 @@ where Log: OperationLog,
     }
 
 
-    fn send_append_entries(&self, entry : LogEntry) -> Result<bool, Box<Error>>{
+    fn send_append_entries(&self, entry : LogEntry) -> Result<bool, RaftError>{
         if let NodeStatus::Leader = self.status {
             let cluster = self.cluster_configuration.lock()
                 .expect("cluster lock is not poisoned");
@@ -269,7 +268,7 @@ where Log: OperationLog,
                     },
                     Err(err) => {
                         trace!("Destination Node {} Append Entry (index={}) failed: {}",
-                               dest_node_id,  entry_index, err.description());
+                               dest_node_id,  entry_index, err);
                         Err(err)
                     }
                 }
@@ -286,7 +285,7 @@ where Log: OperationLog,
                 Err(err) => Err(err)
             };
         }
-        errors::new_err("send_append_entries failed: Not a leader".to_string(), None)
+        errors::new_err("send_append_entries failed: Not a leader".to_string(), String::new())
     }
 
     pub fn create_append_entry_request(&self, request_type : AppendEntriesRequestType)
