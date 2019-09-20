@@ -3,7 +3,7 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver};
 
 
-use crate::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
+use crate::node::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::operation_log::OperationLog;

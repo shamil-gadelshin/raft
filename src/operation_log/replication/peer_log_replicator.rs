@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::operation_log::OperationLog;
-use crate::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
+use crate::node::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
 use crate::communication::peers::{PeerRequestHandler};
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;

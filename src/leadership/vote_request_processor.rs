@@ -3,7 +3,7 @@ use crossbeam_channel::{Sender};
 
 use super::node_leadership_status::{LeaderElectionEvent};
 use crate::communication::peers::{VoteRequest, VoteResponse, PeerRequestHandler};
-use crate::state::{Node, NodeStateSaver};
+use crate::node::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;

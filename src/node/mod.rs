@@ -1,15 +1,18 @@
+pub mod configuration;
+pub mod state;
+
 use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{LeaderConfirmationEvent, RaftWorkerPool};
-use crate::state::{Node, NodeStateSaver};
-use crate::configuration::node::{NodeConfiguration, ElectionTimer};
+use crate::common::{ RaftWorkerPool};
+use crate::leadership::{LeaderConfirmationEvent};
+use crate::node::state::{Node, NodeStateSaver};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams};
 use crate::leadership::node_leadership_status::{run_node_status_watcher};
 use crate::operation_log::OperationLog;
 use crate::rsm::{ReplicatedStateMachine};
-use crate::{common, PeerRequestChannels, PeerRequestHandler, Cluster};
+use crate::{common, PeerRequestChannels, PeerRequestHandler, Cluster, NodeConfiguration, ElectionTimer};
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::heartbeat_sender::{send_heartbeat_append_entries};
 use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEntriesParams};

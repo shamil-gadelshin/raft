@@ -6,10 +6,10 @@ use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::leadership::vote_request_processor::process_vote_request;
 use crate::communication::peers::{PeerRequestHandler, PeerRequestChannels};
 use crate::communication::peers::{VoteRequest, AppendEntriesRequest};
-use crate::state::{Node, NodeStateSaver};
+use crate::node::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
-use crate::common::LeaderConfirmationEvent;
+use crate::leadership::LeaderConfirmationEvent;
 use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
 use crate::Cluster;
 

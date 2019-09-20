@@ -2,14 +2,13 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{LeaderConfirmationEvent};
-use crate::state::{Node, NodeStatus, NodeStateSaver};
+use crate::leadership::{LeaderConfirmationEvent};
+use crate::node::state::{Node, NodeStatus, NodeStateSaver};
 use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
-use crate::configuration::node::ElectionTimer;
-use crate::Cluster;
+use crate::{Cluster, ElectionTimer};
 
 
 pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl>

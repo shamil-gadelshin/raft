@@ -2,13 +2,9 @@ use std::time::Duration;
 
 use crate::communication::peers::{PeerRequestChannels};
 use crate::communication::client::{ClientRequestChannels};
-use crate::state::NodeState;
-use crate::{OperationLog, ReplicatedStateMachine, PeerRequestHandler, NodeStateSaver};
+use crate::node::state::NodeState;
+use crate::{OperationLog, ReplicatedStateMachine, PeerRequestHandler, NodeStateSaver, ElectionTimer};
 
-
-pub trait ElectionTimer: Send + 'static {
-    fn get_next_elections_timeout(&self) -> Duration;
-}
 
 pub struct NodeTimings {
     pub heartbeat_timeout: Duration,

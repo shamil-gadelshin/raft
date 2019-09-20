@@ -9,9 +9,6 @@ pub trait QuorumResponse : Send{
     fn get_result(&self) -> bool;
 }
 
-pub enum LeaderConfirmationEvent {
-    ResetWatchdogCounter
-}
 
 #[derive(Clone, Debug)]
 pub struct DataEntryContent {

@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::state::{Node, NodeStatus, NodeStateSaver};
+use crate::node::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, ClientRequestChannels};
 use crate::operation_log::{OperationLog};
 use crate::common::{NewClusterConfigurationEntryContent, EntryContent, DataEntryContent};
