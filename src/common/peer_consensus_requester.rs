@@ -13,8 +13,8 @@ pub fn request_peer_consensus<Req, Resp, Requester>(request: Req,
                                                     peers : Vec<u64>,
                                                     quorum: Option<u32>,
                                                     requester : Requester) -> Result<bool, RaftError>
-where Requester: Fn(u64, Req) ->Result<Resp, RaftError>,
-      Req: Clone,
+where Requester: Fn(u64, Req) ->Result<Resp, RaftError> + Sync,
+      Req: Clone + Sync,
       Resp: QuorumResponse {
     if peers.is_empty() {
         return Ok(true)
@@ -55,27 +55,13 @@ where Requester: Fn(u64, Req) ->Result<Resp, RaftError>,
 }
 
 fn get_responses_from_peer<Req, Resp, Requester>(request: Req, peers: Vec<u64>, requester: Requester) -> Vec<Result<Resp, RaftError>>
-    where Requester: Fn(u64, Req) -> Result<Resp, RaftError>,
-          Req: Clone,
+    where Requester: Fn(u64, Req) -> Result<Resp, RaftError> + Sync,
+          Req: Clone + Sync,
           Resp: QuorumResponse {
 
-//TODO communicator result & timeout handling
-//TODO rayon parallel-foreach
+//TODO timeout handling
 
-
-    let mut responses = Vec::new();
-    for peer_id in peers {
-
-        let resp = requester(peer_id, request.clone());
-        responses.push(resp);
-    }
-
-//    let mut resp_iter = peers.into_par_iter().map(|peer_id| {
-//        let resp = requester(peer_id, request.clone());
-//
-//        resp
-//    });
-//
-//    let responses: Vec<_> = resp_iter.collect();
-    responses
+    peers.into_par_iter()
+         .map(|peer_id| {requester(peer_id, request.clone())})
+         .collect()
 }

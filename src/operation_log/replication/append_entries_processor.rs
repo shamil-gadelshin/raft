@@ -7,15 +7,17 @@ use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse, P
 use crate::operation_log::{OperationLog};
 use crate::leadership::node_leadership_status::{LeaderElectionEvent};
 use crate::rsm::ReplicatedStateMachine;
+use crate::Cluster;
 
 
-pub fn process_append_entries_request<Log, Rsm, Pc, Ns>(request : AppendEntriesRequest,  protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
+pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl>(request : AppendEntriesRequest,  protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
                                                  leader_election_event_tx: Sender<LeaderElectionEvent>,
                                                  reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>) -> AppendEntriesResponse
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
-          Ns : NodeStateSaver{
+          Ns : NodeStateSaver,
+          Cl : Cluster{
     let mut node = protected_node.lock().expect("node lock is not poisoned");
 
     if request.term < node.get_current_term() {

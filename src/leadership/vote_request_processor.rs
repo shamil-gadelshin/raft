@@ -6,15 +6,17 @@ use crate::communication::peers::{VoteRequest, VoteResponse, PeerRequestHandler}
 use crate::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
+use crate::Cluster;
 
 
-pub fn process_vote_request<Log, Rsm, Pc, Ns>(request: VoteRequest,
-                                              protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
+pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl>(request: VoteRequest,
+                                              protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
                                               leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
-          Ns : NodeStateSaver{
+          Ns : NodeStateSaver,
+          Cl : Cluster{
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     let mut vote_granted = false;

@@ -4,8 +4,7 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::common::{LeaderConfirmationEvent};
 use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::peers::{PeerRequestHandler};
-use crate::configuration::cluster::{ClusterConfiguration};
-use crate::common;
+use crate::{common, Cluster};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::leadership::election::{StartElectionParams, start_election};
@@ -22,27 +21,29 @@ pub struct ElectionNotice {
 }
 
 
-pub struct ElectionManagerParams<Log, Rsm,Pc, Ns>
+pub struct ElectionManagerParams<Log, Rsm,Pc, Ns, Cl>
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
-          Ns : NodeStateSaver{
-    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
+          Ns : NodeStateSaver,
+          Cl : Cluster{
+    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub leader_election_event_rx : Receiver<LeaderElectionEvent>,
     pub leader_initial_heartbeat_tx : Sender<bool>,
     pub watchdog_event_tx : Sender<LeaderConfirmationEvent>,
     pub peer_communicator: Pc,
-    pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+    pub cluster_configuration : Cl,
 }
 
 
-pub fn run_node_status_watcher<Log, Rsm, Pc, Ns>(params : ElectionManagerParams<Log, Rsm, Pc, Ns>,
+pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl>(params : ElectionManagerParams<Log, Rsm, Pc, Ns, Cl>,
                                                  terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
-          Ns : NodeStateSaver{
+          Ns : NodeStateSaver,
+          Cl : Cluster{
     info!("Leader election status watcher worker started");
     loop {
         select!(
@@ -61,11 +62,12 @@ pub fn run_node_status_watcher<Log, Rsm, Pc, Ns>(params : ElectionManagerParams<
     info!("Leader election status watcher worker stopped");
 }
 
-fn change_node_leadership_state<Log, Rsm, Pc, Ns>(params: &ElectionManagerParams<Log, Rsm, Pc, Ns>, event: LeaderElectionEvent)
+fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(params: &ElectionManagerParams<Log, Rsm, Pc, Ns, Cl>, event: LeaderElectionEvent)
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc: PeerRequestHandler,
-          Ns: NodeStateSaver {
+          Ns: NodeStateSaver,
+          Cl : Cluster {
     match event {
         LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
             let mut node = params.protected_node.lock().expect("node lock is not poisoned");
@@ -76,10 +78,8 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns>(params: &ElectionManagerParams
             node.status = NodeStatus::Candidate;
             info!("Node {} Status changed to Candidate", node.id);
 
-            let cluster = params.cluster_configuration.lock().expect("node lock is not poisoned");
-
-            let (peers_copy, quorum_size) =
-                (cluster.get_peers(node_id), cluster.get_quorum_size());
+            let peers_copy = params.cluster_configuration.get_peers(node_id);
+            let quorum_size = params.cluster_configuration.get_quorum_size();
 
             let params = StartElectionParams {
                 node_id,

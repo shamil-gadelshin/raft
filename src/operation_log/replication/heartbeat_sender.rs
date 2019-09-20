@@ -6,29 +6,31 @@ use crossbeam_channel::{Receiver};
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::peer_consensus_requester::request_peer_consensus;
-use crate::configuration::cluster::{ClusterConfiguration};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
+use crate::Cluster;
 
-pub struct SendHeartbeatAppendEntriesParams<Log, Rsm, Pc,Ns>
+pub struct SendHeartbeatAppendEntriesParams<Log, Rsm, Pc, Ns, Cl>
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
-          Ns : NodeStateSaver{
-    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
-    pub cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+          Ns : NodeStateSaver,
+          Cl : Cluster{
+    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    pub cluster_configuration : Cl,
     pub communicator : Pc,
     pub leader_initial_heartbeat_rx : Receiver<bool>,
     pub heartbeat_timeout : Duration
 }
 
 //TODO park-unpark the thread
-pub fn send_heartbeat_append_entries<Log, Rsm, Pc, Ns>(params : SendHeartbeatAppendEntriesParams<Log, Rsm, Pc, Ns>,
+pub fn send_heartbeat_append_entries<Log, Rsm, Pc, Ns, Cl>(params : SendHeartbeatAppendEntriesParams<Log, Rsm, Pc, Ns, Cl>,
                                                        terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
-          Ns : NodeStateSaver{
+          Ns : NodeStateSaver,
+          Cl : Cluster{
     info!("Heartbeat sender worker started");
     loop {
         let heartbeat_timeout = crossbeam_channel::after(params.heartbeat_timeout);
@@ -54,19 +56,18 @@ pub fn send_heartbeat_append_entries<Log, Rsm, Pc, Ns>(params : SendHeartbeatApp
     info!("Heartbeat sender worker stopped");
 }
 
-fn send_heartbeat<Log, Rsm, Pc, Ns>(protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
-                             cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+fn send_heartbeat<Log, Rsm, Pc, Ns, Cl>(protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+                             cluster_configuration : Cl,
                              communicator : &Pc)
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
-          Ns : NodeStateSaver {
+          Ns : NodeStateSaver,
+          Cl : Cluster {
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     if let NodeStatus::Leader = node.status {
-        let cluster = cluster_configuration.lock().expect("cluster lock is not poisoned");
-
-        let peers_list_copy = cluster.get_peers(node.id);
+        let peers_list_copy = cluster_configuration.get_peers(node.id);
 
         let append_entries_heartbeat =
             node.create_append_entry_request(AppendEntriesRequestType::Heartbeat);

@@ -4,32 +4,34 @@ use crate::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::client::{ClientRpcResponse, ClientResponseStatus, ClientRequestChannels};
 use crate::operation_log::{OperationLog};
 use crate::common::{NewClusterConfigurationEntryContent, EntryContent, DataEntryContent};
-use crate::{errors, ClusterConfiguration};
+use crate::{errors, Cluster};
 use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
 use crossbeam_channel::Receiver;
 use crate::errors::RaftError;
 
 
-pub struct ClientRequestHandlerParams<Log, Rsm, Cc,Pc, Ns>
+pub struct ClientRequestHandlerParams<Log, Rsm, Cc,Pc, Ns, Cl>
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Cc : ClientRequestChannels,
-		  Ns : NodeStateSaver
-{	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
+		  Ns : NodeStateSaver,
+		  Cl : Cluster
+{	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
 	pub client_communicator : Cc,
-	pub cluster_configuration: Arc<Mutex<ClusterConfiguration>>
+	pub cluster_configuration: Cl
 }
 
 
-pub fn process_client_requests<Log, Rsm, Cc,Pc, Ns>(params : ClientRequestHandlerParams<Log,Rsm, Cc, Pc, Ns>,
+pub fn process_client_requests<Log, Rsm, Cc, Pc, Ns, Cl>(params : ClientRequestHandlerParams<Log,Rsm, Cc, Pc, Ns, Cl>,
 													terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Cc : ClientRequestChannels,
-		  Ns : NodeStateSaver{
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
 	info!("Client request processor worker started");
 	let add_server_request_rx = params.client_communicator.add_server_request_rx();
 	let new_data_request_rx = params.client_communicator.new_data_request_rx();
@@ -82,13 +84,14 @@ pub fn process_client_requests<Log, Rsm, Cc,Pc, Ns>(params : ClientRequestHandle
 	info!("Client request processor worker stopped");
 }
 
-fn process_client_request_internal<Log, Rsm, Pc, Ns>(
-	protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
+fn process_client_request_internal<Log, Rsm, Pc, Ns, Cl>(
+	protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
 	entry_content: EntryContent) -> Result<ClientRpcResponse, RaftError>
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
-		  Ns : NodeStateSaver{
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
 	let mut node = protected_node.lock().expect("node lock is not poisoned");
 
 	let client_rpc_response = match node.status {
@@ -110,10 +113,10 @@ fn process_client_request_internal<Log, Rsm, Pc, Ns>(
 	Ok(client_rpc_response)
 }
 
-fn get_new_configuration(cluster_configuration: Arc<Mutex<ClusterConfiguration>>, new_server: u64) -> Vec<u64> {
-	let cluster = cluster_configuration.lock().expect("node lock is not poisoned");
+fn get_new_configuration<Cl>(cluster_configuration: Cl, new_server: u64) -> Vec<u64>
+	where Cl : Cluster{
 
-	let mut nodes = cluster.get_all_nodes();
+	let mut nodes = cluster_configuration.get_all_nodes();
 	nodes.push(new_server);
 
 	nodes

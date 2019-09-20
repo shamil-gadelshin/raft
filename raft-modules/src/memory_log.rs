@@ -1,29 +1,28 @@
-use raft::{LogEntry, EntryContent, ClusterConfiguration};
+use raft::{LogEntry, EntryContent};
 use raft::OperationLog;
 use raft::{RaftError};
-use std::sync::{Mutex, Arc};
+use crate::ClusterConfiguration;
 
 #[derive(Clone, Debug)]
+//TODO multithreaded protection required
 pub struct MemoryOperationLog {
-    cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
+    cluster: ClusterConfiguration,
     last_index: u64,
     entries : Vec<LogEntry>
 }
 
 impl MemoryOperationLog {
-    pub fn new(cluster_configuration: Arc<Mutex<ClusterConfiguration>>)-> MemoryOperationLog {
+    pub fn new(cluster: ClusterConfiguration)-> MemoryOperationLog {
         MemoryOperationLog {
-            cluster_configuration,
+            cluster,
             entries : Vec::new(),
             last_index: 0,
         }
     }
 
-    fn add_servers_to_cluster(&self, servers: Vec<u64>) {
-        let mut cluster = self.cluster_configuration.lock().expect("cluster lock is not poisoned");
-
+    fn add_servers_to_cluster(&mut self, servers: Vec<u64>) {
         for new_server_id in servers {
-            cluster.add_peer(new_server_id);
+            self.cluster.add_peer(new_server_id);
         }
     }
 }

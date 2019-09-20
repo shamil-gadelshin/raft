@@ -1,7 +1,5 @@
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::configuration::cluster::{ClusterConfiguration};
 use crate::communication::peers::{PeerRequestChannels};
 use crate::communication::client::{ClientRequestChannels};
 use crate::state::NodeState;
@@ -26,15 +24,22 @@ impl Default for NodeTimings{
     }
 }
 
-pub struct NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns>
+pub trait Cluster : Send + Sync + Clone + 'static{
+    fn get_quorum_size(&self) -> u32;
+    fn get_all_nodes(&self) -> Vec<u64>;
+    fn get_peers(&self, node_id : u64) -> Vec<u64>;
+}
+
+pub struct NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>
     where Log: OperationLog ,
           Rsm: ReplicatedStateMachine,
           Cc : ClientRequestChannels,
           Pc : PeerRequestHandler + PeerRequestChannels,
           Et : ElectionTimer,
-          Ns : NodeStateSaver {
+          Ns : NodeStateSaver,
+          Cl : Cluster{
     pub node_state: NodeState,
-    pub cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
+    pub cluster_configuration: Cl,
     pub peer_communicator: Pc,
     pub client_communicator: Cc,
     pub election_timer: Et,

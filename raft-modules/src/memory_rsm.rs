@@ -2,6 +2,7 @@ use raft::{LogEntry, DataEntryContent, EntryContent, ReplicatedStateMachine};
 use raft::{RaftError};
 
 #[derive(Debug, Clone, Default)]
+//TODO multithreaded protection required
 pub struct MemoryRsm {
 	data : Vec<DataEntryContent>,
 	last_applied_index: u64,

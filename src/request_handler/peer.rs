@@ -11,26 +11,29 @@ use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::common::LeaderConfirmationEvent;
 use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
+use crate::Cluster;
 
 
-pub struct PeerRequestHandlerParams<Log, Rsm,Pc, Ns>
+pub struct PeerRequestHandlerParams<Log, Rsm,Pc, Ns, Cl>
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
-		  Ns : NodeStateSaver{
-	pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns>>>,
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
+	pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
 	pub peer_communicator: Pc,
 	pub leader_election_event_tx: Sender<LeaderElectionEvent>,
 	pub reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>,
 	pub communication_timeout: Duration
 }
 
-pub fn process_peer_request<Log, Rsm,Pc, Ns>(params : PeerRequestHandlerParams<Log, Rsm,Pc, Ns>,
+pub fn process_peer_request<Log, Rsm,Pc, Ns, Cl>(params : PeerRequestHandlerParams<Log, Rsm, Pc, Ns, Cl>,
 											 terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
-		  Ns : NodeStateSaver{
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
 	info!("Peer request processor worker started");
 	let node_id = {params.protected_node.lock().expect("node lock is not poisoned").id};
 	let vote_request_rx = params.peer_communicator.vote_request_rx(node_id).clone();
@@ -60,13 +63,14 @@ pub fn process_peer_request<Log, Rsm,Pc, Ns>(params : PeerRequestHandlerParams<L
 	info!("Peer request processor worker stopped");
 }
 
-fn handle_vote_request<Log, Rsm, Pc, Ns>(node_id: u64,
+fn handle_vote_request<Log, Rsm, Pc, Ns, Cl>(node_id: u64,
 										 request : VoteRequest,
-										 params : &PeerRequestHandlerParams<Log, Rsm, Pc, Ns>)
+										 params : &PeerRequestHandlerParams<Log, Rsm, Pc, Ns, Cl>)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
-		  Ns : NodeStateSaver{
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
 	info!("Node {} Received  vote request {:?}", node_id, request);
 
 	let vote_response = process_vote_request(request,
@@ -82,13 +86,14 @@ fn handle_vote_request<Log, Rsm, Pc, Ns>(node_id: u64,
 }
 
 
-pub fn handle_append_entries_request<Log, Rsm, Pc, Ns>(node_id : u64,
+pub fn handle_append_entries_request<Log, Rsm, Pc, Ns, Cl>(node_id : u64,
 													   request : AppendEntriesRequest,
-													   params : &PeerRequestHandlerParams<Log, Rsm, Pc, Ns>)
+													   params : &PeerRequestHandlerParams<Log, Rsm, Pc, Ns, Cl>)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestChannels + PeerRequestHandler,
-		  Ns : NodeStateSaver{
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
 	let append_entries_response_tx = params.peer_communicator.append_entries_response_tx(node_id);
 	trace!("Node {} Received 'Append Entries Request' {:?}", node_id, request);
 

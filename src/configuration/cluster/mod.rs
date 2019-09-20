@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::configuration::node::Cluster;
 
 #[derive(Clone, Debug)]
 //TODO save changes to cluster configuration
@@ -6,8 +7,8 @@ pub struct ClusterConfiguration{
     nodes_id_map : HashMap<u64, ()>,
 }
 
-impl ClusterConfiguration {
-    pub fn get_quorum_size(&self) -> u32 {
+impl Cluster for ClusterConfiguration {
+    fn get_quorum_size(&self) -> u32 {
         let node_count = self.nodes_id_map.len() as u32;
 
         if node_count == 0 {
@@ -19,13 +20,19 @@ impl ClusterConfiguration {
         half + 1 //majority
     }
 
-    pub fn get_peers(&self, node_id : u64) -> Vec<u64>{
+    fn get_all_nodes(&self) -> Vec<u64> {
+        self.nodes_id_map.keys().cloned().collect()
+    }
+
+    fn get_peers(&self, node_id : u64) -> Vec<u64>{
         let mut peer_ids = self.get_all_nodes();
         peer_ids.retain(|&x| x != node_id);
 
         peer_ids
     }
+}
 
+impl ClusterConfiguration {
     pub fn new(peers : Vec<u64>) -> ClusterConfiguration {
         let mut cluster_config = ClusterConfiguration{nodes_id_map : HashMap::new()};
 
@@ -41,9 +48,5 @@ impl ClusterConfiguration {
             warn!("Cluster configuration - add duplicate peer:{}", peer)
         }
         self.nodes_id_map.insert(peer, ());
-    }
-
-    pub fn get_all_nodes(&self) -> Vec<u64> {
-        self.nodes_id_map.keys().cloned().collect()
     }
 }

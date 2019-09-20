@@ -16,7 +16,7 @@ mod errors;
 
 pub use communication::client::{AddServerRequest,NewDataRequest, ClientRpcResponse, ClientResponseStatus,ClientRequestHandler, ClientRequestChannels};
 pub use operation_log::{OperationLog};
-pub use configuration::cluster::ClusterConfiguration;
+pub use configuration::node::Cluster;
 pub use configuration::node::NodeConfiguration;
 pub use rsm::ReplicatedStateMachine;
 pub use common::{LogEntry, DataEntryContent, EntryContent};
@@ -30,13 +30,14 @@ pub use errors::{RaftError, new_err};
 pub type NodeWorker = common::RaftWorker;
 
 
-pub fn start_node<Log, Rsm,Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Rsm,Cc, Pc, Et, Ns>) -> NodeWorker
+pub fn start_node<Log, Rsm,Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, Rsm,Cc, Pc, Et, Ns, Cl>) -> NodeWorker
 where Log: OperationLog ,
 	  Rsm: ReplicatedStateMachine,
 	  Cc : ClientRequestChannels,
 	  Pc : PeerRequestHandler + PeerRequestChannels,
 	  Et : ElectionTimer,
-	  Ns : NodeStateSaver{
+	  Ns : NodeStateSaver,
+	  Cl : Cluster{
 
 	common::run_worker(node::start, node_config)
 }

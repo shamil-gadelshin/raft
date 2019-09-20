@@ -6,26 +6,29 @@ use crate::operation_log::OperationLog;
 use crate::state::{Node, NodeStatus, AppendEntriesRequestType, NodeStateSaver};
 use crate::communication::peers::{PeerRequestHandler};
 use crate::rsm::ReplicatedStateMachine;
+use crate::Cluster;
 
 
-pub struct LogReplicatorParams<Log, Rsm, Pc, Ns>
+pub struct LogReplicatorParams<Log, Rsm, Pc, Ns, Cl>
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
-		  Ns : NodeStateSaver{
-	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns>>>,
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
+	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
 	pub replicate_log_to_peer_rx: Receiver<u64>,
 	pub replicate_log_to_peer_tx: Sender<u64>,
 	pub communicator : Pc
 }
 
 
-pub fn replicate_log_to_peer<Log, Rsm, Pc, Ns>(params : LogReplicatorParams<Log, Rsm, Pc, Ns>,
+pub fn replicate_log_to_peer<Log, Rsm, Pc, Ns, Cl>(params : LogReplicatorParams<Log, Rsm, Pc, Ns, Cl>,
 											   terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
-		  Ns : NodeStateSaver{
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
 	info!("Peer log replicator worker started");
 	loop {
 		select!(
@@ -44,11 +47,12 @@ pub fn replicate_log_to_peer<Log, Rsm, Pc, Ns>(params : LogReplicatorParams<Log,
 	info!("Peer log replicator worker stopped");
 }
 
-fn process_replication_request<Log, Rsm, Pc, Ns>(params: &LogReplicatorParams<Log, Rsm, Pc, Ns>, peer_id: u64)
+fn process_replication_request<Log, Rsm, Pc, Ns, Cl>(params: &LogReplicatorParams<Log, Rsm, Pc, Ns, Cl>, peer_id: u64)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc: PeerRequestHandler,
-		  Ns: NodeStateSaver {
+		  Ns: NodeStateSaver,
+		  Cl : Cluster {
 	trace!("Replicate request for peer {}", peer_id);
 
 	let mut node = params.protected_node.lock().expect("node lock is not poisoned");

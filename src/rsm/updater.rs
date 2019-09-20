@@ -7,22 +7,25 @@ use crate::rsm::{ReplicatedStateMachine};
 use crate::common::LogEntry;
 use crate::state::{Node, NodeStateSaver};
 use crate::communication::peers::PeerRequestHandler;
+use crate::Cluster;
 
-pub struct FsmUpdaterParams<Log, Rsm,Pc, Ns>
+pub struct FsmUpdaterParams<Log, Rsm,Pc, Ns, Cl>
 	where Log: OperationLog,
 		  Rsm:ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
-		  Ns : NodeStateSaver {
-	pub protected_node : Arc<Mutex<Node<Log,Rsm,Pc, Ns>>>,
+		  Ns : NodeStateSaver,
+		  Cl : Cluster {
+	pub protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
 	pub commit_index_updated_rx : Receiver<u64>
 }
 
 
-pub fn update_fsm<Log, Rsm,Pc, Ns>(params : FsmUpdaterParams<Log,Rsm,Pc, Ns>, terminate_worker_rx : Receiver<()>)
+pub fn update_fsm<Log, Rsm,Pc, Ns, Cl>(params : FsmUpdaterParams<Log, Rsm, Pc, Ns, Cl>, terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
-		  Ns : NodeStateSaver{
+		  Ns : NodeStateSaver,
+		  Cl : Cluster{
 	info!("FSM updater worker started");
 	loop {
 		select!(
@@ -41,11 +44,12 @@ pub fn update_fsm<Log, Rsm,Pc, Ns>(params : FsmUpdaterParams<Log,Rsm,Pc, Ns>, te
 	info!("FSM updater worker stopped");
 }
 
-fn process_update_fsm_request<Log, Rsm, Pc, Ns>(params: &FsmUpdaterParams<Log, Rsm, Pc, Ns>, new_commit_index: u64)
+fn process_update_fsm_request<Log, Rsm, Pc, Ns, Cl>(params: &FsmUpdaterParams<Log, Rsm, Pc, Ns, Cl>, new_commit_index: u64)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc: PeerRequestHandler,
-		  Ns: NodeStateSaver {
+		  Ns: NodeStateSaver,
+		  Cl : Cluster {
 	let mut node = params.protected_node.lock().expect("node lock is not poisoned");
 	trace!("Update Rsm request for Node {}, Commit index = {}", node.id, new_commit_index);
 	loop {

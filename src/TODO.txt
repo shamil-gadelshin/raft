@@ -9,8 +9,7 @@ Main algorithm:
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
     .append_entries: respond for no quorum
-    .transmit full cluster configuration on AddServer Rpc
-    .log (instead of Rsm) is responsible for cluster_configuration apply
+
 
 Details:
 - stability
@@ -21,7 +20,6 @@ Details:
     .on termination - shutdown communication workers first
     .remove channel.send().expect - handle disconnection error (because of node termination)
 - investigate
-    .Replicate State Machine or Rsm?
     .detect faster split votes by counting votes??
     .Check commit index on restart with existing log, should be safe with 0(zero)
     .futures
@@ -40,7 +38,6 @@ Details:
     .increase log coverage
 - error handling
     .communication timeouts
-    .de-box errors to RaftError
 - node example
     .remove node_id from log
     .implement peer network communicator
@@ -85,7 +82,6 @@ Details:
     .license
     .Rust API Guidelines
 - optimization
-    .rayon on nodes requests
     .speed & memory profiling
     .mutex
         .consider to pass node_id as a copy to reduce mutex locks
@@ -119,6 +115,7 @@ Future Features:
 Done:
 - support single node
 - investigate
+    .Replicate State Machine or Rsm?
     .investigate channels faults
     .'static in the 'Log : LogStorage + Sync + Send+ 'static'
     .Arc<dyn Log> to get rid of &static + Send ...
@@ -147,8 +144,11 @@ Done:
     .memory snapshot
     .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .not commit entry if quorum fails (clear entry?)
+    .transmit full cluster configuration on AddServer Rpc
+    .log (instead of Rsm) is responsible for cluster_configuration apply
 - error handling
     .error style
+    .de-box errors to RaftError
 - project structure
     .library crate
     .exe-project
@@ -157,3 +157,5 @@ Done:
     .raft vs infrastructure module(code) separation
 - release
     .graceful-shutdown
+- optimization
+    .rayon on nodes requests

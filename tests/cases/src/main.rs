@@ -3,7 +3,7 @@ extern crate env_logger;
 extern crate chrono;
 extern crate crossbeam_channel;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use std::time::Duration;
 use std::collections::HashMap;
 use std::io::Write;
@@ -15,11 +15,10 @@ extern crate raft;
 extern crate raft_modules;
 
 use raft::{ClientResponseStatus, ClientRequestHandler, NodeState, NodeWorker, NodeTimings};
-use raft::ClusterConfiguration;
 use raft::NodeConfiguration;
 use raft::NewDataRequest;
 
-use raft_modules::{MemoryRsm, RandomizedElectionTimer, MockNodeStateSaver};
+use raft_modules::{MemoryRsm, RandomizedElectionTimer, MockNodeStateSaver, ClusterConfiguration};
 use raft_modules::MemoryOperationLog;
 use raft_modules::{InProcPeerCommunicator};
 use raft_modules::NetworkClientCommunicator;
@@ -41,15 +40,15 @@ fn main() {
     let node_ids = vec![1, 2];
     let new_node_id = node_ids.last().unwrap() + 1;
     let communication_timeout = Duration::from_millis(500);
-    let main_cluster_configuration = ClusterConfiguration::new(node_ids);
+    let all_nodes = node_ids.clone();
 
-    let mut communicator = InProcPeerCommunicator::new(main_cluster_configuration.get_all_nodes(), communication_timeout);
+    let mut communicator = InProcPeerCommunicator::new(all_nodes.clone(), communication_timeout);
     communicator.add_node_communication(new_node_id);
 
     let mut client_handlers  = HashMap::new(); //: HashMap<u64, ClientRequestHandler>
     let mut node_workers = Vec::new();
 
-    let all_nodes = main_cluster_configuration.get_all_nodes();
+
 
     //run initial cluster
     for node_id in all_nodes.clone() {
@@ -87,7 +86,7 @@ fn main() {
 
     thread::spawn(     ||add_thousands_of_data(leader_client_handler));
 
-    thread::sleep(Duration::from_secs(2));
+    thread::sleep(Duration::from_secs(25));
     terminate_workers(node_workers);
 }
 
@@ -118,18 +117,18 @@ fn terminate_workers(node_workers: Vec<NodeWorker>) {
 }
 
 fn create_node_configuration(node_id: u64, all_nodes: Vec<u64>, communication_timeout: Duration, communicator: InProcPeerCommunicator, )
-                             -> (NetworkClientCommunicator, NodeConfiguration<MemoryOperationLog, MemoryRsm, NetworkClientCommunicator, InProcPeerCommunicator, RandomizedElectionTimer, MockNodeStateSaver>)
+                             -> (NetworkClientCommunicator, NodeConfiguration<MemoryOperationLog, MemoryRsm, NetworkClientCommunicator, InProcPeerCommunicator, RandomizedElectionTimer, MockNodeStateSaver, ClusterConfiguration>)
 {
-    let protected_cluster_config = Arc::new(Mutex::new(ClusterConfiguration::new(all_nodes)));
+    let cluster_config =ClusterConfiguration::new(all_nodes);
     let client_request_handler = NetworkClientCommunicator::new(get_address(node_id), node_id, communication_timeout, true);
-    let operation_log = MemoryOperationLog::new(protected_cluster_config.clone());
+    let operation_log = MemoryOperationLog::new(cluster_config.clone());
     let config = NodeConfiguration {
         node_state: NodeState {
             node_id,
             current_term: 0,
             vote_for_id: None
         },
-        cluster_configuration: protected_cluster_config.clone(),
+        cluster_configuration: cluster_config.clone(),
         peer_communicator: communicator,
         client_communicator: client_request_handler.clone(),
         election_timer: RandomizedElectionTimer::new(1000, 4000),

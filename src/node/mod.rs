@@ -9,7 +9,7 @@ use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionMan
 use crate::leadership::node_leadership_status::{run_node_status_watcher};
 use crate::operation_log::OperationLog;
 use crate::rsm::{ReplicatedStateMachine};
-use crate::{common, PeerRequestChannels, PeerRequestHandler};
+use crate::{common, PeerRequestChannels, PeerRequestHandler, Cluster};
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::heartbeat_sender::{send_heartbeat_append_entries};
 use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEntriesParams};
@@ -22,14 +22,15 @@ use crate::communication::client::ClientRequestChannels;
 
 
 
-pub fn start<Log, Rsm, Cc, Pc, Et, Ns>(node_config : NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns>,
+pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
                                         terminate_worker_rx : Receiver<()>)
     where Log: OperationLog ,
           Rsm: ReplicatedStateMachine,
           Cc : ClientRequestChannels,
           Pc : PeerRequestHandler + PeerRequestChannels,
           Et : ElectionTimer,
-          Ns : NodeStateSaver {
+          Ns : NodeStateSaver,
+          Cl : Cluster {
 
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx): (Sender<u64>, Receiver<u64>) =
         crossbeam_channel::unbounded();

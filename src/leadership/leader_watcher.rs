@@ -9,28 +9,31 @@ use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
 use crate::configuration::node::ElectionTimer;
+use crate::Cluster;
 
 
-pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns>
+pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl>
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
-          Ns : NodeStateSaver{
-    pub protected_node: Arc<Mutex<Node<Log,Rsm, Pc, Ns>>>,
+          Ns : NodeStateSaver,
+          Cl : Cluster{
+    pub protected_node: Arc<Mutex<Node<Log,Rsm, Pc, Ns, Cl>>>,
     pub leader_election_event_tx : Sender<LeaderElectionEvent>,
     pub watchdog_event_rx : Receiver<LeaderConfirmationEvent>,
     pub election_timer: Et,
 }
 
 
-pub fn watch_leader_status<Log,Rsm, Pc, Et, Ns>(params : WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns>,
+pub fn watch_leader_status<Log,Rsm, Pc, Et, Ns, Cl>(params : WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl>,
                                                 terminate_worker_rx : Receiver<()>)
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
-          Ns : NodeStateSaver{
+          Ns : NodeStateSaver,
+          Cl : Cluster{
     info!("Watch leader expiration status worker started");
     loop {
         let timeout = crossbeam_channel::after(params.election_timer.get_next_elections_timeout());
@@ -57,12 +60,13 @@ pub fn watch_leader_status<Log,Rsm, Pc, Et, Ns>(params : WatchLeaderStatusParams
     info!("Watch leader expiration status worker stopped");
 }
 
-fn propose_node_election<Log, Rsm, Pc, Et, Ns>(params: &WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns>)
+fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl>(params: &WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl>)
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
           Et : ElectionTimer,
-          Ns : NodeStateSaver{
+          Ns : NodeStateSaver,
+          Cl : Cluster{
     let node = params.protected_node.lock().expect("node lock is not poisoned");
     if let NodeStatus::Follower = node.status {
         info!("Node {} Leader awaiting time elapsed. Starting new election", node.id);

@@ -1,26 +1,25 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Sender};
 
-use crate::configuration::cluster::ClusterConfiguration;
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::common::{LogEntry,EntryContent};
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::rsm::{ReplicatedStateMachine};
 use crate::operation_log::{OperationLog};
-use crate::errors;
+use crate::{errors, Cluster};
 use crate::errors::{new_err, RaftError};
 
 
 #[derive(Debug, Clone)]
 //TODO decompose GOD object
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
-pub struct Node<Log,Rsm,Pc, Ns>
+pub struct Node<Log,Rsm,Pc, Ns,Cl>
 where Log: OperationLog,
       Rsm: ReplicatedStateMachine,
       Pc : PeerRequestHandler,
-      Ns : NodeStateSaver{
+      Ns : NodeStateSaver,
+      Cl : Cluster{
     pub id : u64,
     current_term: u64,
     voted_for_id: Option<u64>,
@@ -35,7 +34,7 @@ where Log: OperationLog,
     communicator : Pc,
     state_saver: Ns,
 
-    cluster_configuration : Arc<Mutex<ClusterConfiguration>>,
+    cluster_configuration : Cl,
 
     replicate_log_to_peer_tx: Sender<u64>,
     commit_index_updated_tx : Sender<u64>,
@@ -55,7 +54,7 @@ pub struct NodeState {
     pub vote_for_id: Option<u64>,
 }
 
-pub trait NodeStateSaver : Send + 'static{
+pub trait NodeStateSaver : Send + Sync + 'static{
     fn save_node_state(&self, state : NodeState) -> Result<(), RaftError>;
 }
 
@@ -66,19 +65,20 @@ pub enum AppendEntriesRequestType {
 }
 
 //TODO refactor to node_config
-impl <Log, Rsm,Pc, Ns> Node<Log, Rsm,Pc, Ns>
+impl <Log, Rsm,Pc, Ns, Cl> Node<Log, Rsm,Pc, Ns, Cl>
 where Log: OperationLog,
       Rsm: ReplicatedStateMachine,
       Pc : PeerRequestHandler,
-      Ns : NodeStateSaver{
+      Ns : NodeStateSaver,
+      Cl : Cluster{
     pub fn new(node_state: NodeState,
                log: Log,
                rsm: Rsm,
                communicator: Pc,
-               cluster_configuration: Arc<Mutex<ClusterConfiguration>>,
+               cluster_configuration: Cl,
                state_saver : Ns,
                replicate_log_to_peer_tx: Sender<u64>,
-               commit_index_updated_tx: Sender<u64>, ) -> Node<Log, Rsm, Pc, Ns> {
+               commit_index_updated_tx: Sender<u64>, ) -> Node<Log, Rsm, Pc, Ns, Cl> {
         Node {
             id: node_state.node_id,
             current_term: node_state.current_term,
@@ -241,11 +241,9 @@ where Log: OperationLog,
 
     fn send_append_entries(&self, entry : LogEntry) -> Result<bool, RaftError>{
         if let NodeStatus::Leader = self.status {
-            let cluster = self.cluster_configuration.lock()
-                .expect("cluster lock is not poisoned");
 
-            let (peers_list_copy, quorum_size) =
-                (cluster.get_peers(self.id), cluster.get_quorum_size());
+            let peers_copy = self.cluster_configuration.get_peers(self.id);
+            let quorum_size = self.cluster_configuration.get_quorum_size();
 
             let entry_index = entry.index;
             trace!("Node {} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
@@ -277,7 +275,7 @@ where Log: OperationLog,
             let notify_peers_result = request_peer_consensus(
                 append_entries_request,
                 self.id,
-                peers_list_copy,
+                peers_copy,
                 Some(quorum_size), requester);
 
             return match notify_peers_result {
