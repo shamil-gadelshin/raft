@@ -4,7 +4,7 @@ use crossbeam_channel::Receiver;
 
 use crate::operation_log::OperationLog;
 use crate::rsm::{ReplicatedStateMachine};
-use crate::common::LogEntry;
+use crate::operation_log::LogEntry;
 use crate::node::state::{Node, NodeStateSaver};
 use crate::communication::peers::PeerRequestHandler;
 use crate::Cluster;

@@ -18,7 +18,7 @@ pub use node::configuration::Cluster;
 pub use node::configuration::NodeConfiguration;
 pub use node::configuration::NodeTimings;
 pub use rsm::ReplicatedStateMachine;
-pub use common::{LogEntry, DataEntryContent, EntryContent};
+pub use operation_log::{LogEntry, DataEntryContent, EntryContent};
 pub use communication::peers::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse};
 pub use communication::peers::{PeerRequestHandler, PeerRequestChannels};
 pub use node::state::NodeState;

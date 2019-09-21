@@ -1,37 +1,8 @@
-use std::sync::{Arc};
 use std::thread::JoinHandle;
 use std::thread;
 use crossbeam_channel::{Sender, Receiver};
 
 pub mod peer_consensus_requester;
-
-pub trait QuorumResponse : Send{
-    fn get_result(&self) -> bool;
-}
-
-
-#[derive(Clone, Debug)]
-pub struct DataEntryContent {
-    pub data : Arc<&'static [u8]>
-}
-
-#[derive(Clone, Debug)]
-pub struct NewClusterConfigurationEntryContent {
-    pub new_cluster_configuration: Vec<u64>
-}
-
-#[derive(Clone, Debug)]
-pub struct LogEntry {
-    pub index: u64,
-    pub term: u64,
-    pub entry_content: EntryContent
-}
-
-#[derive(Clone, Debug)]
-pub enum EntryContent {
-    AddServer(NewClusterConfigurationEntryContent),
-    Data(DataEntryContent),
-}
 
 pub fn run_worker_thread<T: Send + 'static, F: Fn(T) + Send + 'static>(worker : F, params : T) -> JoinHandle<()> {
     thread::spawn(move || worker(params))

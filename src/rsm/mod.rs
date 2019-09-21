@@ -1,6 +1,6 @@
 pub mod updater;
 
-use crate::common::{LogEntry};
+use crate::operation_log::{LogEntry};
 use crate::errors::RaftError;
 
 pub trait ReplicatedStateMachine: Sized + Sync + Send +  'static {

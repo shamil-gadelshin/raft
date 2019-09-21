@@ -1,7 +1,7 @@
 use crossbeam_channel::{Sender, Receiver};
 
-use crate::common::{LogEntry};
-use crate::common::QuorumResponse;
+use crate::operation_log::{LogEntry};
+use crate::operation_log::QuorumResponse;
 use crate::errors::RaftError;
 
 #[derive(Clone, Copy, Debug)]

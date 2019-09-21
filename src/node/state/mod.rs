@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crossbeam_channel::{Sender};
 
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
-use crate::common::{LogEntry,EntryContent};
+use crate::operation_log::{LogEntry,EntryContent};
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::rsm::{ReplicatedStateMachine};
 use crate::operation_log::{OperationLog};

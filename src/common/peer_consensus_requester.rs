@@ -4,7 +4,7 @@ use std::string::*;
 use rayon::prelude::*;
 
 use crate::errors;
-use super::QuorumResponse;
+use crate::operation_log::QuorumResponse;
 use crate::errors::RaftError;
 
 
