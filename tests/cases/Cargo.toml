@@ -4,6 +4,14 @@ version = "0.1.0"
 authors = ["Shamil Gadelshin <shamilgadelshin@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "cases"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cases"
+path = "src/main.rs"
+
 [dependencies]
 chrono = "0.4"
 log = "0.4"
