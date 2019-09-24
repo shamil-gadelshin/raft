@@ -5,7 +5,7 @@ use crate::leadership::{LeaderConfirmationEvent};
 use crate::node::state::{Node, NodeStatus, NodeStateSaver};
 use crate::communication::peers::{AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler};
 use crate::operation_log::{OperationLog};
-use crate::leadership::node_leadership_status::{LeaderElectionEvent};
+use crate::leadership::node_leadership_fsm::{LeaderElectionEvent};
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
 

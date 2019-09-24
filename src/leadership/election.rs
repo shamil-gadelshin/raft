@@ -1,6 +1,6 @@
 use crossbeam_channel::{Sender};
 
-use super::node_leadership_status::{LeaderElectionEvent};
+use super::node_leadership_fsm::{LeaderElectionEvent};
 use crate::communication::peers::{VoteRequest, PeerRequestHandler};
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::errors;

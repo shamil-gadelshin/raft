@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use crossbeam_channel::{Sender};
 
-use super::node_leadership_status::{LeaderElectionEvent};
+use super::node_leadership_fsm::{LeaderElectionEvent};
 use crate::communication::peers::{VoteRequest, VoteResponse, PeerRequestHandler};
 use crate::node::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;

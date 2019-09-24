@@ -9,7 +9,7 @@ use crate::node::state::{Node, NodeStateSaver};
 use crate::communication::peers::PeerRequestHandler;
 use crate::Cluster;
 
-pub struct FsmUpdaterParams<Log, Rsm,Pc, Ns, Cl>
+pub struct RsmUpdaterParams<Log, Rsm,Pc, Ns, Cl>
 	where Log: OperationLog,
 		  Rsm:ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
@@ -20,7 +20,7 @@ pub struct FsmUpdaterParams<Log, Rsm,Pc, Ns, Cl>
 }
 
 
-pub fn update_fsm<Log, Rsm,Pc, Ns, Cl>(params : FsmUpdaterParams<Log, Rsm, Pc, Ns, Cl>, terminate_worker_rx : Receiver<()>)
+pub fn update_rsm<Log, Rsm,Pc, Ns, Cl>(params : RsmUpdaterParams<Log, Rsm, Pc, Ns, Cl>, terminate_worker_rx : Receiver<()>)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
@@ -44,7 +44,7 @@ pub fn update_fsm<Log, Rsm,Pc, Ns, Cl>(params : FsmUpdaterParams<Log, Rsm, Pc, N
 	info!("FSM updater worker stopped");
 }
 
-fn process_update_fsm_request<Log, Rsm, Pc, Ns, Cl>(params: &FsmUpdaterParams<Log, Rsm, Pc, Ns, Cl>, new_commit_index: u64)
+fn process_update_fsm_request<Log, Rsm, Pc, Ns, Cl>(params: &RsmUpdaterParams<Log, Rsm, Pc, Ns, Cl>, new_commit_index: u64)
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc: PeerRequestHandler,

@@ -8,18 +8,18 @@ use crossbeam_channel::{Sender, Receiver};
 use crate::common::{ RaftWorkerPool};
 use crate::leadership::{LeaderConfirmationEvent};
 use crate::node::state::{Node, NodeStateSaver};
-use crate::leadership::node_leadership_status::{LeaderElectionEvent, ElectionManagerParams};
-use crate::leadership::node_leadership_status::{run_node_status_watcher};
+use crate::leadership::node_leadership_fsm::{LeaderElectionEvent, ElectionManagerParams};
+use crate::leadership::node_leadership_fsm::{run_node_status_watcher};
 use crate::operation_log::OperationLog;
 use crate::rsm::{ReplicatedStateMachine};
 use crate::{common, PeerRequestChannels, PeerRequestHandler, Cluster, NodeConfiguration, ElectionTimer};
 use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
 use crate::operation_log::replication::heartbeat_sender::{send_heartbeat_append_entries};
 use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEntriesParams};
-use crate::leadership::leader_watcher::{WatchLeaderStatusParams, watch_leader_status};
+use crate::leadership::leader_status_watcher::{WatchLeaderStatusParams, watch_leader_status};
 use crate::operation_log::replication::peer_log_replicator::{LogReplicatorParams};
 use crate::operation_log::replication::peer_log_replicator::{replicate_log_to_peer};
-use crate::rsm::updater::{update_fsm, FsmUpdaterParams};
+use crate::rsm::updater::{update_rsm, RsmUpdaterParams};
 use crate::request_handler::peer::{PeerRequestHandlerParams, process_peer_request};
 use crate::communication::client::ClientRequestChannels;
 
@@ -122,8 +122,8 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, 
         });
 
     let fsm_updater_worker = common::run_worker(
-        update_fsm,
-        FsmUpdaterParams {
+        update_rsm,
+        RsmUpdaterParams {
             protected_node: protected_node.clone(),
             commit_index_updated_rx
         });

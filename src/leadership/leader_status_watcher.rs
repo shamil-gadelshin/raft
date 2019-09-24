@@ -4,7 +4,7 @@ use crossbeam_channel::{Sender, Receiver};
 
 use crate::leadership::{LeaderConfirmationEvent};
 use crate::node::state::{Node, NodeStatus, NodeStateSaver};
-use super::node_leadership_status::{LeaderElectionEvent, ElectionNotice};
+use super::node_leadership_fsm::{LeaderElectionEvent, ElectionNotice};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::communication::peers::PeerRequestHandler;
