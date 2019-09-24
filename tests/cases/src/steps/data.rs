@@ -3,20 +3,20 @@ use std::sync::Arc;
 use crate::steps::cluster::Leader;
 use std::thread;
 
-pub fn add_data_sample(leader: &Leader) {
+pub fn add_data_sample<Cc : ClientRequestHandler>(leader: &Leader<Cc>) {
 	let bytes = "first data".as_bytes();
 	let new_data_request = NewDataRequest{data : Arc::new(bytes)};
 	let data_resp = leader.client_handler.new_data(new_data_request.clone());
 	info!("Add server request sent for Node {}. Response = {:?}", leader.id, data_resp);
 }
 
-pub fn add_server(leader: &Leader, new_node_id : u64) {
+pub fn add_server<Cc : ClientRequestHandler>(leader: &Leader<Cc>, new_node_id : u64) {
 	let add_server_request = raft::AddServerRequest{new_server : new_node_id};
 	let resp = leader.client_handler.add_server(add_server_request);
 	info!("Add server request sent for Node {}. Response = {:?}", leader.id, resp);
 }
 
-pub fn add_thousands_data_samples(leader : Leader) {
+pub fn add_thousands_data_samples<Cc : ClientRequestHandler>(leader : Leader<Cc>) {
 	fn add_thousands_of_data<Cc : ClientRequestHandler + ?Sized + Sync>(client_handler : Arc<Cc>)
 	{
 		//  thread::sleep(Duration::from_secs(7));

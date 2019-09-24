@@ -28,8 +28,7 @@ fn main() {
     init_logger();
 
     cases::smoke::run();
-//    steps::sleep(5);
-//    cases::add_thousand::run();
+    cases::add_thousand::run();
 }
 
 

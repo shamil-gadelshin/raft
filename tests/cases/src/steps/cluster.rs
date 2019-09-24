@@ -1,4 +1,4 @@
-use raft_modules::{InProcPeerCommunicator, NetworkClientCommunicator};
+use raft_modules::{InProcPeerCommunicator};
 use std::collections::HashMap;
 use raft::{NodeWorker, NewDataRequest, ClientResponseStatus, ClientRequestHandler};
 use std::sync::Arc;
@@ -11,12 +11,16 @@ pub struct CaseCluster<Cc : ClientRequestHandler> {
 }
 
 #[derive(Clone)]
-pub struct Leader {
+pub struct Leader<Cc : ClientRequestHandler> {
 	pub id : u64,
-	pub client_handler: Arc<NetworkClientCommunicator>
+	pub client_handler: Arc<Cc>
 }
 
-pub fn start_initial_cluster(nodes : Vec<u64>, peer_communicator : InProcPeerCommunicator) -> CaseCluster<NetworkClientCommunicator> {
+
+
+pub fn start_initial_cluster<F, Cc>(nodes : Vec<u64>, peer_communicator : InProcPeerCommunicator, node_creator: F) -> CaseCluster<Cc>
+where F: Fn(u64, Vec<u64>, InProcPeerCommunicator) -> (NodeWorker, Cc),
+	  Cc : ClientRequestHandler {
 	let all_nodes = nodes.clone();
 
 	let mut client_handlers  = HashMap::new();
@@ -24,11 +28,9 @@ pub fn start_initial_cluster(nodes : Vec<u64>, peer_communicator : InProcPeerCom
 
 	//run initial cluster
 	for node_id in all_nodes.clone() {
-		let (client_request_handler, node_config) = super::create_node_configuration(node_id, all_nodes.clone(),peer_communicator.clone() );
+		let (node_worker, client_request_handler) = node_creator(node_id, all_nodes.clone(), peer_communicator.clone());
 
-		let node_worker = raft::start_node(node_config);
 		node_workers.push(node_worker);
-
 		client_handlers.insert(node_id, client_request_handler);
 	}
 
@@ -40,15 +42,16 @@ pub fn start_initial_cluster(nodes : Vec<u64>, peer_communicator : InProcPeerCom
 	}
 }
 
-impl CaseCluster<NetworkClientCommunicator> {
-	pub fn add_new_server(&mut self, new_node_id: u64) {
-		let (client_request_handler, new_node_config) = super::create_node_configuration(new_node_id, self.initial_nodes.clone(), self.peer_communicator.clone());
-		let node_worker = raft::start_node(new_node_config);
+impl <Cc : ClientRequestHandler> CaseCluster<Cc> {
+	pub fn add_new_server<F>(&mut self, new_node_id: u64, node_creator: F)
+		where F: Fn(u64, Vec<u64>, InProcPeerCommunicator)  -> (NodeWorker, Cc) {
+		let (node_worker, client_request_handler) = node_creator(new_node_id, self.initial_nodes.clone(), self.peer_communicator.clone());
+
 		self.node_workers.push(node_worker);
 		self.client_handlers.insert(new_node_id, client_request_handler);
 	}
 
-	pub fn find_a_leader(&self) -> Leader{
+	pub fn find_a_leader(&self) -> Leader<Cc>{
 		let bytes = "find a leader".as_bytes();
 		let new_data_request = NewDataRequest{data : Arc::new(bytes)};
 		for kv in &self.client_handlers {
