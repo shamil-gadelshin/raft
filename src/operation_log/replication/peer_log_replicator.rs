@@ -61,8 +61,6 @@ fn process_replication_request<Log, Rsm, Pc, Ns, Cl>(params: &LogReplicatorParam
 		return
 	}
 
-	//TODO check for commit index - because of failed consensus - replication can be incorrect
-
 	let next_index = node.get_next_index(peer_id);
 	let append_entries_request = node.create_append_entry_request(AppendEntriesRequestType::UpdateNode(peer_id));
 	let request_entry_count = append_entries_request.entries.len() as u64;

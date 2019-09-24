@@ -258,7 +258,7 @@ where Log: OperationLog,
                         trace!("Destination Node {} Append Entry (index={}) result={}",
                                dest_node_id,  entry_index, resp.success);
 
-                        //TODO bug: should replicate only if consensus gathered - no info at this point
+                        //repeat on fail, if no consensus gathered - the replication won't happen
                         if !resp.success {
                             replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
                         }
@@ -339,7 +339,7 @@ where Log: OperationLog,
             },
             AppendEntriesRequestType::UpdateNode(peer_id) => {
                 let next_index = self.get_next_index(peer_id);
-                let last_index = self.log.get_last_entry_index();
+                let last_index = self.get_commit_index();
 
                 let mut entries = Vec::new();
                 for idx in  next_index..=last_index {

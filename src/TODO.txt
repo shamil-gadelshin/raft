@@ -63,7 +63,7 @@ Details:
     .cases
         .low election timeout
         .low communication timeout
-        .check commited only applied to rsm
+        .check committed only applied to rsm
         .single node
         .add new separate node, when add to cluster - ensure conversion to follower and log replication
         .cases description in file
