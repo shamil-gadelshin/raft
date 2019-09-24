@@ -8,6 +8,7 @@ use crate::operation_log::{OperationLog};
 use crate::leadership::node_leadership_fsm::{LeaderElectionEvent};
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
+use std::cmp::min;
 
 
 pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl>(request : AppendEntriesRequest,  protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
@@ -60,9 +61,14 @@ pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl>(request : AppendEntr
         }
     }
 
-	//TODO bug: set_commit commit - lesser from leader_commit and log.length
+	//set commit_index - lesser from leader_commit_index and log.length
     if request.leader_commit > node.get_commit_index() {
-        node.set_commit_index(request.leader_commit);
+        let node_last_index = node.log.get_last_entry_index();
+
+        let new_commit_index = min(node_last_index, request.leader_commit);
+        if new_commit_index > node.get_commit_index() {
+            node.set_commit_index(new_commit_index);
+        }
     }
 
     AppendEntriesResponse { term: node.get_current_term(), success: true }
