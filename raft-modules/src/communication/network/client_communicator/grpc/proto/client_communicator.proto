@@ -19,22 +19,10 @@ enum ClientResponseStatus {
   Unknown = 0;
   Ok = 1;
   NotLeader = 2;
+  NoQuorum = 3;
 }
 
 message ClientRpcResponse {
   ClientResponseStatus status = 1;
   uint64 current_leader = 2;
 }
-
-
-/*
-pub struct NewDataRequest {
-    pub data : Arc<&'static [u8]>
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ClientRpcResponse {
-    pub status : ClientResponseStatus,
-    pub current_leader : Option<u64>
-}
-*/

@@ -21,6 +21,7 @@ pub enum ClientResponseStatus {
     Unknown = 0,
     Ok = 1,
     NotLeader = 2,
+    NoQuorum = 3,
 }
 pub mod client {
     use ::tower_grpc::codegen::client::*;

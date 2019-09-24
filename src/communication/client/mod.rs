@@ -6,6 +6,7 @@ use crate::errors::RaftError;
 #[derive(Clone, Copy, Debug)]
 pub enum ClientResponseStatus {
     Ok,
+    NoQuorum,
     NotLeader
 }
 

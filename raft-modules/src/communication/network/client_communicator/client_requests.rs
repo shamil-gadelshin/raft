@@ -4,7 +4,7 @@ use tower_util::MakeService;
 use futures::{Future};
 use tower_grpc::{Request};
 
-use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{AddServerRequest, NewDataRequest};
+use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{AddServerRequest, NewDataRequest, ClientRpcResponse};
 use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::client::ClientRequestHandler;
 
 use raft::{ClientResponseStatus};
@@ -47,12 +47,8 @@ pub fn add_server_request(host : String, timeout: Duration, request : raft::AddS
 		.and_then(move |response| {
 			trace!("NewData RESPONSE = {:?}", response);
 
-			let mut current_leader : Option<u64> = None;
-			let response_current_leader =  response.get_ref().current_leader;
-			if response_current_leader > 0 {
-				current_leader = Some(response_current_leader);
-			}
-			let resp = raft::ClientRpcResponse {current_leader, status: ClientResponseStatus::Ok};
+			let resp = convert_response(response.get_ref());
+
 			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})
@@ -70,6 +66,23 @@ pub fn add_server_request(host : String, timeout: Duration, request : raft::AddS
 		Err(str) => { new_err(str, String::new()) },
 	}
 
+}
+
+fn convert_response(grpc_response: &ClientRpcResponse) -> raft::ClientRpcResponse{
+	let mut current_leader : Option<u64> = None;
+	let response_current_leader =  grpc_response.current_leader;
+	if response_current_leader > 0 {
+		current_leader = Some(response_current_leader);
+	}
+
+	let status = match grpc_response.status {
+		1 => ClientResponseStatus::Ok,
+		2 => ClientResponseStatus::NotLeader,
+		3 => ClientResponseStatus::NoQuorum,
+		_ => panic!("invalid client response status")
+	};
+
+	raft::ClientRpcResponse {current_leader, status}
 }
 
 pub fn new_data_request(host: String, timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, RaftError> {
@@ -106,12 +119,9 @@ pub fn new_data_request(host: String, timeout: Duration, request : raft::NewData
 	let response = request
 		.and_then(move |response| {
 			trace!("NewData RESPONSE = {:?}", response);
-			let mut current_leader : Option<u64> = None;
-			let response_current_leader =  response.get_ref().current_leader;
-			if response_current_leader > 0 {
-				current_leader = Some(response_current_leader);
-			}
-			let resp = raft::ClientRpcResponse {current_leader, status: ClientResponseStatus::Ok};
+
+			let resp = convert_response(response.get_ref());
+
 			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})

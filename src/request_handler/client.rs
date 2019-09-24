@@ -96,10 +96,25 @@ fn process_client_request_internal<Log, Rsm, Pc, Ns, Cl>(
 
 	let client_rpc_response = match node.status {
 		NodeStatus::Leader => {
-			node.append_content_to_log(entry_content)?;
-			ClientRpcResponse {
-				status: ClientResponseStatus::Ok,
-				current_leader: node.current_leader_id
+			let append_result = node.append_content_to_log(entry_content);
+
+			match append_result {
+				Err(err) => {
+					return Err(err)
+				},
+				Ok(quorum_gathered) => {
+					if !quorum_gathered {
+						ClientRpcResponse {
+							status: ClientResponseStatus::NoQuorum,
+							current_leader: node.current_leader_id
+						}
+					} else {
+						ClientRpcResponse {
+							status: ClientResponseStatus::Ok,
+							current_leader: node.current_leader_id
+						}
+					}
+				}
 			}
 		},
 		NodeStatus::Candidate | NodeStatus::Follower => {

@@ -8,7 +8,6 @@ Main algorithm:
     .operation_log forcing from the leader (clear entries with invalid terms and indices
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
     .support max AppendEntries size parameter & max AppendEntries number
-    .append_entries: respond for no quorum
 
 
 Details:
@@ -61,6 +60,7 @@ Details:
 - debug
     .tests
     .cases
+        .no quorum
         .low election timeout
         .low communication timeout
         .check committed only applied to rsm
@@ -146,6 +146,7 @@ Done:
     .not commit entry if quorum fails (clear entry?)
     .transmit full cluster configuration on AddServer Rpc
     .log (instead of Rsm) is responsible for cluster_configuration apply
+    .append_entries: respond for no quorum
 - error handling
     .error style
     .de-box errors to RaftError
