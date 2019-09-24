@@ -10,6 +10,7 @@ mod rsm;
 mod request_handler;
 mod node;
 mod errors;
+mod raft_facets;
 
 
 pub use communication::client::{AddServerRequest,NewDataRequest, ClientRpcResponse, ClientResponseStatus,ClientRequestHandler, ClientRequestChannels};
