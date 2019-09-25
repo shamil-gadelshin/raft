@@ -27,9 +27,10 @@ fn init_logger() {
 fn main() {
     init_logger();
 
-//    cases::smoke::run();
-//    cases::add_thousand::run();
-   cases::no_quorum::run();
+    cases::smoke::run();
+    cases::add_thousand::run();
+    cases::no_quorum::run();
+    cases::single_node::run();
 }
 
 

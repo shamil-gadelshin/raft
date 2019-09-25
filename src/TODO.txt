@@ -63,7 +63,6 @@ Details:
         .low election timeout
         .low communication timeout
         .check committed only applied to rsm
-        .single node
         .add new separate node, when add to cluster - ensure conversion to follower and log replication
         .cases description in file
         .election
@@ -162,3 +161,4 @@ Done:
 - debug
     .cases
         .no quorum
+        .single node
