@@ -20,9 +20,11 @@ enum ClientResponseStatus {
   Ok = 1;
   NotLeader = 2;
   NoQuorum = 3;
+  Error = 4;
 }
 
 message ClientRpcResponse {
   ClientResponseStatus status = 1;
   uint64 current_leader = 2;
+  string message = 3;
 }

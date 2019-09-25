@@ -60,7 +60,6 @@ Details:
 - debug
     .tests
     .cases
-        .no quorum
         .low election timeout
         .low communication timeout
         .check committed only applied to rsm
@@ -160,3 +159,6 @@ Done:
     .graceful-shutdown
 - optimization
     .rayon on nodes requests
+- debug
+    .cases
+        .no quorum

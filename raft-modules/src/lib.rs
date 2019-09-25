@@ -9,12 +9,13 @@ mod election;
 mod node;
 mod cluster;
 
-
+pub use communication::duplex_channel::DuplexChannel;
 pub use memory_rsm::MemoryRsm;
 pub use memory_log::MemoryOperationLog;
 pub use communication::inproc::inproc_client_communicator::InProcClientCommunicator;
 pub use communication::inproc::inproc_peer_communicator::InProcPeerCommunicator;
 pub use communication::network::client_communicator::network_client_communicator::NetworkClientCommunicator;
-pub use election::RandomizedElectionTimer;
+pub use election::randomized_election_timer::RandomizedElectionTimer;
+pub use election::fixed_election_timer::FixedElectionTimer;
 pub use node::MockNodeStateSaver;
 pub use cluster::ClusterConfiguration;

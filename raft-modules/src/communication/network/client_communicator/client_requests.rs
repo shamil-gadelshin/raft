@@ -79,10 +79,11 @@ fn convert_response(grpc_response: &ClientRpcResponse) -> raft::ClientRpcRespons
 		1 => ClientResponseStatus::Ok,
 		2 => ClientResponseStatus::NotLeader,
 		3 => ClientResponseStatus::NoQuorum,
+		4 => ClientResponseStatus::Error,
 		_ => panic!("invalid client response status")
 	};
 
-	raft::ClientRpcResponse {current_leader, status}
+	raft::ClientRpcResponse {current_leader, status, message: grpc_response.message.clone()}
 }
 
 pub fn new_data_request(host: String, timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, RaftError> {

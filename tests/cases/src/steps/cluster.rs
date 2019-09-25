@@ -1,11 +1,12 @@
-use raft_modules::{InProcPeerCommunicator};
 use std::collections::HashMap;
-use raft::{NodeWorker, NewDataRequest, ClientResponseStatus, ClientRequestHandler};
+use raft::{NodeWorker, NewDataRequest, ClientResponseStatus, ClientRequestHandler, PeerRequestHandler, PeerRequestChannels};
 use std::sync::Arc;
 
-pub struct CaseCluster<Cc : ClientRequestHandler> {
+pub struct CaseCluster<Cc, Pc>
+	where Cc : ClientRequestHandler,
+		  Pc : PeerRequestHandler + PeerRequestChannels{
 	pub initial_nodes: Vec<u64>,
-	pub peer_communicator: InProcPeerCommunicator,
+	pub peer_communicator: Pc,
 	pub node_workers: Vec<NodeWorker>,
 	pub client_handlers: HashMap<u64, Cc>
 }
@@ -18,9 +19,10 @@ pub struct Leader<Cc : ClientRequestHandler> {
 
 
 
-pub fn start_initial_cluster<F, Cc>(nodes : Vec<u64>, peer_communicator : InProcPeerCommunicator, node_creator: F) -> CaseCluster<Cc>
-where F: Fn(u64, Vec<u64>, InProcPeerCommunicator) -> (NodeWorker, Cc),
-	  Cc : ClientRequestHandler {
+pub fn start_initial_cluster<F, Cc, Pc>(nodes : Vec<u64>, peer_communicator : Pc, node_creator: F) -> CaseCluster<Cc, Pc>
+where F: Fn(u64, Vec<u64>, Pc) -> (NodeWorker, Cc),
+	  Cc : ClientRequestHandler,
+      Pc : PeerRequestHandler + PeerRequestChannels{
 	let all_nodes = nodes.clone();
 
 	let mut client_handlers  = HashMap::new();
@@ -42,9 +44,11 @@ where F: Fn(u64, Vec<u64>, InProcPeerCommunicator) -> (NodeWorker, Cc),
 	}
 }
 
-impl <Cc : ClientRequestHandler> CaseCluster<Cc> {
+impl <Cc, Pc> CaseCluster<Cc, Pc>
+where Cc : ClientRequestHandler,
+	  Pc : PeerRequestHandler + PeerRequestChannels {
 	pub fn add_new_server<F>(&mut self, new_node_id: u64, node_creator: F)
-		where F: Fn(u64, Vec<u64>, InProcPeerCommunicator)  -> (NodeWorker, Cc) {
+		where F: Fn(u64, Vec<u64>, Pc)  -> (NodeWorker, Cc) {
 		let (node_worker, client_request_handler) = node_creator(new_node_id, self.initial_nodes.clone(), self.peer_communicator.clone());
 
 		self.node_workers.push(node_worker);
@@ -59,16 +63,22 @@ impl <Cc : ClientRequestHandler> CaseCluster<Cc> {
 
 			let result = v.new_data(new_data_request.clone());
 			if let Ok(resp) = result {
-				if let ClientResponseStatus::Ok = resp.status {
-					let mut client_handler = Arc::new(v.clone());
-					let leader_id = resp.current_leader.expect("can get a leader");
+//				if let ClientResponseStatus::Ok = resp.status {
+//					let mut client_handler = Arc::new(v.clone());
+//					let leader_id = resp.current_leader.expect("can get a leader");
+//
+//					if *k != leader_id {
+//						client_handler = Arc::new(self.client_handlers[&leader_id].clone());
+//					}
+//					return Leader {client_handler, id : leader_id};
+//				}
+				let leader_id = resp.current_leader.expect("can get a leader");
+				let	client_handler = Arc::new(self.client_handlers[&leader_id].clone());
 
-					if *k != leader_id {
-						client_handler = Arc::new(self.client_handlers[&leader_id].clone());
-					}
-					return Leader {client_handler, id : leader_id};
-				}
+				return Leader {client_handler, id : leader_id};
 			}
+
+			error!("Find a leader error: {:?}", result);
 		}
 
 		panic!("cannot get a leader!")

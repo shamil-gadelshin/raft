@@ -338,7 +338,10 @@ where Log: OperationLog,
                 entries
             },
             AppendEntriesRequestType::UpdateNode(peer_id) => {
-                let next_index = self.get_next_index(peer_id);
+                let mut next_index = self.get_next_index(peer_id);
+                if next_index == 0 {
+                    next_index = 1; //fix next_index in case of empty log
+                }
                 let last_index = self.get_commit_index();
 
                 let mut entries = Vec::new();

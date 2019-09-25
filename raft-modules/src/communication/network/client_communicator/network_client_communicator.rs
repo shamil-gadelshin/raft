@@ -101,16 +101,7 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 		}
 
 		if let Ok(resp) = receive_result {
-			let current_leader = {
-				match resp.current_leader {
-					Some(id)=> id,
-					None => 0
-				}};
-			let response = Response::new(ClientRpcResponse {
-				current_leader,
-				status: 1
-			});
-
+			let response = Response::new(convert_response(resp));
 			return future::ok(response);
 		}
 
@@ -134,16 +125,7 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 		}
 
 		if let Ok(resp) = receive_result {
-			let current_leader = {
-				match resp.current_leader {
-				Some(id)=> id,
-				None => 0
-			}};
-			let response = Response::new(ClientRpcResponse {
-				current_leader,
-				status: 1
-			});
-
+			let response = Response::new(convert_response(resp));
 			return future::ok(response);
 		}
 
@@ -151,4 +133,16 @@ impl server::ClientRequestHandler for NetworkClientCommunicator {
 	}
 }
 
+fn convert_response(raft_response: raft::ClientRpcResponse) -> ClientRpcResponse{
+	let current_leader = {
+		match raft_response.current_leader {
+			Some(id)=> id,
+			None => 0
+		}};
 
+	ClientRpcResponse {
+		current_leader,
+		status: 1,
+		message : String::new()
+	}
+}

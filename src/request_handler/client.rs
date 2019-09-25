@@ -100,18 +100,24 @@ fn process_client_request_internal<Log, Rsm, Pc, Ns, Cl>(
 
 			match append_result {
 				Err(err) => {
-					return Err(err)
+					ClientRpcResponse {
+						status: ClientResponseStatus::Error,
+						current_leader: node.current_leader_id,
+						message : format!("{}", err)
+					}
 				},
 				Ok(quorum_gathered) => {
 					if !quorum_gathered {
 						ClientRpcResponse {
 							status: ClientResponseStatus::NoQuorum,
-							current_leader: node.current_leader_id
+							current_leader: node.current_leader_id,
+							message : String::new()
 						}
 					} else {
 						ClientRpcResponse {
 							status: ClientResponseStatus::Ok,
-							current_leader: node.current_leader_id
+							current_leader: node.current_leader_id,
+							message : String::new()
 						}
 					}
 				}
@@ -120,7 +126,8 @@ fn process_client_request_internal<Log, Rsm, Pc, Ns, Cl>(
 		NodeStatus::Candidate | NodeStatus::Follower => {
 			ClientRpcResponse {
 				status: ClientResponseStatus::NotLeader,
-				current_leader: node.current_leader_id
+				current_leader: node.current_leader_id,
+				message : String::new()
 			}
 		}
 	};

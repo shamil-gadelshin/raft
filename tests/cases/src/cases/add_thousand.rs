@@ -21,7 +21,7 @@ pub fn run() {
 	steps::data::add_server(&leader, new_node_id);
 
 	//add new data to the cluster
-	steps::data::add_data_sample(&leader);
+	steps::data::add_data_sample(&leader).expect("add sample successful");
 
 	steps::sleep(5);
 

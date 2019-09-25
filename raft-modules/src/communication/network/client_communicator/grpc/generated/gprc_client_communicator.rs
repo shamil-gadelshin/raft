@@ -14,6 +14,8 @@ pub struct ClientRpcResponse {
     pub status: i32,
     #[prost(uint64, tag="2")]
     pub current_leader: u64,
+    #[prost(string, tag="3")]
+    pub message: std::string::String,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -22,6 +24,7 @@ pub enum ClientResponseStatus {
     Ok = 1,
     NotLeader = 2,
     NoQuorum = 3,
+    Error = 4,
 }
 pub mod client {
     use ::tower_grpc::codegen::client::*;

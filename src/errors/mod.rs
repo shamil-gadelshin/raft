@@ -16,7 +16,11 @@ pub fn new_err<T>(text : String, cause : String) -> Result<T>{
 
 impl Display for RaftError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "{}. Cause {:?}", self.text, self.cause)
+		let mut cause_word = String::new();
+		if !self.cause.is_empty() {
+			cause_word = " Cause: ".to_string();
+		}
+		write!(f, "{}.{}{}", self.text, cause_word, self.cause)
 	}
 }
 
@@ -24,9 +28,15 @@ impl Error for RaftError {}
 
 pub fn new_multiple_err<T>(text : String, causes :  Vec<RaftError>) -> Result<T>{
 	let mut error_string = String::new();
+
+	if !causes.is_empty() {
+		error_string.push_str("Errors: ");
+	}
+
+	let mut error_index = 1;
 	for err in causes{
-		error_string.push_str(err.description());
-		error_string.push_str(";");
+		error_string.push_str(&format!("{}) {}",error_index, err));
+		error_index += 1;
 	}
 	Err(RaftError{text, cause: error_string})
 }

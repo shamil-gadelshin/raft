@@ -48,7 +48,7 @@ impl OperationLog for MemoryOperationLog {
     }
     fn get_entry(&self, index: u64) -> Option<LogEntry> {
         let idx = index as usize;
-        if idx > self.entries.len() {
+        if idx > self.entries.len() || idx == 0{
             return None;
         }
         Some(self.entries[idx-1].clone())
