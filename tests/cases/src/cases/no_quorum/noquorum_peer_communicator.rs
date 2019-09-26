@@ -1,7 +1,7 @@
 use raft_modules::DuplexChannel;
 
 use crossbeam_channel::{Receiver, Sender};
-use raft::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler, PeerRequestChannels, new_err};
+use raft::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler, PeerRequestChannels};
 use raft::RaftError;
 
 use std::time::Duration;

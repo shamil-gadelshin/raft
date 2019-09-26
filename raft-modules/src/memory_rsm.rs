@@ -8,6 +8,12 @@ pub struct MemoryRsm {
 	last_applied_index: u64,
 }
 
+impl MemoryRsm {
+	//Full log clone for debug purposes
+	pub fn get_entries_clone(&self) -> Vec<DataEntryContent> {
+		self.data.clone()
+	}
+}
 
 impl ReplicatedStateMachine for MemoryRsm {
 	fn apply_entry(&mut self, entry: LogEntry) -> Result<(), RaftError> {

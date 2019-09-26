@@ -25,6 +25,11 @@ impl MemoryOperationLog {
             self.cluster.add_peer(new_server_id);
         }
     }
+
+    //Full log clone for debug purposes
+    pub fn get_entries_clone(&self) -> Vec<LogEntry> {
+        self.entries.clone()
+    }
 }
 
 impl OperationLog for MemoryOperationLog {
@@ -33,6 +38,7 @@ impl OperationLog for MemoryOperationLog {
     }
 
     fn append_entry(&mut self, entry: LogEntry) -> Result<(), RaftError> {
+        trace!("-----Log entry: {:?}", entry);
         if self.last_index < entry.index {
             self.entries.push(entry.clone());
 

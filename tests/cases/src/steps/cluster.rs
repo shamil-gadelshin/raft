@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use raft::{NodeWorker, NewDataRequest, ClientResponseStatus, ClientRequestHandler, PeerRequestHandler, PeerRequestChannels};
+use raft::{NodeWorker, NewDataRequest, ClientRequestHandler, PeerRequestHandler, PeerRequestChannels};
 use std::sync::Arc;
 
 pub struct CaseCluster<Cc, Pc>
@@ -55,23 +55,15 @@ where Cc : ClientRequestHandler,
 		self.client_handlers.insert(new_node_id, client_request_handler);
 	}
 
-	pub fn find_a_leader(&self) -> Leader<Cc>{
+	pub fn find_a_leader_by_adding_data_sample(&self) -> Leader<Cc>{
 		let bytes = "find a leader".as_bytes();
 		let new_data_request = NewDataRequest{data : Arc::new(bytes)};
 		for kv in &self.client_handlers {
-			let (k, v) = kv;
+			let (_k, v) = kv;
 
 			let result = v.new_data(new_data_request.clone());
+			println!("--Leader Result: {:?}", result);
 			if let Ok(resp) = result {
-//				if let ClientResponseStatus::Ok = resp.status {
-//					let mut client_handler = Arc::new(v.clone());
-//					let leader_id = resp.current_leader.expect("can get a leader");
-//
-//					if *k != leader_id {
-//						client_handler = Arc::new(self.client_handlers[&leader_id].clone());
-//					}
-//					return Leader {client_handler, id : leader_id};
-//				}
 				let leader_id = resp.current_leader.expect("can get a leader");
 				let	client_handler = Arc::new(self.client_handlers[&leader_id].clone());
 
@@ -80,6 +72,27 @@ where Cc : ClientRequestHandler,
 
 			error!("Find a leader error: {:?}", result);
 		}
+
+		panic!("cannot get a leader!")
+	}
+
+	pub fn get_node1_leader_by_adding_data_sample(&self) -> Leader<Cc> {
+		let bytes = "find a leader".as_bytes();
+		let new_data_request = NewDataRequest { data: Arc::new(bytes) };
+
+
+		let handler = self.client_handlers[&1].clone();
+
+		let result = handler.new_data(new_data_request.clone());
+		println!("--Leader Result: {:?}", result);
+		if let Ok(resp) = result {
+			let leader_id = resp.current_leader.expect("can get a leader");
+			let client_handler = Arc::new(self.client_handlers[&leader_id].clone());
+
+			return Leader { client_handler, id: leader_id };
+		}
+
+		error!("Find a leader error: {:?}", result);
 
 		panic!("cannot get a leader!")
 	}

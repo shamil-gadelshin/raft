@@ -11,7 +11,7 @@ pub fn run() {
 	steps::sleep(5);
 
 	//find elected leader
-	let leader = cluster.find_a_leader();
+	let leader = cluster.find_a_leader_by_adding_data_sample();
 
 	// run new server
 	cluster.add_new_server(new_node_id, steps::create_node_inproc);

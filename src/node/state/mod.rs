@@ -453,7 +453,7 @@ mod tests {
                 return entry.index;
             }
 
-            0 //Raft documentation demands zero as initial value
+            0
         }
         fn get_last_entry_term(&self) -> u64{
             let last = self.entries.last();
@@ -461,27 +461,9 @@ mod tests {
                 return entry.term;
             }
 
-            0 //Raft documentation demands zero as initial value
+            0
         }
     }
-
-    /*
-impl <Log, Rsm,Pc, Ns, Cl> Node<Log, Rsm,Pc, Ns, Cl>
-where Log: OperationLog,
-  Rsm: ReplicatedStateMachine,
-  Pc : PeerRequestHandler,
-  Ns : NodeStateSaver,
-  Cl : Cluster{
-pub fn new(node_state: NodeState,
-		   log: Log,
-		   rsm: Rsm,
-		   communicator: Pc,
-		   cluster_configuration: Cl,
-		   state_saver : Ns,
-		   replicate_log_to_peer_tx: Sender<u64>,
-		   commit_index_updated_tx: Sender<u64>, ) -> Node<Log, Rsm, Pc, Ns, Cl> {
-
-*/
 
     fn create_node_with_log(log : MockOperationLog) -> Node<MockOperationLog, MockRsm, MockPeerRequestHandler, MockNodeStateServer, MockCluster> {
         let node_state = NodeState{

@@ -14,7 +14,7 @@ pub struct NodeTimings {
 impl Default for NodeTimings{
     fn default() -> Self {
         NodeTimings{
-            heartbeat_timeout: Duration::from_millis(1000),
+            heartbeat_timeout: Duration::from_millis(800),
             communication_timeout: Duration::from_millis(1000),
         }
     }

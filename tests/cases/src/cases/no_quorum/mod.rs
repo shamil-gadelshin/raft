@@ -13,7 +13,7 @@ pub fn run() {
 	steps::sleep(4);
 
 	//find elected leader
-	let leader = cluster.find_a_leader();
+	let leader = cluster.find_a_leader_by_adding_data_sample();
 	assert_eq!(1, leader.id);
 
 	//add new data to the cluster

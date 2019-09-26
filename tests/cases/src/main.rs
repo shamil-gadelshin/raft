@@ -31,6 +31,7 @@ fn main() {
     cases::add_thousand::run();
     cases::no_quorum::run();
     cases::single_node::run();
+    cases::operation_log::basic_replication::run()
 }
 
 
