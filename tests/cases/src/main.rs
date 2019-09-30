@@ -27,11 +27,12 @@ fn init_logger() {
 fn main() {
     init_logger();
 
-    cases::smoke::run();
-    cases::add_thousand::run();
-    cases::no_quorum::run();
-    cases::single_node::run();
-    cases::operation_log::basic_replication::run()
+//    cases::smoke::run();
+//    cases::add_thousand::run();
+//    cases::no_quorum::run();
+//    cases::single_node::run();
+//    cases::operation_log::basic_replication::run()
+    cases::operation_log::forced_replication::run()
 }
 
 

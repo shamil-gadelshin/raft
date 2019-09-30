@@ -85,7 +85,7 @@ fn create_node_configuration_inproc<Pc, Et>(node_id: u64, all_nodes: Vec<u64>, c
 	let config = NodeConfiguration {
 		node_state: NodeState {
 			node_id,
-			current_term: 0,
+			current_term: 3,
 			vote_for_id: None
 		},
 		cluster_configuration: cluster_config.clone(),
