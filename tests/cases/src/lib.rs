@@ -2,4 +2,4 @@
 pub mod cases;
 mod steps;
 
-pub use cases::smoke;
+pub use self::cases::smoke;

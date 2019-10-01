@@ -161,6 +161,11 @@ Done:
     .cases
         .no quorum
         .single node
+        .operation log
+            .basic replication
+            .forced replication
+        .replicated state machine
+        .
 - user-friendliness
     .license
     .readme.md

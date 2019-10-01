@@ -25,10 +25,7 @@ pub fn run() {
 
 	steps::sleep(5);
 
-	steps::data::add_thousands_data_samples(leader.clone());
-
-	steps::sleep(25);
-
+	steps::data::add_ten_thousands_data_samples(leader.clone());
 
 	cluster.terminate();
 }

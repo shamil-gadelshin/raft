@@ -4,7 +4,7 @@ extern crate chrono;
 extern crate crossbeam_channel;
 
 mod steps;
-mod cases;
+pub mod cases;
 
 use std::io::Write;
 use chrono::prelude::{DateTime, Local};
@@ -27,12 +27,14 @@ fn init_logger() {
 fn main() {
     init_logger();
 
-    cases::smoke::run();
+//    cases::smoke::run();
 //    cases::add_thousands::run();
 //    cases::no_quorum::run();
 //    cases::single_node::run();
 //    cases::operation_log::basic_replication::run();
 //    cases::operation_log::forced_replication::run();
+//    cases::replicated_state_machine::basic_replication::run();
+    cases::replicated_state_machine::leader_rsm::run();
 }
 
 

@@ -1,7 +1,6 @@
 use raft::{NewDataRequest, ClientRequestHandler, ClientRpcResponse, RaftError};
 use std::sync::Arc;
 use crate::steps::cluster::Leader;
-use std::thread;
 
 pub fn add_data_sample<Cc : ClientRequestHandler>(leader: &Leader<Cc>) -> Result<ClientRpcResponse, RaftError> {
 	let bytes = "first data".as_bytes();
@@ -18,7 +17,7 @@ pub fn add_server<Cc : ClientRequestHandler>(leader: &Leader<Cc>, new_node_id : 
 	info!("Add server request sent for Node {}. Response = {:?}", leader.id, resp);
 }
 
-pub fn add_thousands_data_samples<Cc : ClientRequestHandler>(leader : Leader<Cc>) {
+pub fn add_ten_thousands_data_samples<Cc : ClientRequestHandler>(leader : Leader<Cc>) {
 	fn add_thousands_of_data<Cc : ClientRequestHandler + ?Sized + Sync>(client_handler : Arc<Cc>)
 	{
 		//  thread::sleep(Duration::from_secs(7));
@@ -29,5 +28,6 @@ pub fn add_thousands_data_samples<Cc : ClientRequestHandler>(leader : Leader<Cc>
 		}
 	}
 
-	thread::spawn(     ||add_thousands_of_data(leader.client_handler));
+	add_thousands_of_data(leader.client_handler);
+//	thread::spawn(     ||add_thousands_of_data(leader.client_handler));
 }

@@ -1,20 +1,24 @@
 use raft::{LogEntry, DataEntryContent, EntryContent, ReplicatedStateMachine};
 use raft::{RaftError};
 use std::sync::{Mutex, Arc};
+use crossbeam_channel::Sender;
 
 #[derive(Debug, Clone)]
 pub struct MemoryRsm {
 	data : Vec<DataEntryContent>,
 	last_applied_index: u64,
-	lock : Arc<Mutex<bool>>
+	lock : Arc<Mutex<bool>>,
+	debug_tx: Sender<DataEntryContent>
 }
 
 impl MemoryRsm {
-	pub fn new()-> MemoryRsm {
+
+	pub fn new(debug_tx: Sender<DataEntryContent>)-> MemoryRsm {
 		MemoryRsm {
 			data: Vec::new(),
 			last_applied_index: 0,
-			lock: Arc::new(Mutex::new(true))
+			lock: Arc::new(Mutex::new(true)),
+			debug_tx
 		}
 	}
 }
@@ -29,7 +33,8 @@ impl ReplicatedStateMachine for MemoryRsm {
 		}
 
 		if let EntryContent::Data(data_content) = entry.entry_content {
-			self.data.push(data_content);
+			self.data.push(data_content.clone());
+			self.debug_tx.send(data_content.clone()).expect("valid send");
 		}
 
 		trace!("Rsm applied entry: {}", entry.index);
