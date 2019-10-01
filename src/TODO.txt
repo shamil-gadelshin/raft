@@ -171,6 +171,8 @@ Done:
 - user-friendliness
     .license
     .readme.md
+    .documentation
+        .comment .proto
 - rsm
     .basic support
     .append sync on entry-commit

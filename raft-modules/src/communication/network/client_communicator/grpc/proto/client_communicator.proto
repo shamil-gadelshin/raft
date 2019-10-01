@@ -2,29 +2,46 @@ syntax = "proto3";
 
 package gprc_client_communicator;
 
+//Client RPC
 service ClientRequestHandler {
+  //add new server to the cluster
   rpc AddServer (AddServerRequest) returns (ClientRpcResponse) {}
+  //add new data
   rpc NewData (NewDataRequest) returns (ClientRpcResponse) {}
 }
 
+//apply new data entry request
 message NewDataRequest {
+  // data in binary format
   bytes data = 1;
 }
 
+//add new server to the cluster request
 message AddServerRequest {
+  //new server id
   uint64 new_server = 1;
 }
 
+// Client RPC response status
 enum ClientResponseStatus {
+  //invalid status
   Unknown = 0;
+  //success
   Ok = 1;
+  //node is follower or candidate
   NotLeader = 2;
+  //request failed: leader failed to acquire the quorum
   NoQuorum = 3;
+  //other error
   Error = 4;
 }
 
+//Common Client RPC response
 message ClientRpcResponse {
+  //response status
   ClientResponseStatus status = 1;
+  //current leader id if any, 0 (zero) means no known leader yet
   uint64 current_leader = 2;
+  //error message if ClientResponseStatus::Error
   string message = 3;
 }
