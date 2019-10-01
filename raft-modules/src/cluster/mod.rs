@@ -28,7 +28,7 @@ impl Cluster for ClusterConfiguration{
 }
 
 #[derive(Clone, Debug)]
-//TODO save changes to cluster configuration
+//TODO save changes to cluster configuration (persistence)
 struct ClusterConfigurationInternal{
     nodes_id_map : HashMap<u64, ()>,
 }

@@ -1,11 +1,14 @@
-use raft_modules::{ ClusterConfiguration, MemoryOperationLog, RandomizedElectionTimer, MemoryRsm, MockNodeStateSaver, InProcClientCommunicator, FixedElectionTimer};
+use raft_modules::{ClusterConfiguration, MemoryOperationLog, RandomizedElectionTimer, MemoryRsm, MockNodeStateSaver, InProcClientCommunicator, FixedElectionTimer, InProcPeerCommunicator};
 use std::time::Duration;
 use raft::{NodeConfiguration, NodeState, NodeTimings, NodeWorker, PeerRequestHandler, PeerRequestChannels, ElectionTimer};
 use std::thread;
 
 pub mod cluster;
-pub mod peer_communicator;
 pub mod data;
+
+pub fn get_generic_peer_communicator(nodes : Vec<u64>) -> InProcPeerCommunicator{
+	InProcPeerCommunicator::new(nodes, get_peers_communication_timeout())
+}
 
 pub fn get_peers_communication_timeout() -> Duration {
 	Duration::from_millis(500)
