@@ -4,15 +4,14 @@ use tower_util::MakeService;
 use futures::{Future};
 use tower_grpc::{Request};
 
-use crate::communication::network::client_communicator::grpc::generated::grpc_client_communicator::{AddServerRequest, NewDataRequest, ClientRpcResponse};
-use crate::communication::network::client_communicator::grpc::generated::grpc_client_communicator::client::ClientRequestHandler;
-
-use raft::{ClientResponseStatus};
+use raft::{EntryContent};
 use std::time::Duration;
 use raft::{new_err, RaftError};
+use crate::communication::network::peer_communicator::grpc::generated::grpc_peer_communicator::client::PeerRequestHandler;
+use crate::communication::network::peer_communicator::grpc::generated::grpc_peer_communicator::{AppendEntriesRequest, LogEntry, VoteRequest};
 
 
-pub fn add_server_request(host : String, timeout: Duration, request : raft::AddServerRequest) -> Result<raft::ClientRpcResponse, RaftError>{
+pub fn append_entries_request(host : String, timeout: Duration, request : raft::AppendEntriesRequest) -> Result<raft::AppendEntriesResponse, RaftError>{
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
@@ -34,26 +33,27 @@ pub fn add_server_request(host : String, timeout: Duration, request : raft::AddS
 				.expect("valid request builder");
 
 			// Wait until the client is ready...
-			ClientRequestHandler::new(conn).ready()
+			PeerRequestHandler::new(conn).ready()
 		});
 	let request = client_service
 		.and_then(move |mut client|
 			{
-			client.add_server(Request::new(AddServerRequest {
-				new_server: request.new_server
-			}))
+			client.append_entries(Request::new(convert_append_entries_request(request)))
 		});
 	let response = request
 		.and_then(move |response| {
-			trace!("NewData RESPONSE = {:?}", response);
+			trace!("Append entries RESPONSE = {:?}", response);
 
-			let resp = convert_response(response.get_ref());
+			let resp = raft::AppendEntriesResponse{
+				success: response.get_ref().success,
+				term: response.get_ref().term
+			};
 
 			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})
 		.map_err(move |e| {
-			error!("NewData request failed = {:?}", e);
+			error!("Append entries request failed = {:?}", e);
 			err_tx.send(Err(format!("Communication error:{}", e))).expect("can send error");
 		});
 
@@ -68,38 +68,20 @@ pub fn add_server_request(host : String, timeout: Duration, request : raft::AddS
 
 }
 
-fn convert_response(grpc_response: &ClientRpcResponse) -> raft::ClientRpcResponse{
-	let mut current_leader : Option<u64> = None;
-	let response_current_leader =  grpc_response.current_leader;
-	if response_current_leader > 0 {
-		current_leader = Some(response_current_leader);
-	}
-
-	let status = match grpc_response.status {
-		1 => ClientResponseStatus::Ok,
-		2 => ClientResponseStatus::NotLeader,
-		3 => ClientResponseStatus::NoQuorum,
-		4 => ClientResponseStatus::Error,
-		_ => panic!("invalid client response status")
-	};
-
-	raft::ClientRpcResponse {current_leader, status, message: grpc_response.message.clone()}
-}
-
-pub fn new_data_request(host: String, timeout: Duration, request : raft::NewDataRequest) -> Result<raft::ClientRpcResponse, RaftError> {
+pub fn vote_request(host : String, timeout: Duration, request : raft::VoteRequest) -> Result<raft::VoteResponse, RaftError>{
 	let uri = get_uri(host);
 	let dst = Destination::try_from_uri(uri.clone()).expect("valid URI");
 
 	let connector = util::Connector::new(HttpConnector::new(4));
 	let settings = client::Builder::new().http2_only(true).clone();
 	let mut make_client = client::Connect::with_builder(connector, settings);
-
-	let (tx, rx) = crossbeam_channel::unbounded();
+	let (tx, rx)= crossbeam_channel::unbounded();
 	let err_tx = tx.clone();
+
 	let client_service = make_client
 		.make_service(dst)
 		.map_err(|e| {
-			tower_grpc::Status::new(tower_grpc::Code::Unknown, format!("Connection error:{}", e))
+			tower_grpc::Status::new(tower_grpc::Code::Unknown, format!("Connection error:{}",e))
 		})
 		.and_then(move |conn| {
 			let conn = tower_request_modifier::Builder::new()
@@ -108,26 +90,33 @@ pub fn new_data_request(host: String, timeout: Duration, request : raft::NewData
 				.expect("valid request builder");
 
 			// Wait until the client is ready...
-			ClientRequestHandler::new(conn).ready()
+			PeerRequestHandler::new(conn).ready()
 		});
 	let request = client_service
 		.and_then(move |mut client|
 			{
-				client.new_data(Request::new(NewDataRequest {
-					data: Vec::from(*request.data)
-				}))
-			});
+			client.request_vote(Request::new(VoteRequest{
+				term: request.term,
+				candidate_id: request.candidate_id,
+				last_log_term: request.last_log_term,
+				last_log_index: request.last_log_index
+			}))
+		});
 	let response = request
 		.and_then(move |response| {
-			trace!("NewData RESPONSE = {:?}", response);
+			trace!("Vote RESPONSE = {:?}", response);
 
-			let resp = convert_response(response.get_ref());
+			let resp = raft::VoteResponse{
+				vote_granted: response.get_ref().vote_granted,
+				term: response.get_ref().term,
+				peer_id: response.get_ref().peer_id
+			};
 
 			tx.send(Ok(resp)).expect("can send response");
 			Ok(())
 		})
 		.map_err(move |e| {
-			error!("NewData request failed = {:?}", e);
+			error!("Append entries request failed = {:?}", e);
 			err_tx.send(Err(format!("Communication error:{}", e))).expect("can send error");
 		});
 
@@ -136,10 +125,42 @@ pub fn new_data_request(host: String, timeout: Duration, request : raft::NewData
 	let receive_result = rx.recv_timeout(timeout);
 	let result = receive_result.expect("valid response");
 	match result {
-		Ok(resp) => { Ok(resp) },
+		Ok(resp) => {Ok(resp) },
 		Err(str) => { new_err(str, String::new()) },
 	}
+
 }
+
+fn convert_append_entries_request(request: raft::AppendEntriesRequest) -> AppendEntriesRequest {
+	let entries = request
+		.entries
+		.into_iter()
+		.map(|entry| {
+			let (content_type, data, new_cluster_configuration) = match entry.entry_content {
+				EntryContent::Data(content) 	 => (1,content.data.to_vec(), Vec::new()),
+				EntryContent::AddServer(content) => (2,Vec::new(), content.new_cluster_configuration),
+			};
+
+			LogEntry{
+				index: entry.index,
+				term: entry.term,
+				content_type,
+				data,
+				new_cluster_configuration
+			}
+		})
+		.collect();
+	
+	AppendEntriesRequest{
+		term: request.term,
+		leader_commit: request.leader_commit,
+		leader_id: request.leader_id,
+		prev_log_index: request.prev_log_index,
+		prev_log_term: request.prev_log_term,
+		entries
+	}
+}
+
 
 fn get_uri(host: String) -> http::Uri{
 	format!("http://{}", host).parse().unwrap()

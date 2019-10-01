@@ -33,15 +33,13 @@ impl InProcPeerCommunicator {
 		communicator
 	}
 
-	pub fn add_node_communication(&mut self, node_id : u64) {
+	fn add_node_communication(&mut self, node_id : u64) {
 		let vote_duplex = DuplexChannel::new(format!("Vote channel NodeId={}", node_id), self.timeout);
 		let append_entries_duplex = DuplexChannel::new(format!("AppendEntries channel NodeId={}", node_id), self.timeout);
 
 		self.votes_channels.insert(node_id, vote_duplex);
 		self.append_entries_channels.insert(node_id, append_entries_duplex);
 	}
-
-
 }
 
 impl PeerRequestHandler for InProcPeerCommunicator {

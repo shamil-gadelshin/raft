@@ -11,7 +11,7 @@ use raft::{ClientRequestHandler};
 use raft::{ClientRequestChannels};
 use raft::{RaftError};
 
-use crate::communication::network::client_communicator::grpc::generated::gprc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
+use crate::communication::network::client_communicator::grpc::generated::grpc_client_communicator::{server, ClientRpcResponse, AddServerRequest, NewDataRequest};
 use super::client_requests::{new_data_request};
 use crate::communication::duplex_channel::DuplexChannel;
 use crate::communication::network::client_communicator::client_requests::add_server_request;

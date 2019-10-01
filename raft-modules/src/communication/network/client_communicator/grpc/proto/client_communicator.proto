@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package gprc_client_communicator;
+package grpc_client_communicator;
 
 //Client RPC
 service ClientRequestHandler {

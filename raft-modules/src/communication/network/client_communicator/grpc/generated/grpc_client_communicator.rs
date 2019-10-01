@@ -1,35 +1,50 @@
+///apply new data entry request
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewDataRequest {
+    /// data in binary format
     #[prost(bytes, tag="1")]
     pub data: std::vec::Vec<u8>,
 }
+///add new server to the cluster request
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddServerRequest {
+    ///new server id
     #[prost(uint64, tag="1")]
     pub new_server: u64,
 }
+///Common Client RPC response
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientRpcResponse {
+    ///response status
     #[prost(enumeration="ClientResponseStatus", tag="1")]
     pub status: i32,
+    ///current leader id if any, 0 (zero) means no known leader yet
     #[prost(uint64, tag="2")]
     pub current_leader: u64,
+    ///error message if ClientResponseStatus::Error
     #[prost(string, tag="3")]
     pub message: std::string::String,
 }
+/// Client RPC response status
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ClientResponseStatus {
+    ///invalid status
     Unknown = 0,
+    ///success
     Ok = 1,
+    ///node is follower or candidate
     NotLeader = 2,
+    ///request failed: leader failed to acquire the quorum
     NoQuorum = 3,
+    ///other error
     Error = 4,
 }
 pub mod client {
     use ::tower_grpc::codegen::client::*;
     use super::{AddServerRequest, ClientRpcResponse, NewDataRequest};
 
+    /// Client RPC
     #[derive(Debug, Clone)]
     pub struct ClientRequestHandler<T> {
         inner: grpc::Grpc<T>,
@@ -55,19 +70,21 @@ pub mod client {
             futures::Future::map(self.inner.ready(), |inner| Self { inner })
         }
 
+        /// Client RPC
         pub fn add_server<R>(&mut self, request: grpc::Request<AddServerRequest>) -> grpc::unary::ResponseFuture<ClientRpcResponse, T::Future, T::ResponseBody>
         where T: grpc::GrpcService<R>,
               grpc::unary::Once<AddServerRequest>: grpc::Encodable<R>,
         {
-            let path = http::PathAndQuery::from_static("/gprc_client_communicator.ClientRequestHandler/AddServer");
+            let path = http::PathAndQuery::from_static("/grpc_client_communicator.ClientRequestHandler/AddServer");
             self.inner.unary(request, path)
         }
 
+        /// Client RPC
         pub fn new_data<R>(&mut self, request: grpc::Request<NewDataRequest>) -> grpc::unary::ResponseFuture<ClientRpcResponse, T::Future, T::ResponseBody>
         where T: grpc::GrpcService<R>,
               grpc::unary::Once<NewDataRequest>: grpc::Encodable<R>,
         {
-            let path = http::PathAndQuery::from_static("/gprc_client_communicator.ClientRequestHandler/NewData");
+            let path = http::PathAndQuery::from_static("/grpc_client_communicator.ClientRequestHandler/NewData");
             self.inner.unary(request, path)
         }
     }
@@ -87,12 +104,15 @@ pub mod server {
         })
     }
 
+    /// Client RPC
     pub trait ClientRequestHandler: Clone {
         type AddServerFuture: futures::Future<Item = grpc::Response<ClientRpcResponse>, Error = grpc::Status>;
         type NewDataFuture: futures::Future<Item = grpc::Response<ClientRpcResponse>, Error = grpc::Status>;
 
+        /// add new server to the cluster
         fn add_server(&mut self, request: grpc::Request<AddServerRequest>) -> Self::AddServerFuture;
 
+        /// add new data
         fn new_data(&mut self, request: grpc::Request<NewDataRequest>) -> Self::NewDataFuture;
     }
 
@@ -124,12 +144,12 @@ pub mod server {
             use self::client_request_handler::Kind::*;
 
             match request.uri().path() {
-                "/gprc_client_communicator.ClientRequestHandler/AddServer" => {
+                "/grpc_client_communicator.ClientRequestHandler/AddServer" => {
                     let service = client_request_handler::methods::AddServer(self.client_request_handler.clone());
                     let response = grpc::unary(service, request);
                     client_request_handler::ResponseFuture { kind: AddServer(response) }
                 }
-                "/gprc_client_communicator.ClientRequestHandler/NewData" => {
+                "/grpc_client_communicator.ClientRequestHandler/NewData" => {
                     let service = client_request_handler::methods::NewData(self.client_request_handler.clone());
                     let response = grpc::unary(service, request);
                     client_request_handler::ResponseFuture { kind: NewData(response) }

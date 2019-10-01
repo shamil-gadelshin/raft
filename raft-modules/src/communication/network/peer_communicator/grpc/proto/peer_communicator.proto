@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package grpc_peer_communicator;
+
+
+//Peer request service: Append Entries RPC and Vote Request RPC
+service PeerRequestHandler {
+  //append entry request to the peer
+  rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse) {}
+
+  //vote request to the peer
+  rpc RequestVote (VoteRequest) returns (VoteResponse) {}
+}
+
+//Request vote RPC request
+message VoteRequest {
+  //current election term
+  uint64 term = 1;
+
+  //candidate id for the current term
+  uint64 candidate_id = 2;
+
+  //term of the candidate last log entry
+  uint64 last_log_term = 3;
+
+  //index of the candidate last log entry
+  uint64 last_log_index = 4;
+}
+
+//Request vote RPC response
+message VoteResponse {
+  //current election term
+  uint64 term = 1;
+
+  //voting result
+  bool vote_granted = 2;
+
+  //voting peer id
+  uint64 peer_id = 3;
+}
+
+//Append Entries RPC request
+message AppendEntriesRequest {
+  //current term
+  uint64 term = 1;
+
+  //term of the previous log entry
+  uint64 prev_log_term = 2;
+
+  //index of the previous log entry
+  uint64 prev_log_index = 3;
+
+  //cluster leader id
+  uint64 leader_id = 4;
+
+  //leader current commit index
+  uint64 leader_commit = 5;
+
+  //log entries (empty means - request is heartbeat)
+  repeated LogEntry entries = 6;
+}
+
+
+//log entry
+message LogEntry {
+
+  //entry index
+  uint64 index = 1;
+
+  //entry term
+  uint64 term = 2;
+
+  //entry content type
+  ContentType content_type = 3;
+
+  //data in binary format, filled if content_type = Data
+  bytes data = 4;
+
+  //new cluster configuration, filled if content_type = Configuration
+  repeated uint64 new_cluster_configuration = 5;
+}
+
+// Client RPC response status
+enum ContentType {
+  //invalid type
+  Unknown = 0;
+  //data content type
+  Data = 1;
+  //configuration content type
+  Configuration = 2;
+}
+
+//Append Entries RPC response
+message AppendEntriesResponse {
+  //current term
+  uint64 term = 1;
+  //append entry success flag
+  bool success = 3;
+}

@@ -3,13 +3,13 @@ use log::error;
 use tokio::net::TcpListener;
 use tower_hyper::server::{Http, Server};
 
-use crate::communication::network::client_communicator::grpc::generated::grpc_client_communicator::{server};
-use crate::NetworkClientCommunicator;
+use crate::communication::network::peer_communicator::grpc::generated::grpc_peer_communicator::{server};
+use crate::NetworkPeerCommunicator;
 use std::net::SocketAddr;
 
-pub fn run_server(addr : SocketAddr, communicator : NetworkClientCommunicator)
+pub fn run_server(addr : SocketAddr, communicator : NetworkPeerCommunicator)
 {
-	let new_service = server::ClientRequestHandlerServer::new(communicator);
+	let new_service = server::PeerRequestHandlerServer::new(communicator);
 
 	let mut server = Server::new(new_service);
 	let http = Http::new().http2_only(true).clone();

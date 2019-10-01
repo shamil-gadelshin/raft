@@ -1,1 +1,1 @@
-pub mod gprc_client_communicator;
+pub mod grpc_client_communicator;
