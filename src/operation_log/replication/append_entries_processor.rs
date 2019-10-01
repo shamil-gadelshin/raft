@@ -67,7 +67,7 @@ pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl>(request : AppendEntr
 
         let new_commit_index = min(node_last_index, request.leader_commit);
         if new_commit_index > node.get_commit_index() {
-            node.set_commit_index(new_commit_index);
+            node.set_commit_index(new_commit_index, true);
         }
     }
 

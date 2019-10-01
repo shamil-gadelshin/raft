@@ -70,7 +70,7 @@ fn process_update_fsm_request<Log, Rsm, Pc, Ns, Cl>(params: &RsmUpdaterParams<Lo
 			let fsm_apply_result = node.rsm.apply_entry(entry);
 
 			if let Err(err) = fsm_apply_result {
-				error!("Rsm Apply error. Entry = {}: {}", entry_index, err);
+				error!("Rsm: 'Apply entry' error. Entry = {}: {}", entry_index, err);
 				break;
 			}
 		} else {

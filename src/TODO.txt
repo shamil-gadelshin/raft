@@ -1,8 +1,7 @@
 TODO: Features:
 
 Main algorithm:
-- rsm
-    .append sync on entry-commit
+
 - operation_log replication
     .enforce elections timeout
     .operation_log forcing from the leader (clear entries with invalid terms and indices
@@ -121,7 +120,6 @@ Done:
     .worker thread structure: all peer-request thread, client-thread?
     .extract communicator trait
     .timeouts to NodeConfig as separate struct
-- rsm support
 - leader election
     .check log on votes
 - communication
@@ -166,3 +164,6 @@ Done:
 - user-friendliness
     .license
     .readme.md
+- rsm
+    .basic support
+    .append sync on entry-commit
