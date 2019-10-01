@@ -17,10 +17,11 @@ pub struct ClientRequestHandlerParams<Log, Rsm, Cc,Pc, Ns, Cl>
 		  Pc : PeerRequestHandler,
 		  Cc : ClientRequestChannels,
 		  Ns : NodeStateSaver,
-		  Cl : Cluster
-{	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
+		  Cl : Cluster {
+	pub protected_node : Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
 	pub client_communicator : Cc,
-	pub cluster_configuration: Cl
+	pub cluster_configuration: Cl,
+	pub max_data_content_size: u64
 }
 
 
@@ -61,7 +62,7 @@ pub fn process_client_requests<Log, Rsm, Cc, Pc, Ns, Cl>(params : ClientRequestH
         );
 
 
-		let client_rpc_response_result = process_client_request_internal(params.protected_node.clone(), entry_content);
+		let client_rpc_response_result = process_client_request_internal(params.protected_node.clone(), entry_content, params.max_data_content_size);
 
 		let process_request_result = match client_rpc_response_result {
 			Ok(client_rpc_response) => {
@@ -86,13 +87,25 @@ pub fn process_client_requests<Log, Rsm, Cc, Pc, Ns, Cl>(params : ClientRequestH
 
 fn process_client_request_internal<Log, Rsm, Pc, Ns, Cl>(
 	protected_node: Arc<Mutex<Node<Log, Rsm,Pc, Ns, Cl>>>,
-	entry_content: EntryContent) -> Result<ClientRpcResponse, RaftError>
+	entry_content: EntryContent,
+	max_data_content_size: u64) -> Result<ClientRpcResponse, RaftError>
 	where Log: OperationLog,
 		  Rsm: ReplicatedStateMachine,
 		  Pc : PeerRequestHandler,
 		  Ns : NodeStateSaver,
 		  Cl : Cluster{
 	let mut node = protected_node.lock().expect("node lock is not poisoned");
+
+	if let EntryContent::Data(content) = &entry_content {
+		if content.data.len() as u64 > max_data_content_size {
+			return Ok(
+				ClientRpcResponse {
+				status: ClientResponseStatus::Error,
+				current_leader: node.current_leader_id,
+				message : format!("Max data size ({}) exceeded:{}", max_data_content_size, content.data.len())
+			});
+		}
+	}
 
 	let client_rpc_response = match node.status {
 		NodeStatus::Leader => {

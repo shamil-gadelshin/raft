@@ -91,7 +91,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, 
             leader_election_event_tx: leader_election_tx.clone(),
             reset_leadership_watchdog_tx: reset_leadership_watchdog_tx.clone(),
             peer_communicator: node_config.peer_communicator.clone(),
-            communication_timeout: node_config.timings.communication_timeout
+            communication_timeout: node_config.limits.communication_timeout
         });
 
     let send_heartbeat_append_entries_worker = common::run_worker(
@@ -101,7 +101,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, 
             cluster_configuration: node_config.cluster_configuration.clone(),
             communicator: node_config.peer_communicator.clone(),
             leader_initial_heartbeat_rx,
-            heartbeat_timeout: node_config.timings.heartbeat_timeout
+            heartbeat_timeout: node_config.limits.heartbeat_timeout
         });
 
     let client_request_handler_worker = common::run_worker(
@@ -109,7 +109,8 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, 
         ClientRequestHandlerParams {
             protected_node: protected_node.clone(),
             cluster_configuration: node_config.cluster_configuration.clone(),
-            client_communicator: node_config.client_communicator.clone()
+            client_communicator: node_config.client_communicator.clone(),
+            max_data_content_size: node_config.limits.max_data_content_size
         });
 
     let peer_log_replicator_worker = common::run_worker(

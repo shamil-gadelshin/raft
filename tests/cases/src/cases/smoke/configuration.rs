@@ -1,4 +1,4 @@
-use raft::{PeerRequestHandler, NodeWorker, PeerRequestChannels, NodeTimings, NodeConfiguration, NodeState};
+use raft::{PeerRequestHandler, NodeWorker, PeerRequestChannels, NodeConfiguration, NodeState, NodeLimits};
 use raft_modules::{NetworkClientCommunicator, ClusterConfiguration, MemoryOperationLog, MockNodeStateSaver, RandomizedElectionTimer, MemoryRsm};
 
 pub fn create_node_with_network<Pc: PeerRequestHandler + PeerRequestChannels>(node_id: u64, all_nodes : Vec<u64>, peer_communicator : Pc) -> (NodeWorker, NetworkClientCommunicator)
@@ -21,7 +21,7 @@ pub fn create_node_with_network<Pc: PeerRequestHandler + PeerRequestChannels>(no
 		operation_log,
 		rsm: MemoryRsm::new(),
 		state_saver: MockNodeStateSaver::default(),
-		timings: NodeTimings::default()
+		limits: NodeLimits::default()
 	};
 
 

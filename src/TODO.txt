@@ -4,9 +4,8 @@ Main algorithm:
 
 - operation_log replication
     .enforce elections timeout
-    .operation_log forcing from the leader (clear entries with invalid terms and indices
+    .operation_log
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
-    .support max AppendEntries size parameter & max AppendEntries number
 
 
 Details:
@@ -109,6 +108,7 @@ Future Features:
 - operation-log
     .add failure reason to AppendEntryResponse
     .park-unpark the send_heartbeat_append_entries thread - remove unnecessary mutex-lock
+    .support max AppendEntries number (replicate log in rounds)
 
 Done:
 - support single node
@@ -144,6 +144,8 @@ Done:
     .transmit full cluster configuration on AddServer Rpc
     .log (instead of Rsm) is responsible for cluster_configuration apply
     .append_entries: respond for no quorum
+    .operation_log forced from the leader (clear entries with invalid terms and indices)
+    .support max AppendEntries size parameter
 - error handling
     .error style
     .de-box errors to RaftError

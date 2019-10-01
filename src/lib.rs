@@ -17,7 +17,7 @@ pub use communication::client::{AddServerRequest,NewDataRequest, ClientRpcRespon
 pub use operation_log::{OperationLog};
 pub use node::configuration::Cluster;
 pub use node::configuration::NodeConfiguration;
-pub use node::configuration::NodeTimings;
+pub use node::configuration::NodeLimits;
 pub use rsm::ReplicatedStateMachine;
 pub use operation_log::{LogEntry, DataEntryContent, EntryContent};
 pub use communication::peers::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse};

@@ -1,6 +1,6 @@
 use raft_modules::{ClusterConfiguration, MemoryOperationLog, RandomizedElectionTimer, MemoryRsm, MockNodeStateSaver, InProcClientCommunicator, FixedElectionTimer, InProcPeerCommunicator};
 use std::time::Duration;
-use raft::{NodeConfiguration, NodeState, NodeTimings, NodeWorker, PeerRequestHandler, PeerRequestChannels, ElectionTimer};
+use raft::{NodeConfiguration, NodeState, NodeWorker, PeerRequestHandler, PeerRequestChannels, ElectionTimer, NodeLimits};
 use std::thread;
 
 pub mod cluster;
@@ -65,7 +65,7 @@ fn create_generic_node_configuration_inproc<Pc, Et>(node_id: u64, all_nodes: Vec
 		operation_log,
 		rsm: MemoryRsm::new(),
 		state_saver: MockNodeStateSaver::default(),
-		timings: NodeTimings::default()
+		limits: NodeLimits::default()
 	};
 
 	(client_request_handler, config)

@@ -6,16 +6,18 @@ use crate::node::state::NodeState;
 use crate::{OperationLog, ReplicatedStateMachine, PeerRequestHandler, NodeStateSaver, ElectionTimer};
 
 
-pub struct NodeTimings {
+pub struct NodeLimits {
     pub heartbeat_timeout: Duration,
     pub communication_timeout: Duration,
+    pub max_data_content_size: u64
 }
 
-impl Default for NodeTimings{
+impl Default for NodeLimits {
     fn default() -> Self {
-        NodeTimings{
+        NodeLimits {
             heartbeat_timeout: Duration::from_millis(800),
             communication_timeout: Duration::from_millis(1000),
+            max_data_content_size: 20 * 1024 * 1024, //20 MB
         }
     }
 }
@@ -42,5 +44,5 @@ pub struct NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>
     pub operation_log : Log,
     pub rsm : Rsm,
     pub state_saver : Ns,
-    pub timings: NodeTimings
+    pub limits: NodeLimits
 }

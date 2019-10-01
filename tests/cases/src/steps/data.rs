@@ -3,7 +3,16 @@ use std::sync::Arc;
 use crate::steps::cluster::Leader;
 
 pub fn add_data_sample<Cc : ClientRequestHandler>(leader: &Leader<Cc>) -> Result<ClientRpcResponse, RaftError> {
-	let bytes = "first data".as_bytes();
+	let bytes = "small size data sample".as_bytes();
+	let new_data_request = NewDataRequest{data : Arc::new(bytes)};
+	let data_resp = leader.client_handler.new_data(new_data_request.clone());
+	info!("Add data request sent for Node {}. Response = {:?}", leader.id, data_resp);
+
+	data_resp
+}
+
+pub fn add_tiny_data_sample<Cc : ClientRequestHandler>(leader: &Leader<Cc>) -> Result<ClientRpcResponse, RaftError> {
+	let bytes = "tiny".as_bytes();
 	let new_data_request = NewDataRequest{data : Arc::new(bytes)};
 	let data_resp = leader.client_handler.new_data(new_data_request.clone());
 	info!("Add data request sent for Node {}. Response = {:?}", leader.id, data_resp);

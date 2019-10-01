@@ -11,7 +11,7 @@ use chrono::prelude::{DateTime, Local};
 extern crate raft;
 extern crate raft_modules;
 
-use raft::{NodeState, NodeTimings};
+use raft::{NodeState, NodeLimits};
 use raft::NodeConfiguration;
 
 use raft_modules::{MemoryRsm, RandomizedElectionTimer, MockNodeStateSaver, ClusterConfiguration};
@@ -52,7 +52,7 @@ fn main() {
         peer_communicator: InProcPeerCommunicator::new(all_nodes.clone(), communication_timeout),
         client_communicator: client_request_handler.clone(),
         election_timer: RandomizedElectionTimer::new(1000, 4000),
-        timings: NodeTimings::default(),
+        limits: NodeLimits::default(),
         operation_log: MemoryOperationLog::new(cluster_configuration.clone()),
         rsm: MemoryRsm::new(),
         state_saver: MockNodeStateSaver::default()

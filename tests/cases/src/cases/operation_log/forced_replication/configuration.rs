@@ -1,4 +1,4 @@
-use raft::{PeerRequestHandler, PeerRequestChannels, NodeTimings, NodeConfiguration, NodeState, ElectionTimer, OperationLog, NodeWorker};
+use raft::{PeerRequestHandler, PeerRequestChannels, NodeConfiguration, NodeState, ElectionTimer, OperationLog, NodeWorker, NodeLimits};
 use raft_modules::{ClusterConfiguration, MockNodeStateSaver, MemoryRsm, InProcClientCommunicator, MemoryOperationLog, FixedElectionTimer};
 use crate::steps::get_client_communication_timeout;
 
@@ -26,7 +26,7 @@ pub fn create_different_term_node_configuration_inproc<Pc>(node_id: u64, all_nod
 		operation_log,
 		rsm: MemoryRsm::new(),
 		state_saver: MockNodeStateSaver::default(),
-		timings: NodeTimings::default()
+		limits: NodeLimits::default()
 	};
 
 	let node_worker = raft::start_node(node_config);
@@ -57,7 +57,7 @@ pub fn create_node_configuration_inproc<Pc, Et, Log>(node_id: u64, all_nodes: Ve
 		operation_log,
 		rsm: MemoryRsm::new(),
 		state_saver: MockNodeStateSaver::default(),
-		timings: NodeTimings::default()
+		limits: NodeLimits::default()
 	};
 
 	(client_request_handler, config)

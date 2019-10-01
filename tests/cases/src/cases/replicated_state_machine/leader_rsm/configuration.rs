@@ -1,4 +1,4 @@
-use raft::{PeerRequestHandler, PeerRequestChannels, NodeTimings, NodeConfiguration, NodeState, ElectionTimer, ReplicatedStateMachine};
+use raft::{PeerRequestHandler, PeerRequestChannels, NodeConfiguration, NodeState, ElectionTimer, ReplicatedStateMachine, NodeLimits};
 use raft_modules::{ClusterConfiguration, MockNodeStateSaver, InProcClientCommunicator, MemoryOperationLog};
 use crate::steps::get_client_communication_timeout;
 
@@ -24,7 +24,7 @@ pub fn create_node_configuration_inproc<Pc, Et, Rsm>(node_id: u64, all_nodes: Ve
 		operation_log: MemoryOperationLog::new(cluster_config.clone()),
 		rsm,
 		state_saver: MockNodeStateSaver::default(),
-		timings: NodeTimings::default()
+		limits: NodeLimits::default()
 	};
 
 	(client_request_handler, config)
