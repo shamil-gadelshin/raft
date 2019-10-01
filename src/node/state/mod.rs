@@ -195,12 +195,10 @@ where Log: OperationLog,
     pub fn append_entry_to_log(&mut self, entry: LogEntry) -> Result<(), RaftError> {
         let entry_index = entry.index;
 
-        if self.log.get_last_entry_index() < entry_index {
-            let log_append_result = self.log.append_entry(entry.clone());
-            if let Err(err) = log_append_result {
-                return errors::new_err(
-                    format!("cannot append entry to log, index = {}", entry_index), err.to_string());
-            }
+        let log_append_result = self.log.append_entry(entry);
+        if let Err(err) = log_append_result {
+            return errors::new_err(
+                format!("cannot append entry to log, index = {}", entry_index), err.to_string());
         }
         Ok(())
     }

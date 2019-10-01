@@ -1,12 +1,14 @@
 use crate::steps;
 
+mod configuration;
+
 pub fn run() {
 
 		let node_ids = vec![1, 2];
 		let new_node_id = node_ids.last().unwrap() + 1;
 
 		let peer_communicator = steps::peer_communicator::get_peer_communicator( vec![1, 2, 3]);
-		let mut cluster = steps::cluster::start_initial_cluster(node_ids, peer_communicator.clone(), steps::create_node_with_network);
+		let mut cluster = steps::cluster::start_initial_cluster(node_ids, peer_communicator.clone(), configuration::create_node_with_network);
 
 		steps::sleep(5);
 
@@ -14,7 +16,7 @@ pub fn run() {
 		let leader = cluster.find_a_leader_by_adding_data_sample();
 
 		// run new server
-		cluster.add_new_server(new_node_id, steps::create_node_with_network);
+		cluster.add_new_server(new_node_id, configuration::create_node_with_network);
 
 
 		//add new server to the cluster
@@ -27,4 +29,13 @@ pub fn run() {
 
 		cluster.terminate();
 
+}
+
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn test_smoke() {
+		crate::cases::smoke::run()
+	}
 }

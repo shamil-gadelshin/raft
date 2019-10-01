@@ -34,12 +34,6 @@ fn send_data<Cc : ClientRequestHandler>(client_request_handler: Cc) {
     let result = client_request_handler.new_data(new_data_request);
 
     println!("{:?}", result);
-//    if let Ok(resp) = result {
-//        println!("{:?}", resp);
-//        if let ClientResponseStatus::Ok = resp.status {
-//
-//        }
-//    }
 }
 
 

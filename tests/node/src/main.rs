@@ -54,7 +54,7 @@ fn main() {
         election_timer: RandomizedElectionTimer::new(1000, 4000),
         timings: NodeTimings::default(),
         operation_log: MemoryOperationLog::new(cluster_configuration.clone()),
-        rsm: MemoryRsm::default(),
+        rsm: MemoryRsm::new(),
         state_saver: MockNodeStateSaver::default()
     };
 

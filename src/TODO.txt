@@ -74,10 +74,11 @@ Details:
     .conditional compilation
 - user-friendliness
     .readme.md
+        .add modules description
+        .add test cases description
     .documentation
         .add the top of the main file: #![warn(missing_docs, unsafe_code)]
         .comment .proto
-    .license
     .Rust API Guidelines
 - optimization
     .speed & memory profiling
@@ -162,3 +163,6 @@ Done:
     .cases
         .no quorum
         .single node
+- user-friendliness
+    .license
+    .readme.md

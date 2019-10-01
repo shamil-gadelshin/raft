@@ -62,7 +62,7 @@ where Cc : ClientRequestHandler,
 			let (_k, v) = kv;
 
 			let result = v.new_data(new_data_request.clone());
-			println!("--Leader Result: {:?}", result);
+			info!("--Leader Result: {:?}", result);
 			if let Ok(resp) = result {
 				let leader_id = resp.current_leader.expect("can get a leader");
 				let	client_handler = Arc::new(self.client_handlers[&leader_id].clone());
@@ -84,7 +84,7 @@ where Cc : ClientRequestHandler,
 		let handler = self.client_handlers[&1].clone();
 
 		let result = handler.new_data(new_data_request.clone());
-		println!("--Leader Result: {:?}", result);
+		info!("--Leader Result: {:?}", result);
 		if let Ok(resp) = result {
 			let leader_id = resp.current_leader.expect("can get a leader");
 			let client_handler = Arc::new(self.client_handlers[&leader_id].clone());

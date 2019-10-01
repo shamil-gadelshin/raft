@@ -2,13 +2,14 @@ use raft::{LogEntry, EntryContent};
 use raft::OperationLog;
 use raft::{RaftError};
 use crate::ClusterConfiguration;
+use std::sync::{Mutex, Arc};
 
 #[derive(Clone, Debug)]
-//TODO multithreaded protection required
 pub struct MemoryOperationLog {
     cluster: ClusterConfiguration,
     last_index: u64,
-    entries : Vec<LogEntry>
+    entries : Vec<LogEntry>,
+    lock : Arc<Mutex<bool>>
 }
 
 impl MemoryOperationLog {
@@ -17,26 +18,25 @@ impl MemoryOperationLog {
             cluster,
             entries : Vec::new(),
             last_index: 0,
-        }
-    }
-
-    fn add_servers_to_cluster(&mut self, servers: Vec<u64>) {
-        for new_server_id in servers {
-            self.cluster.add_peer(new_server_id);
+            lock: Arc::new(Mutex::new(true))
         }
     }
 }
 
 impl OperationLog for MemoryOperationLog {
     fn create_next_entry(&mut self,  term : u64, entry_content : EntryContent) -> LogEntry {
+        let _lock = self.lock.lock();
         LogEntry { index: self.last_index + 1, term, entry_content }
     }
 
     fn append_entry(&mut self, entry: LogEntry) -> Result<(), RaftError> {
+        let _lock = self.lock.lock();
+
         trace!("--Log entry: {:?}", entry);
         while self.last_index >= entry.index {
             let vec_idx = (entry.index - 1) as usize;
             let removed_entry = self.entries.remove(vec_idx);
+            self.last_index -= 1;
             warn!("-------------Removed Log entry: {:?}", removed_entry);
         }
 
@@ -44,7 +44,11 @@ impl OperationLog for MemoryOperationLog {
 
         if let EntryContent::AddServer(add_server_request) = entry.entry_content {
             trace!("New server configuration: {:?}", &add_server_request.new_cluster_configuration);
-            self.add_servers_to_cluster(add_server_request.new_cluster_configuration);
+
+            // add servers to cluster
+            for new_server_id in add_server_request.new_cluster_configuration {
+                self.cluster.add_peer(new_server_id);
+            }
         }
 
         self.last_index = entry.index;
@@ -52,7 +56,10 @@ impl OperationLog for MemoryOperationLog {
 
         Ok(())
     }
+
     fn get_entry(&self, index: u64) -> Option<LogEntry> {
+        let _lock = self.lock.lock();
+
         let idx = index as usize;
         if idx > self.entries.len() || idx == 0{
             return None;
@@ -61,6 +68,7 @@ impl OperationLog for MemoryOperationLog {
     }
 
     fn get_last_entry_index(&self) -> u64{
+        let _lock = self.lock.lock();
         let last = self.entries.last();
         if let Some(entry) = last {
             return entry.index;
@@ -69,6 +77,7 @@ impl OperationLog for MemoryOperationLog {
         0 //Raft documentation demands zero as initial value
     }
     fn get_last_entry_term(&self) -> u64{
+        let _lock = self.lock.lock();
         let last = self.entries.last();
         if let Some(entry) = last {
             return entry.term;

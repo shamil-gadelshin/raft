@@ -1,4 +1,4 @@
-mod noquorum_peer_communicator;
+mod custom_peer_communicator;
 
 use crate::steps;
 use raft::ClientResponseStatus;
@@ -7,8 +7,8 @@ pub fn run() {
 
 	let node_ids = vec![1, 2, 3, 4];
 
-	let peer_communicator = noquorum_peer_communicator::InProcPeerCommunicator::new(vec![1, 2, 3, 4], steps::get_peers_communication_timeout());
-	let cluster = steps::cluster::start_initial_cluster(node_ids, peer_communicator.clone(), steps::create_node_inproc);
+	let peer_communicator = custom_peer_communicator::InProcPeerCommunicator::new(vec![1, 2, 3, 4], steps::get_peers_communication_timeout());
+	let cluster = steps::cluster::start_initial_cluster(node_ids, peer_communicator.clone(), steps::create_generic_node_inproc);
 
 	steps::sleep(4);
 
@@ -24,4 +24,13 @@ pub fn run() {
 
 
 	cluster.terminate();
+}
+
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn test_noquorum() {
+		crate::cases::no_quorum::run()
+	}
 }
