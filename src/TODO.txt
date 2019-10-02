@@ -29,7 +29,6 @@ Details:
     .libp2p
     .grpc
     .change client and node response patterns (after committing to the operation_log)
-    .service discovery for network-communication (peer)
 - system events logging
     .remove requests from log messages
     .increase log coverage
@@ -124,11 +123,13 @@ Done:
     .check log on votes
 - communication
     .channel communication
+    .service discovery for network-communication (peer)
     .tarpc (won't do)
     .client_requests support
         .server api
         .separate client_requests
-- modules create
+- modules
+    .create
 - cluster_membership changes
     .add server
     .change quorum size
@@ -176,3 +177,6 @@ Done:
 - rsm
     .basic support
     .append sync on entry-commit
+- node example
+    .implement peer network communicator
+        .implement service discovery
