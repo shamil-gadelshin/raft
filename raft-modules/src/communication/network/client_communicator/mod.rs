@@ -1,4 +1,4 @@
-mod grpc;
 mod client_requests;
-mod server;
+mod grpc;
 pub mod network_client_communicator;
+mod server;

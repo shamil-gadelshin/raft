@@ -24,6 +24,4 @@ fn main() {
         )
         .unwrap_or_else(|e| panic!("protobuf compilation failed: {}", e));
     println!("cargo:rerun-if-changed=communication/network/peer_communicator/grpc/proto//peer_communicator.proto");
-
-
 }

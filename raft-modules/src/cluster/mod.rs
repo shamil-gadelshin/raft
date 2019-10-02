@@ -1,13 +1,13 @@
-use std::collections::HashMap;
 use raft::Cluster;
-use std::sync::{Mutex, Arc};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
-pub struct ClusterConfiguration{
-    cluster : Arc<Mutex<ClusterConfigurationInternal>>
+pub struct ClusterConfiguration {
+    cluster: Arc<Mutex<ClusterConfigurationInternal>>,
 }
 
-impl Cluster for ClusterConfiguration{
+impl Cluster for ClusterConfiguration {
     fn get_quorum_size(&self) -> u32 {
         let cluster = self.cluster.lock().expect("cluster lock is not poisoned");
 
@@ -29,8 +29,8 @@ impl Cluster for ClusterConfiguration{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 //TODO save changes to cluster configuration (persistence)
-struct ClusterConfigurationInternal{
-    nodes_id_map : HashMap<u64, ()>,
+struct ClusterConfigurationInternal {
+    nodes_id_map: HashMap<u64, ()>,
 }
 
 impl Cluster for ClusterConfigurationInternal {
@@ -50,7 +50,7 @@ impl Cluster for ClusterConfigurationInternal {
         self.nodes_id_map.keys().cloned().collect()
     }
 
-    fn get_peers(&self, node_id : u64) -> Vec<u64>{
+    fn get_peers(&self, node_id: u64) -> Vec<u64> {
         let mut peer_ids = self.get_all_nodes();
         peer_ids.retain(|&x| x != node_id);
 
@@ -59,8 +59,10 @@ impl Cluster for ClusterConfigurationInternal {
 }
 
 impl ClusterConfigurationInternal {
-    pub fn new(peers : Vec<u64>) -> ClusterConfigurationInternal {
-        let mut cluster_config = ClusterConfigurationInternal{nodes_id_map : HashMap::new()};
+    pub fn new(peers: Vec<u64>) -> ClusterConfigurationInternal {
+        let mut cluster_config = ClusterConfigurationInternal {
+            nodes_id_map: HashMap::new(),
+        };
 
         for node in peers {
             cluster_config.add_peer(node);
@@ -69,7 +71,7 @@ impl ClusterConfigurationInternal {
         cluster_config
     }
 
-    pub fn add_peer(&mut self, peer : u64) {
+    pub fn add_peer(&mut self, peer: u64) {
         if self.nodes_id_map.contains_key(&peer) {
             warn!("Cluster configuration - add duplicate peer:{}", peer)
         }
@@ -78,13 +80,15 @@ impl ClusterConfigurationInternal {
 }
 
 impl ClusterConfiguration {
-    pub fn new(peers : Vec<u64>) -> ClusterConfiguration {
+    pub fn new(peers: Vec<u64>) -> ClusterConfiguration {
         let cluster_config = ClusterConfigurationInternal::new(peers);
 
-        ClusterConfiguration{cluster: Arc::new(Mutex::new(cluster_config))}
+        ClusterConfiguration {
+            cluster: Arc::new(Mutex::new(cluster_config)),
+        }
     }
 
-    pub fn add_peer(&mut self, peer : u64) {
+    pub fn add_peer(&mut self, peer: u64) {
         let mut cluster = self.cluster.lock().expect("cluster lock is not poisoned");
 
         cluster.add_peer(peer);

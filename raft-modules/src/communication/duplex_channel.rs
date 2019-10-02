@@ -1,12 +1,12 @@
-use crossbeam_channel::{Sender, Receiver};
+use crossbeam_channel::{Receiver, Sender};
 
 use std::time::Duration;
 
-use raft::{RaftError, new_err};
+use raft::{new_err, RaftError};
 
 #[derive(Clone, Debug)]
 pub struct DuplexChannel<Request, Response> {
-    name : String,
+    name: String,
     timeout_duration: Duration,
     pub request_tx: Sender<Request>,
     pub request_rx: Receiver<Request>,
@@ -14,19 +14,23 @@ pub struct DuplexChannel<Request, Response> {
     pub response_rx: Receiver<Response>,
 }
 
-impl <Request, Response> DuplexChannel<Request, Response>
-where Request: Send + 'static{
-    pub fn new(name : String, timeout_duration: Duration) -> DuplexChannel<Request, Response> {
-        let (request_tx, request_rx): (Sender<Request>, Receiver<Request>) = crossbeam_channel::bounded(0);
-        let (response_tx, response_rx): (Sender<Response>, Receiver<Response>) = crossbeam_channel::bounded(0);
+impl<Request, Response> DuplexChannel<Request, Response>
+where
+    Request: Send + 'static,
+{
+    pub fn new(name: String, timeout_duration: Duration) -> DuplexChannel<Request, Response> {
+        let (request_tx, request_rx): (Sender<Request>, Receiver<Request>) =
+            crossbeam_channel::bounded(0);
+        let (response_tx, response_rx): (Sender<Response>, Receiver<Response>) =
+            crossbeam_channel::bounded(0);
 
-        DuplexChannel{
+        DuplexChannel {
             timeout_duration,
             name,
             request_tx,
             request_rx,
             response_tx,
-            response_rx
+            response_rx,
         }
     }
 
@@ -34,7 +38,9 @@ where Request: Send + 'static{
         self.request_rx.clone()
     }
     #[allow(dead_code)]
-    pub fn get_request_tx(&self) -> Sender<Request> { self.request_tx.clone() }
+    pub fn get_request_tx(&self) -> Sender<Request> {
+        self.request_tx.clone()
+    }
 
     pub fn get_response_tx(&self) -> Sender<Response> {
         self.response_tx.clone()
@@ -48,14 +54,18 @@ where Request: Send + 'static{
     pub fn send_request(&self, request: Request) -> Result<Response, RaftError> {
         let send_result = self.request_tx.send_timeout(request, self.timeout_duration);
         if let Err(err) = send_result {
-            return
-               new_err( format!("Cannot send request. Channel : {} ", self.name),  err.to_string())
-
+            return new_err(
+                format!("Cannot send request. Channel : {} ", self.name),
+                err.to_string(),
+            );
         }
 
         let receive_result = self.response_rx.recv_timeout(self.timeout_duration);
         if let Err(err) = receive_result {
-            return new_err(format!("Cannot receive response. Channel : {}", self.name), err.to_string())
+            return new_err(
+                format!("Cannot receive response. Channel : {}", self.name),
+                err.to_string(),
+            );
         }
         if let Ok(resp) = receive_result {
             let response = resp;
@@ -66,4 +76,3 @@ where Request: Send + 'static{
         unreachable!("invalid request-response sequence");
     }
 }
-

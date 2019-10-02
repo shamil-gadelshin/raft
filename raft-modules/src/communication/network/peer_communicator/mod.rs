@@ -1,5 +1,5 @@
-mod grpc;
 mod client_requests;
-mod server;
+mod grpc;
 pub mod network_peer_communicator;
+mod server;
 pub mod service_discovery;
