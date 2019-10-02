@@ -9,9 +9,10 @@ use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
 
 
-pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl>(request: VoteRequest,
-                                              protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
-                                              leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
+pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl>(
+    request: VoteRequest,
+    protected_node : Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    leader_election_event_tx : Sender<LeaderElectionEvent>) -> VoteResponse
     where Log: OperationLog,
           Rsm: ReplicatedStateMachine,
           Pc : PeerRequestHandler,
@@ -32,7 +33,8 @@ pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl>(request: VoteRequest,
             vote_granted = true;
             response_current_term = request.term;
 
-            leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(request.term)).expect("can send LeaderElectionEvent");
+            leader_election_event_tx.send(LeaderElectionEvent::ResetNodeToFollower(request.term))
+                .expect("can send LeaderElectionEvent");
         }
     }
 

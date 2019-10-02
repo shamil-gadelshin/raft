@@ -36,6 +36,9 @@ pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl>(request : AppendEntr
             }
         },
         NodeStatus::Follower => {
+            if request.term > node.get_current_term() {
+                node.set_current_term(request.term);
+            }
             reset_leadership_watchdog_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter)
                 .expect("can send LeaderConfirmationEvent");
         }

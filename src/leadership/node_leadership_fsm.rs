@@ -76,7 +76,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(params: &ElectionManagerPa
             node.set_voted_for_id(Some(node_id));
             node.current_leader_id = None;
             node.status = NodeStatus::Candidate;
-            info!("Node {} Status changed to Candidate", node.id);
+            info!("Node {} Status changed to Candidate for term {}", node.id, vr.term);
 
             let peers_copy = params.cluster_configuration.get_peers(node_id);
             let quorum_size = params.cluster_configuration.get_quorum_size();
@@ -100,9 +100,9 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(params: &ElectionManagerPa
 
             node.current_leader_id = Some(node.id);
             node.set_current_term(term);
-            node.set_voted_for_id(None);
             node.status = NodeStatus::Leader;
-            info!("Node {} Status changed to Leader", node.id);
+            node.set_voted_for_id(None);
+            info!("Node {} Status changed to Leader for term {}", node.id, term);
 
             params.watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderElectedEvent");
             params.leader_initial_heartbeat_tx.send(true).expect("can send leader initial heartbeat");
@@ -113,7 +113,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(params: &ElectionManagerPa
             node.set_current_term(term);
             node.status = NodeStatus::Follower;
             node.set_voted_for_id(None);
-            info!("Node {} Status changed to Follower", node.id);
+            info!("Node {} Status changed to Follower for term {}", node.id, term);
 
             params.watchdog_event_tx.send(LeaderConfirmationEvent::ResetWatchdogCounter).expect("can send LeaderConfirmationEvent");
         },
