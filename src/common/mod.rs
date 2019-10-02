@@ -1,33 +1,45 @@
-use std::thread::JoinHandle;
+use crossbeam_channel::{Receiver, Sender};
 use std::thread;
-use crossbeam_channel::{Sender, Receiver};
+use std::thread::JoinHandle;
 
 pub mod peer_consensus_requester;
 
-pub fn run_worker_thread<T: Send + 'static, F: Fn(T) + Send + 'static>(worker : F, params : T) -> JoinHandle<()> {
+pub fn run_worker_thread<T, F>(worker: F, params: T) -> JoinHandle<()>
+where
+    T: Send + 'static,
+    F: Fn(T) + Send + 'static,
+{
     thread::spawn(move || worker(params))
 }
 
 #[derive(Debug)]
 pub struct RaftWorker {
-    pub join_handle : JoinHandle<()>,
-    pub terminate_worker_tx : Sender<()>
+    pub join_handle: JoinHandle<()>,
+    pub terminate_worker_tx: Sender<()>,
 }
-pub fn run_worker<T: Send + 'static, F: Fn(T, Receiver<()>) + Send + 'static>(worker : F, params : T) -> RaftWorker {
-    let (terminate_worker_tx, terminate_worker_rx): (Sender<()>, Receiver<()>) = crossbeam_channel::unbounded();
+pub fn run_worker<T, F>(worker: F, params: T) -> RaftWorker
+where
+    T: Send + 'static,
+    F: Fn(T, Receiver<()>) + Send + 'static,
+{
+    let (terminate_worker_tx, terminate_worker_rx): (Sender<()>, Receiver<()>) =
+        crossbeam_channel::unbounded();
 
-    let join_handle = thread::spawn(move|| worker (params, terminate_worker_rx));
+    let join_handle = thread::spawn(move || worker(params, terminate_worker_rx));
 
-    RaftWorker {join_handle, terminate_worker_tx}
+    RaftWorker {
+        join_handle,
+        terminate_worker_tx,
+    }
 }
 
 pub struct RaftWorkerPool {
-    workers : Vec<RaftWorker>
+    workers: Vec<RaftWorker>,
 }
 
 impl RaftWorkerPool {
-    pub fn new(workers : Vec<RaftWorker>) -> RaftWorkerPool {
-        RaftWorkerPool {workers}
+    pub fn new(workers: Vec<RaftWorker>) -> RaftWorkerPool {
+        RaftWorkerPool { workers }
     }
 
     pub fn terminate(&self) {
@@ -48,4 +60,3 @@ impl RaftWorkerPool {
         }
     }
 }
-

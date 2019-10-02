@@ -1,2 +1,2 @@
-pub mod peers;
 pub mod client;
+pub mod peers;

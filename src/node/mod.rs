@@ -3,30 +3,31 @@ pub mod state;
 
 use std::sync::{Arc, Mutex};
 
-use crossbeam_channel::{Sender, Receiver};
+use crossbeam_channel::{Receiver, Sender};
 
-use crate::common::{ RaftWorkerPool};
-use crate::leadership::{LeaderConfirmationEvent};
-use crate::node::state::{Node, NodeStateSaver};
-use crate::leadership::node_leadership_fsm::{LeaderElectionEvent, ElectionManagerParams};
-use crate::leadership::node_leadership_fsm::{run_node_status_watcher};
-use crate::operation_log::OperationLog;
-use crate::rsm::{ReplicatedStateMachine};
-use crate::{common, PeerRequestChannels, PeerRequestHandler, Cluster, NodeConfiguration, ElectionTimer};
-use crate::request_handler::client::{ClientRequestHandlerParams, process_client_requests};
-use crate::operation_log::replication::heartbeat_sender::{send_heartbeat_append_entries};
-use crate::operation_log::replication::heartbeat_sender::{SendHeartbeatAppendEntriesParams};
-use crate::leadership::leader_status_watcher::{WatchLeaderStatusParams, watch_leader_status};
-use crate::operation_log::replication::peer_log_replicator::{LogReplicatorParams};
-use crate::operation_log::replication::peer_log_replicator::{replicate_log_to_peer};
-use crate::rsm::updater::{update_rsm, RsmUpdaterParams};
-use crate::request_handler::peer::{PeerRequestHandlerParams, process_peer_request};
+use crate::common::RaftWorkerPool;
 use crate::communication::client::ClientRequestChannels;
+use crate::leadership::leader_status_watcher::{watch_leader_status, WatchLeaderStatusParams};
+use crate::leadership::node_leadership_fsm::run_node_status_watcher;
+use crate::leadership::node_leadership_fsm::{ElectionManagerParams, LeaderElectionEvent};
+use crate::leadership::LeaderConfirmationEvent;
+use crate::node::state::{Node, NodeStateSaver};
+use crate::operation_log::replication::heartbeat_sender::send_heartbeat_append_entries;
+use crate::operation_log::replication::heartbeat_sender::SendHeartbeatAppendEntriesParams;
+use crate::operation_log::replication::peer_log_replicator::replicate_log_to_peer;
+use crate::operation_log::replication::peer_log_replicator::LogReplicatorParams;
+use crate::operation_log::OperationLog;
+use crate::request_handler::client::{process_client_requests, ClientRequestHandlerParams};
+use crate::request_handler::peer::{process_peer_request, PeerRequestHandlerParams};
+use crate::rsm::updater::{update_rsm, RsmUpdaterParams};
+use crate::rsm::ReplicatedStateMachine;
+use crate::{
+    common, Cluster, ElectionTimer, NodeConfiguration, PeerRequestChannels, PeerRequestHandler,
+};
 
-
-
-pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
-                                        terminate_worker_rx : Receiver<()>)
+pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
+    node_config : NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
+    terminate_worker_rx : Receiver<()>)
     where Log: OperationLog ,
           Rsm: ReplicatedStateMachine,
           Cc : ClientRequestChannels,
@@ -54,14 +55,15 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, 
     let protected_node = Arc::new(Mutex::new(node));
 
     let (leader_election_tx, leader_election_rx):
-        (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) = crossbeam_channel::unbounded();
+        (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) =
+        crossbeam_channel::unbounded();
 
     let (reset_leadership_watchdog_tx, reset_leadership_watchdog_rx):
         (Sender<LeaderConfirmationEvent>, Receiver<LeaderConfirmationEvent>) =
         crossbeam_channel::unbounded();
 
-    let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx): (Sender<bool>, Receiver<bool>) =
-        crossbeam_channel::unbounded();
+    let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx)
+        : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
 
     let election_worker = common::run_worker(
         run_node_status_watcher,
@@ -129,13 +131,14 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, 
             commit_index_updated_rx
         });
 
-    let workers = vec![client_request_handler_worker,
-                       send_heartbeat_append_entries_worker,
-                       peer_request_processor_worker,
-                       check_leader_worker,
-                       election_worker,
-                       peer_log_replicator_worker,
-                       fsm_updater_worker];
+    let workers = vec![
+        client_request_handler_worker,
+        send_heartbeat_append_entries_worker,
+        peer_request_processor_worker,
+        check_leader_worker,
+        election_worker,
+        peer_log_replicator_worker,
+        fsm_updater_worker];
 
     let worker_pool = RaftWorkerPool::new(workers);
 

@@ -1,45 +1,51 @@
 #![warn(missing_debug_implementations, unsafe_code)]
 
-#[macro_use] extern crate log;
-#[macro_use] extern crate crossbeam_channel;
-
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate crossbeam_channel;
 
 mod common;
-mod leadership;
 mod communication;
-mod operation_log;
-mod rsm;
-mod request_handler;
-mod node;
 mod errors;
+mod leadership;
+mod node;
+mod operation_log;
 mod raft_facets;
+mod request_handler;
+mod rsm;
 
-
-pub use communication::client::{AddServerRequest,NewDataRequest, ClientRpcResponse, ClientResponseStatus,ClientRequestHandler, ClientRequestChannels};
-pub use operation_log::{OperationLog};
+pub use communication::client::{AddServerRequest, ClientRpcResponse, NewDataRequest};
+pub use communication::client::{
+    ClientRequestChannels, ClientRequestHandler, ClientResponseStatus,
+};
+pub use communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
+pub use communication::peers::{PeerRequestChannels, PeerRequestHandler};
+pub use communication::peers::{VoteRequest, VoteResponse};
+pub use errors::{new_err, RaftError};
+pub use leadership::ElectionTimer;
 pub use node::configuration::Cluster;
 pub use node::configuration::NodeConfiguration;
 pub use node::configuration::NodeLimits;
-pub use rsm::ReplicatedStateMachine;
-pub use operation_log::{LogEntry, DataEntryContent, NewClusterConfigurationEntryContent, EntryContent};
-pub use communication::peers::{VoteRequest, VoteResponse, AppendEntriesRequest, AppendEntriesResponse};
-pub use communication::peers::{PeerRequestHandler, PeerRequestChannels};
 pub use node::state::NodeState;
-pub use leadership::ElectionTimer;
 pub use node::state::NodeStateSaver;
-pub use errors::{RaftError, new_err};
+pub use operation_log::LogEntry;
+pub use operation_log::OperationLog;
+pub use operation_log::{DataEntryContent, EntryContent, NewClusterConfigurationEntryContent};
+pub use rsm::ReplicatedStateMachine;
 pub type NodeWorker = common::RaftWorker;
 
-
-pub fn start_node<Log, Rsm,Cc, Pc, Et, Ns, Cl>(node_config : NodeConfiguration<Log, Rsm,Cc, Pc, Et, Ns, Cl>) -> NodeWorker
-where Log: OperationLog ,
-	  Rsm: ReplicatedStateMachine,
-	  Cc : ClientRequestChannels,
-	  Pc : PeerRequestHandler + PeerRequestChannels,
-	  Et : ElectionTimer,
-	  Ns : NodeStateSaver,
-	  Cl : Cluster{
-
-	common::run_worker(node::start, node_config)
+pub fn start_node<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
+    node_config: NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
+) -> NodeWorker
+where
+    Log: OperationLog,
+    Rsm: ReplicatedStateMachine,
+    Cc: ClientRequestChannels,
+    Pc: PeerRequestHandler + PeerRequestChannels,
+    Et: ElectionTimer,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
+{
+    common::run_worker(node::start, node_config)
 }
-

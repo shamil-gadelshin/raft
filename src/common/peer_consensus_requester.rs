@@ -1,23 +1,26 @@
-use std::result::Result;
-use std::ops::{Fn};
-use std::string::*;
 use rayon::prelude::*;
+use std::ops::Fn;
+use std::result::Result;
+use std::string::*;
 
 use crate::errors;
-use crate::operation_log::QuorumResponse;
 use crate::errors::RaftError;
+use crate::operation_log::QuorumResponse;
 
-
-pub fn request_peer_consensus<Req, Resp, Requester>(request: Req,
-                                                    node_id : u64,
-                                                    peers : Vec<u64>,
-                                                    quorum: Option<u32>,
-                                                    requester : Requester) -> Result<bool, RaftError>
-where Requester: Fn(u64, Req) ->Result<Resp, RaftError> + Sync,
-      Req: Clone + Sync,
-      Resp: QuorumResponse {
+pub fn request_peer_consensus<Req, Resp, Requester>(
+    request: Req,
+    node_id: u64,
+    peers: Vec<u64>,
+    quorum: Option<u32>,
+    requester: Requester,
+) -> Result<bool, RaftError>
+where
+    Requester: Fn(u64, Req) -> Result<Resp, RaftError> + Sync,
+    Req: Clone + Sync,
+    Resp: QuorumResponse,
+{
     if peers.is_empty() {
-        return Ok(true)
+        return Ok(true);
     }
 
     let responses = get_responses_from_peer(request, peers, requester);
@@ -37,31 +40,41 @@ where Requester: Fn(u64, Req) ->Result<Resp, RaftError> + Sync,
                         trace!("Node {} gathered quorum for request", node_id);
                         return Ok(true);
                     }
-                },
+                }
                 Err(err) => {
                     errors.push(err);
                 }
             }
         }
 
-        info!("Node {}: cannot get quorum for request. Vote count: {:?}", node_id, votes);
-        if !errors.is_empty() && votes == 1 { //no responses
-            return errors::new_multiple_err("Cannot get quorum for request".to_string(), errors)
+        info!(
+            "Node {}: cannot get quorum for request. Vote count: {:?}",
+            node_id, votes
+        );
+        if !errors.is_empty() && votes == 1 {
+            //no responses
+            return errors::new_multiple_err("Cannot get quorum for request".to_string(), errors);
         }
-        return Ok(false)
+        return Ok(false);
     }
 
     Ok(true)
 }
 
-fn get_responses_from_peer<Req, Resp, Requester>(request: Req, peers: Vec<u64>, requester: Requester) -> Vec<Result<Resp, RaftError>>
-    where Requester: Fn(u64, Req) -> Result<Resp, RaftError> + Sync,
-          Req: Clone + Sync,
-          Resp: QuorumResponse {
+fn get_responses_from_peer<Req, Resp, Requester>(
+    request: Req,
+    peers: Vec<u64>,
+    requester: Requester,
+) -> Vec<Result<Resp, RaftError>>
+where
+    Requester: Fn(u64, Req) -> Result<Resp, RaftError> + Sync,
+    Req: Clone + Sync,
+    Resp: QuorumResponse,
+{
+    //TODO timeout handling
 
-//TODO timeout handling
-
-    peers.into_par_iter()
-         .map(|peer_id| {requester(peer_id, request.clone())})
-         .collect()
+    peers
+        .into_par_iter()
+        .map(|peer_id| requester(peer_id, request.clone()))
+        .collect()
 }

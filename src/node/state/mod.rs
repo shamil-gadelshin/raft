@@ -1,51 +1,53 @@
 use std::collections::HashMap;
 
-use crossbeam_channel::{Sender};
+use crossbeam_channel::Sender;
 
-use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
-use crate::operation_log::{LogEntry,EntryContent};
 use crate::common::peer_consensus_requester::request_peer_consensus;
-use crate::rsm::{ReplicatedStateMachine};
-use crate::operation_log::{OperationLog};
-use crate::{errors, Cluster};
+use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
 use crate::errors::{new_err, RaftError};
+use crate::operation_log::OperationLog;
+use crate::operation_log::{EntryContent, LogEntry};
+use crate::rsm::ReplicatedStateMachine;
+use crate::{errors, Cluster};
 
 mod tests;
 
 #[derive(Clone, Debug)]
 //TODO decompose GOD object
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
-pub struct Node<Log,Rsm,Pc, Ns,Cl>
-where Log: OperationLog,
-      Rsm: ReplicatedStateMachine,
-      Pc : PeerRequestHandler,
-      Ns : NodeStateSaver,
-      Cl : Cluster{
-    pub id : u64,
+pub struct Node<Log, Rsm, Pc, Ns, Cl>
+where
+    Log: OperationLog,
+    Rsm: ReplicatedStateMachine,
+    Pc: PeerRequestHandler,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
+{
+    pub id: u64,
     current_term: u64,
     voted_for_id: Option<u64>,
 
     pub current_leader_id: Option<u64>,
-    pub status : NodeStatus,
-    next_index : HashMap<u64, u64>,
+    pub status: NodeStatus,
+    next_index: HashMap<u64, u64>,
     commit_index: u64,
 
-    pub log : Log,
-    pub rsm : Rsm,
-    communicator : Pc,
+    pub log: Log,
+    pub rsm: Rsm,
+    communicator: Pc,
     state_saver: Ns,
 
-    cluster_configuration : Cl,
+    cluster_configuration: Cl,
 
     replicate_log_to_peer_tx: Sender<u64>,
-    commit_index_updated_tx : Sender<u64>,
+    commit_index_updated_tx: Sender<u64>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum NodeStatus {
     Follower,
     Candidate,
-    Leader
+    Leader,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -55,31 +57,35 @@ pub struct NodeState {
     pub vote_for_id: Option<u64>,
 }
 
-pub trait NodeStateSaver : Send + Sync + 'static{
-    fn save_node_state(&self, state : NodeState) -> Result<(), RaftError>;
+pub trait NodeStateSaver: Send + Sync + 'static {
+    fn save_node_state(&self, state: NodeState) -> Result<(), RaftError>;
 }
 
 pub enum AppendEntriesRequestType {
     Heartbeat,
     NewEntry(LogEntry),
-    UpdateNode(u64)
+    UpdateNode(u64),
 }
 
 //TODO refactor to node_config
-impl <Log, Rsm,Pc, Ns, Cl> Node<Log, Rsm,Pc, Ns, Cl>
-where Log: OperationLog,
-      Rsm: ReplicatedStateMachine,
-      Pc : PeerRequestHandler,
-      Ns : NodeStateSaver,
-      Cl : Cluster{
-    pub fn new(node_state: NodeState,
-               log: Log,
-               rsm: Rsm,
-               communicator: Pc,
-               cluster_configuration: Cl,
-               state_saver : Ns,
-               replicate_log_to_peer_tx: Sender<u64>,
-               commit_index_updated_tx: Sender<u64>, ) -> Node<Log, Rsm, Pc, Ns, Cl> {
+impl<Log, Rsm, Pc, Ns, Cl> Node<Log, Rsm, Pc, Ns, Cl>
+where
+    Log: OperationLog,
+    Rsm: ReplicatedStateMachine,
+    Pc: PeerRequestHandler,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
+{
+    pub fn new(
+        node_state: NodeState,
+        log: Log,
+        rsm: Rsm,
+        communicator: Pc,
+        cluster_configuration: Cl,
+        state_saver: Ns,
+        replicate_log_to_peer_tx: Sender<u64>,
+        commit_index_updated_tx: Sender<u64>,
+    ) -> Node<Log, Rsm, Pc, Ns, Cl> {
         Node {
             id: node_state.node_id,
             current_term: node_state.current_term,
@@ -98,7 +104,9 @@ where Log: OperationLog,
         }
     }
 
-    pub fn get_next_term(&self) -> u64 {self.current_term + 1}
+    pub fn get_next_term(&self) -> u64 {
+        self.current_term + 1
+    }
     pub fn get_current_term(&self) -> u64 {
         if self.status == NodeStatus::Candidate {
             self.current_term + 1
@@ -111,18 +119,20 @@ where Log: OperationLog,
         self.save_node_state();
     }
 
-    pub fn get_commit_index(&self) -> u64 {self.commit_index }
+    pub fn get_commit_index(&self) -> u64 {
+        self.commit_index
+    }
 
     ///Sets operation log commit index. Updates replicated state machine if node is Follower.
     pub fn set_commit_index(&mut self, new_commit_index: u64, update_rsm: bool) {
         self.commit_index = new_commit_index;
 
         if update_rsm {
-            self.commit_index_updated_tx.send(new_commit_index)
+            self.commit_index_updated_tx
+                .send(new_commit_index)
                 .expect("can send updated commit_index")
         }
     }
-
 
     pub fn get_voted_for_id(&self) -> Option<u64> {
         self.voted_for_id
@@ -132,11 +142,11 @@ where Log: OperationLog,
         self.save_node_state();
     }
 
-    fn save_node_state(&self){
-        let state = NodeState{
+    fn save_node_state(&self) {
+        let state = NodeState {
             node_id: self.id,
             current_term: self.current_term,
-            vote_for_id: self.voted_for_id
+            vote_for_id: self.voted_for_id,
         };
 
         let result = self.state_saver.save_node_state(state);
@@ -156,19 +166,17 @@ where Log: OperationLog,
         }
     }
     pub fn set_next_index(&mut self, peer_id: u64, new_next_index: u64) {
-        let next_index_entry = self.next_index.entry(peer_id)
-            .or_insert(new_next_index);
+        let next_index_entry = self.next_index.entry(peer_id).or_insert(new_next_index);
 
         *next_index_entry = new_next_index;
     }
-
 
     //TODO rename?
     ///Gets entry by index & compares terms.
     /// Special case index=0, term=0 returns true
     pub fn check_log_for_previous_entry(&self, prev_log_term: u64, prev_log_index: u64) -> bool {
         if prev_log_term == 0 && prev_log_index == 0 {
-            return true
+            return true;
         }
         let entry_result = self.log.get_entry(prev_log_index);
 
@@ -181,18 +189,20 @@ where Log: OperationLog,
 
     //Check last log entry for voting purpose. Compares first term, index afterwards.
     //To grant vote - candidate log should contain entries same term or greater
-    pub fn check_candidate_last_log_entry(&self,
-                                          candidate_last_log_entry_term: u64,
-                                          candidate_last_log_entry_index: u64) -> bool {
+    pub fn check_candidate_last_log_entry(
+        &self,
+        candidate_last_log_entry_term: u64,
+        candidate_last_log_entry_index: u64,
+    ) -> bool {
         if self.log.get_last_entry_term() > candidate_last_log_entry_term {
-            return false
+            return false;
         }
         if self.log.get_last_entry_term() < candidate_last_log_entry_term {
-            return true
+            return true;
         }
         //equal terms
-        if self.log.get_last_entry_index() >  candidate_last_log_entry_index {
-            return false
+        if self.log.get_last_entry_index() > candidate_last_log_entry_index {
+            return false;
         }
         //last log entry of same or lesser term and same or lesser index
         true
@@ -204,11 +214,12 @@ where Log: OperationLog,
         let log_append_result = self.log.append_entry(entry);
         if let Err(err) = log_append_result {
             return errors::new_err(
-                format!("cannot append entry to log, index = {}", entry_index), err.to_string());
+                format!("cannot append entry to log, index = {}", entry_index),
+                err.to_string(),
+            );
         }
         Ok(())
     }
-
 
     pub fn append_content_to_log(&mut self, content: EntryContent) -> Result<bool, RaftError> {
         let entry = self.log.create_next_entry(self.get_current_term(), content);
@@ -220,11 +231,11 @@ where Log: OperationLog,
 
                 error!("{}", msg);
                 return new_err("Cannot append content to log".to_string(), msg);
-            },
+            }
             Ok(quorum_gathered) => {
                 if !quorum_gathered {
                     warn!("send_append_entries unsuccessful: no quorum gathered");
-                    return Ok(false)
+                    return Ok(false);
                 }
             }
         }
@@ -250,35 +261,51 @@ where Log: OperationLog,
         Ok(true)
     }
 
-
-    fn send_append_entries(&self, entry : LogEntry) -> Result<bool, RaftError>{
+    fn send_append_entries(&self, entry: LogEntry) -> Result<bool, RaftError> {
         if let NodeStatus::Leader = self.status {
-
             let peers_copy = self.cluster_configuration.get_peers(self.id);
             let quorum_size = self.cluster_configuration.get_quorum_size();
 
             let entry_index = entry.index;
-            trace!("Node {} Sending 'Append Entries Request' Entry index={}", self.id, entry_index);
-            let append_entries_request =  self.create_append_entry_request(
-                AppendEntriesRequestType::NewEntry(entry));
+            trace!(
+                "Node {} Sending 'Append Entries Request' Entry index={}",
+                self.id,
+                entry_index
+            );
+            let append_entries_request =
+                self.create_append_entry_request(AppendEntriesRequestType::NewEntry(entry));
 
             let replicate_log_to_peer_tx_clone = self.replicate_log_to_peer_tx.clone();
             let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
-                let resp_result = self.communicator.send_append_entries_request(dest_node_id, req);
+                let resp_result = self
+                    .communicator
+                    .send_append_entries_request(dest_node_id, req);
+
                 match resp_result {
                     Ok(resp) => {
-                        trace!("Destination Node {} Append Entry (index={}) result={}",
-                               dest_node_id,  entry_index, resp.success);
+                        trace!(
+                            "Destination Node {} Append Entry (index={}) result={}",
+                            dest_node_id,
+                            entry_index,
+                            resp.success
+                        );
 
                         //repeat on fail, if no consensus gathered - the replication won't happen
                         if !resp.success {
-                            replicate_log_to_peer_tx_clone.send(dest_node_id).expect("can send replicate log msg");
+                            replicate_log_to_peer_tx_clone
+                                .send(dest_node_id)
+                                .expect("can send replicate log msg");
                         }
                         Ok(resp)
-                    },
+                    }
                     Err(err) => {
-                        trace!("Destination Node {} Append Entry (index={}) failed: {}",
-                               dest_node_id,  entry_index, err);
+                        trace!(
+                            "Destination Node {} Append Entry (index={}) failed: {}",
+                            dest_node_id,
+                            entry_index,
+                            err
+                        );
+
                         Err(err)
                     }
                 }
@@ -288,18 +315,25 @@ where Log: OperationLog,
                 append_entries_request,
                 self.id,
                 peers_copy,
-                Some(quorum_size), requester);
+                Some(quorum_size),
+                requester,
+            );
 
             return match notify_peers_result {
-                Ok(quorum_gathered)=> Ok(quorum_gathered),
-                Err(err) => Err(err)
+                Ok(quorum_gathered) => Ok(quorum_gathered),
+                Err(err) => Err(err),
             };
         }
-        errors::new_err("send_append_entries failed: Not a leader".to_string(), String::new())
+        errors::new_err(
+            "send_append_entries failed: Not a leader".to_string(),
+            String::new(),
+        )
     }
 
-    pub fn create_append_entry_request(&self, request_type : AppendEntriesRequestType)
-        -> AppendEntriesRequest {
+    pub fn create_append_entry_request(
+        &self,
+        request_type: AppendEntriesRequestType,
+    ) -> AppendEntriesRequest {
         let entries = self.get_log_entries(request_type);
 
         let (prev_log_term, prev_log_index) = self.get_prev_term_index(&entries);
@@ -310,7 +344,7 @@ where Log: OperationLog,
             prev_log_term,
             prev_log_index: prev_log_index as u64,
             leader_commit: self.commit_index,
-            entries
+            entries,
         }
     }
 
@@ -321,7 +355,9 @@ where Log: OperationLog,
             let new_entry_index = new_entry.index;
             if new_entry_index > 1 {
                 let prev_entry_index = new_entry_index - 1;
-                let prev_entry = self.log.get_entry(prev_entry_index)
+                let prev_entry = self
+                    .log
+                    .get_entry(prev_entry_index)
                     .unwrap_or_else(|| panic!("entry exist, index =  {}", prev_entry_index));
 
                 prev_log_term = prev_entry.term;
@@ -339,16 +375,15 @@ where Log: OperationLog,
         (prev_log_term, prev_log_index)
     }
 
-
-    fn get_log_entries(&self, request_type : AppendEntriesRequestType) -> Vec<LogEntry> {
-        match request_type{
+    fn get_log_entries(&self, request_type: AppendEntriesRequestType) -> Vec<LogEntry> {
+        match request_type {
             AppendEntriesRequestType::Heartbeat => {
                 Vec::new() //empty AppendEntriesRequest - heartbeat
-            },
+            }
             AppendEntriesRequestType::NewEntry(entry) => {
                 let entries = vec![entry];
                 entries
-            },
+            }
             AppendEntriesRequestType::UpdateNode(peer_id) => {
                 let mut next_index = self.get_next_index(peer_id);
                 if next_index == 0 {
@@ -357,7 +392,7 @@ where Log: OperationLog,
                 let last_index = self.get_commit_index();
 
                 let mut entries = Vec::new();
-                for idx in  next_index..=last_index {
+                for idx in next_index..=last_index {
                     let entry = self.log.get_entry(idx).expect("valid entry index");
                     entries.push(entry)
                 }
@@ -367,5 +402,3 @@ where Log: OperationLog,
         }
     }
 }
-
-
