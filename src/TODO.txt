@@ -12,6 +12,7 @@ Recurring:
     .rustfmt
     .clippy
     .Rust API Guidelines
+    .speed & memory profiling
 
 Details:
 - stability
@@ -32,8 +33,6 @@ Details:
     .libp2p
 - communication
     .libp2p
-    .grpc
-    .change client and node response patterns (after committing to the operation_log)
 - system events logging
     .remove requests from log messages
     .increase log coverage
@@ -76,7 +75,6 @@ Details:
         .add the top of the main file: #![warn(missing_docs)]
 
 - optimization
-    .speed & memory profiling
     .mutex
         .consider to pass node_id as a copy to reduce mutex locks
         .consider replacing mutex with cas (or RW-lock) for nodes
@@ -119,6 +117,7 @@ Done:
 - leader election
     .check log on votes
 - communication
+    .change client and node response patterns (after committing to the operation_log)
     .grpc
     .channel communication
     .service discovery for network-communication (peer)
@@ -161,6 +160,7 @@ Done:
 - optimization
     .rayon on nodes requests
     .RW-lock for communicator
+    .speed & memory profiling
 - debug
     .cases
         .add new separate node, when add to cluster - ensure conversion to follower and log replication
