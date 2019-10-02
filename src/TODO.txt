@@ -46,7 +46,6 @@ Details:
         .file (toml?)
 - code style
     .introduce aliases (Arc<Mutex<Node<Log>>>)
-    .enforce code line length limit
     .Rust API Guidelines
         .investigate getters
 - release
@@ -73,7 +72,6 @@ Details:
         .add test cases description
     .documentation
         .add the top of the main file: #![warn(missing_docs)]
-
 - optimization
     .mutex
         .consider to pass node_id as a copy to reduce mutex locks
@@ -185,3 +183,4 @@ Done:
 - code style
     .clear #[allow(dead_code)]
     .investigate & remove use crate:: (won't do)
+    .enforce code line length limit
