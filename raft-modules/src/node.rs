@@ -1,6 +1,6 @@
 use raft::{NodeStateSaver, NodeState, RaftError};
 
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default)]
 pub struct MockNodeStateSaver;
 
 impl NodeStateSaver for MockNodeStateSaver {

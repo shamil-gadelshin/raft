@@ -3,6 +3,13 @@ name = "raft"
 version = "0.1.0"
 authors = ["Shamil Gadelshin <shamilgadelshin@gmail.com>"]
 edition = "2018"
+description = "Raft consensus implementation in Rust"
+license = "MIT"
+repository = "https://github.com/shamil-gadelshin/raft"
+documentation = "https://github.com/shamil-gadelshin/raft"
+readme = "README.md"
+keywords =  ["raft", "consensus"]
+categories = ["algorithms", "raft", "distributed-systems", "consensus"]
 
 [dependencies]
 crossbeam-channel = "0.3"

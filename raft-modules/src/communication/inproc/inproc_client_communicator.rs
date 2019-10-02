@@ -5,7 +5,7 @@ use std::time::Duration;
 use crossbeam_channel::{Receiver, Sender};
 use raft::RaftError;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct InProcClientCommunicator {
 	add_server_duplex_channel: DuplexChannel<AddServerRequest, ClientRpcResponse>,
 	new_data_duplex_channel: DuplexChannel<NewDataRequest, ClientRpcResponse>

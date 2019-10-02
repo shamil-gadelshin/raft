@@ -8,6 +8,7 @@ pub fn run_worker_thread<T: Send + 'static, F: Fn(T) + Send + 'static>(worker : 
     thread::spawn(move || worker(params))
 }
 
+#[derive(Debug)]
 pub struct RaftWorker {
     pub join_handle : JoinHandle<()>,
     pub terminate_worker_tx : Sender<()>

@@ -9,24 +9,24 @@ pub trait QuorumResponse : Send{
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct DataEntryContent {
 	pub data : Arc<&'static [u8]>
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NewClusterConfigurationEntryContent {
 	pub new_cluster_configuration: Vec<u64>
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct LogEntry {
 	pub index: u64,
 	pub term: u64,
 	pub entry_content: EntryContent
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum EntryContent {
 	AddServer(NewClusterConfigurationEntryContent),
 	Data(DataEntryContent),

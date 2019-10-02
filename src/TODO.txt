@@ -7,6 +7,11 @@ Main algorithm:
     .operation_log
         .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
 
+Recurring:
+    .tests
+    .rustfmt
+    .clippy
+    .Rust API Guidelines
 
 Details:
 - stability
@@ -36,31 +41,25 @@ Details:
     .communication timeouts
 - node example
     .remove node_id from log
-    .implement peer network communicator
-        .implement service discovery
     .graceful-shutdown for KILL signals
     .configuration
         .cmd params
         .file (toml?)
 - code style
-    .clear #[allow(dead_code)]
-    .investigate & remove use crate::
     .introduce aliases (Arc<Mutex<Node<Log>>>)
     .enforce code line length limit
-    .rustfmt
-    .clippy
+    .Rust API Guidelines
+        .investigate getters
 - release
     .consensus
     .implement Display
     .travis-ci
-    .consider #![forbid(unsafe_code, missing_docs)]
+    .consider #![forbid(missing_docs)]
 - debug
-    .tests
     .cases
         .low election timeout
         .low communication timeout
         .check committed only applied to rsm
-        .add new separate node, when add to cluster - ensure conversion to follower and log replication
         .cases description in file
         .election
             .invalid term (stale)
@@ -74,16 +73,14 @@ Details:
         .add modules description
         .add test cases description
     .documentation
-        .add the top of the main file: #![warn(missing_docs, unsafe_code)]
-        .comment .proto
-    .Rust API Guidelines
+        .add the top of the main file: #![warn(missing_docs)]
+
 - optimization
     .speed & memory profiling
     .mutex
         .consider to pass node_id as a copy to reduce mutex locks
         .consider replacing mutex with cas (or RW-lock) for nodes
         .migrate Mutex to parking_lot implementation
-    .RW-lock for communicator
     .optional abort channel for peers notifier (election) (abort_election_event_rx in notify_peers fn)
 
 
@@ -122,6 +119,7 @@ Done:
 - leader election
     .check log on votes
 - communication
+    .grpc
     .channel communication
     .service discovery for network-communication (peer)
     .tarpc (won't do)
@@ -158,10 +156,14 @@ Done:
     .raft vs infrastructure module(code) separation
 - release
     .graceful-shutdown
+    .consider #![warn no_debug)]
+    .consider #![forbid(unsafe_code)]
 - optimization
     .rayon on nodes requests
+    .RW-lock for communicator
 - debug
     .cases
+        .add new separate node, when add to cluster - ensure conversion to follower and log replication
         .no quorum
         .single node
         .operation log
@@ -180,3 +182,6 @@ Done:
 - node example
     .implement peer network communicator
         .implement service discovery
+- code style
+    .clear #[allow(dead_code)]
+    .investigate & remove use crate:: (won't do)

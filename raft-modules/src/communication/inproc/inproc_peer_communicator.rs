@@ -7,7 +7,7 @@ use raft::RaftError;
 use std::time::Duration;
 use std::collections::HashMap;
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct InProcPeerCommunicator {
 	timeout: Duration,
 	votes_channels: HashMap<u64,DuplexChannel<VoteRequest, VoteResponse>>,

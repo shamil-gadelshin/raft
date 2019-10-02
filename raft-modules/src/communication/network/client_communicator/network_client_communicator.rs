@@ -16,7 +16,7 @@ use super::client_requests::{new_data_request};
 use crate::communication::duplex_channel::DuplexChannel;
 use crate::communication::network::client_communicator::client_requests::add_server_request;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NetworkClientCommunicator {
 	node_id : u64,
 	timeout: Duration,

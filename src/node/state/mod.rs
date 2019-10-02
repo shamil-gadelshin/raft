@@ -12,7 +12,7 @@ use crate::errors::{new_err, RaftError};
 
 mod tests;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 //TODO decompose GOD object
 //TODO decompose to Node & NodeState or extract get_peers() from cluster_config
 pub struct Node<Log,Rsm,Pc, Ns,Cl>
@@ -41,14 +41,14 @@ where Log: OperationLog,
     commit_index_updated_tx : Sender<u64>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum NodeStatus {
     Follower,
     Candidate,
     Leader
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct NodeState {
     pub node_id: u64,
     pub current_term: u64,

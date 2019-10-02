@@ -1,6 +1,8 @@
+#![warn(missing_debug_implementations, unsafe_code)]
+
 #[macro_use] extern crate log;
 #[macro_use] extern crate crossbeam_channel;
-extern crate rayon;
+
 
 mod common;
 mod leadership;

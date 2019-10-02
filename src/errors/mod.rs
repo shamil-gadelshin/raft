@@ -8,7 +8,7 @@ pub struct RaftError {
 	cause: String
 }
 
-pub type Result<T> = std::result::Result<T, RaftError>;
+pub(crate) type Result<T> = std::result::Result<T, RaftError>;
 
 pub fn new_err<T>(text : String, cause : String) -> Result<T>{
 	Err(RaftError {text, cause})
@@ -16,17 +16,20 @@ pub fn new_err<T>(text : String, cause : String) -> Result<T>{
 
 impl Display for RaftError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let mut cause_word = String::new();
-		if !self.cause.is_empty() {
-			cause_word = " Cause: ".to_string();
-		}
+		let cause_word = {
+			if !self.cause.is_empty() {
+				" Cause: ".to_string()
+			} else {
+				String::new()
+			}
+		};
 		write!(f, "{}.{}{}", self.text, cause_word, self.cause)
 	}
 }
 
 impl Error for RaftError {}
 
-pub fn new_multiple_err<T>(text : String, causes :  Vec<RaftError>) -> Result<T>{
+pub(crate) fn new_multiple_err<T>(text : String, causes :  Vec<RaftError>) -> Result<T>{
 	let mut error_string = String::new();
 
 	if !causes.is_empty() {

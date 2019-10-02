@@ -17,7 +17,7 @@ use crate::communication::network::peer_communicator::client_requests::{vote_req
 use crate::communication::network::peer_communicator::service_discovery::PeerCommunicatorServiceDiscovery;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NetworkPeerCommunicator<Psd>
 where Psd: PeerCommunicatorServiceDiscovery{
 	node_id : u64,

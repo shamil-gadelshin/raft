@@ -4,7 +4,7 @@ use crate::operation_log::{LogEntry};
 use crate::operation_log::QuorumResponse;
 use crate::errors::RaftError;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct VoteRequest {
     pub term : u64,
     pub candidate_id : u64,
@@ -12,7 +12,7 @@ pub struct VoteRequest {
     pub last_log_index : u64,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct VoteResponse {
     pub term : u64,
     pub vote_granted: bool,
@@ -25,7 +25,7 @@ impl QuorumResponse for VoteResponse {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct AppendEntriesRequest {
     pub term : u64,
     pub prev_log_term : u64,
@@ -35,7 +35,7 @@ pub struct AppendEntriesRequest {
     pub entries : Vec<LogEntry>
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct AppendEntriesResponse {
     pub term : u64,
     pub success : bool

@@ -2,6 +2,7 @@ use raft::ElectionTimer;
 use std::time::Duration;
 use rand::Rng;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct RandomizedElectionTimer {
 	range_start_ms: u64,
 	range_stop_ms: u64,

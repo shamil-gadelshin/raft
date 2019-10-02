@@ -1,6 +1,7 @@
 use raft::ElectionTimer;
 use std::time::Duration;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct FixedElectionTimer {
 	fixed_duration_ms: u64,
 }
