@@ -1,13 +1,14 @@
 use crate::steps;
 
 mod configuration;
+mod network_peer_communicator;
 
 pub fn run() {
 
 		let node_ids = vec![1, 2];
 		let new_node_id = node_ids.last().unwrap() + 1;
 
-		let peer_communicator = steps::get_generic_peer_communicator( vec![1, 2, 3]);
+		let peer_communicator = steps::get_generic_peer_communicator( vec![1, 2, 3]); //stub
 		let mut cluster = steps::cluster::start_initial_cluster(node_ids, peer_communicator.clone(), configuration::create_node_with_network);
 
 		steps::sleep(5);

@@ -16,6 +16,7 @@ pub use communication::inproc::inproc_client_communicator::InProcClientCommunica
 pub use communication::inproc::inproc_peer_communicator::InProcPeerCommunicator;
 pub use communication::network::client_communicator::network_client_communicator::NetworkClientCommunicator;
 pub use communication::network::peer_communicator::network_peer_communicator::NetworkPeerCommunicator;
+pub use communication::network::peer_communicator::service_discovery::static_table::StaticTableServiceDiscovery;
 pub use election::randomized_election_timer::RandomizedElectionTimer;
 pub use election::fixed_election_timer::FixedElectionTimer;
 pub use node::MockNodeStateSaver;

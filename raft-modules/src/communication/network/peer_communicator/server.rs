@@ -6,9 +6,10 @@ use tower_hyper::server::{Http, Server};
 use crate::communication::network::peer_communicator::grpc::generated::grpc_peer_communicator::{server};
 use crate::NetworkPeerCommunicator;
 use std::net::SocketAddr;
+use crate::communication::network::peer_communicator::service_discovery::PeerCommunicatorServiceDiscovery;
 
-pub fn run_server(addr : SocketAddr, communicator : NetworkPeerCommunicator)
-{
+pub fn run_server<Psd>(addr : SocketAddr, communicator : NetworkPeerCommunicator<Psd>)
+	where Psd: PeerCommunicatorServiceDiscovery {
 	let new_service = server::PeerRequestHandlerServer::new(communicator);
 
 	let mut server = Server::new(new_service);
