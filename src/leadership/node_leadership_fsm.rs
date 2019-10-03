@@ -10,14 +10,20 @@ use crate::rsm::ReplicatedStateMachine;
 use crate::{common, Cluster};
 
 pub enum LeaderElectionEvent {
-    PromoteNodeToCandidate(ElectionNotice),
+    PromoteNodeToCandidate(CandidateInfo),
     PromoteNodeToLeader(u64), //term
-    ResetNodeToFollower(u64), //term
+    ResetNodeToFollower(FollowerInfo),
 }
 
-pub struct ElectionNotice {
+pub struct CandidateInfo {
     pub term: u64,
     pub candidate_id: u64,
+}
+
+pub struct FollowerInfo {
+    pub term: u64,
+    pub leader_id: Option<u64>,
+    pub voted_for_id: Option<u64>,
 }
 
 pub struct ElectionManagerParams<Log, Rsm, Pc, Ns, Cl>
@@ -87,10 +93,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
             node.current_leader_id = None;
             node.status = NodeStatus::Candidate;
 
-            info!(
-                "Node {} Status changed to Candidate for term {}",
-                node.id, vr.term
-            );
+            info!("Node {} Status changed to Candidate for term {}", node.id, vr.term);
 
             let peers_copy = params.cluster_configuration.get_peers(node_id);
             let quorum_size = params.cluster_configuration.get_quorum_size();
@@ -118,12 +121,8 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
             node.current_leader_id = Some(node.id);
             node.set_current_term(term);
             node.status = NodeStatus::Leader;
-            node.set_voted_for_id(None);
 
-            info!(
-                "Node {} Status changed to Leader for term {}",
-                node.id, term
-            );
+            info!("Node {} Status changed to Leader for term {}", node.id, term);
 
             params
                 .watchdog_event_tx
@@ -135,16 +134,25 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
                 .send(true)
                 .expect("can send leader initial heartbeat");
         }
-        LeaderElectionEvent::ResetNodeToFollower(term) => {
+        LeaderElectionEvent::ResetNodeToFollower(info) => {
             let mut node = params.protected_node.lock().expect("node lock is poisoned");
 
-            node.set_current_term(term);
+            if let Some(leader_id) = info.leader_id {
+                node.current_leader_id = Some(leader_id);
+            }
+
             node.status = NodeStatus::Follower;
-            node.set_voted_for_id(None);
-            info!(
-                "Node {} Status changed to Follower for term {}",
-                node.id, term
-            );
+
+            if info.voted_for_id.is_some() {
+                node.set_voted_for_id(info.voted_for_id);
+            }
+            else if node.get_current_term() < info.term {
+                node.set_voted_for_id(None);
+            }
+
+            node.set_current_term(info.term);
+
+            info!("Node {} Status changed to Follower for term {}", node.id, info.term);
 
             params
                 .watchdog_event_tx

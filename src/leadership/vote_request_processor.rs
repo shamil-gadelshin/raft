@@ -7,6 +7,7 @@ use crate::node::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
+use crate::leadership::node_leadership_fsm::FollowerInfo;
 
 pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl>(
     request: VoteRequest,
@@ -37,7 +38,12 @@ where
             response_current_term = request.term;
 
             leader_election_event_tx
-                .send(LeaderElectionEvent::ResetNodeToFollower(request.term))
+                .send(LeaderElectionEvent::ResetNodeToFollower(
+                    FollowerInfo{
+                        term:request.term,
+                        leader_id: None,
+                        voted_for_id: Some(request.candidate_id)
+                    }))
                 .expect("can send LeaderElectionEvent");
         }
     }

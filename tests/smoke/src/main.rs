@@ -12,7 +12,8 @@ fn init_logger() {
     env_logger::builder()
         .format(|buf, record| {
             let now: DateTime<Local> = Local::now();
-            writeln!(buf, "{:5}: {} - {}", record.level(), now.format("%H:%M:%S.%3f").to_string(), record.args())
+            let now_str = now.format("%H:%M:%S.%3f").to_string();
+            writeln!(buf, "{:5}: {} - {}", record.level(), now_str, record.args())
         })
         .init();
 }

@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Receiver, Sender};
 
-use super::node_leadership_fsm::{ElectionNotice, LeaderElectionEvent};
+use super::node_leadership_fsm::{CandidateInfo, LeaderElectionEvent};
 use crate::communication::peers::PeerRequestHandler;
 use crate::leadership::LeaderConfirmationEvent;
 use crate::node::state::{Node, NodeStateSaver, NodeStatus};
@@ -86,7 +86,7 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl>(
 
         if current_leader_id.is_none() || current_leader_id.unwrap() != node.id {
             let next_term = node.get_next_term();
-            let candidate_promotion = LeaderElectionEvent::PromoteNodeToCandidate(ElectionNotice {
+            let candidate_promotion = LeaderElectionEvent::PromoteNodeToCandidate(CandidateInfo {
                 term: next_term,
                 candidate_id: node.id,
             });

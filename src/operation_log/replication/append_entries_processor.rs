@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::communication::peers::{
     AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler,
 };
-use crate::leadership::node_leadership_fsm::LeaderElectionEvent;
+use crate::leadership::node_leadership_fsm::{LeaderElectionEvent, FollowerInfo};
 use crate::leadership::LeaderConfirmationEvent;
 use crate::node::state::{Node, NodeStateSaver, NodeStatus};
 use crate::operation_log::OperationLog;
@@ -41,7 +41,12 @@ where
         NodeStatus::Leader | NodeStatus::Candidate => {
             if request.term > node.get_current_term() {
                 leader_election_event_tx
-                    .send(LeaderElectionEvent::ResetNodeToFollower(request.term))
+                    .send(LeaderElectionEvent::ResetNodeToFollower(
+                        FollowerInfo{
+                            term:request.term,
+                            leader_id: Some(request.leader_id),
+                            voted_for_id: None
+                        }))
                     .expect("can send LeaderElectionEvent");
             }
         }
@@ -54,7 +59,6 @@ where
                 .expect("can send LeaderConfirmationEvent");
         }
     }
-    node.current_leader_id = Some(request.leader_id);
 
     let previous_entry_exist =
         node.check_log_for_previous_entry(request.prev_log_term, request.prev_log_index);

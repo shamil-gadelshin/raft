@@ -4,6 +4,7 @@ use super::node_leadership_fsm::LeaderElectionEvent;
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::communication::peers::{PeerRequestHandler, VoteRequest};
 use crate::errors;
+use crate::leadership::node_leadership_fsm::FollowerInfo;
 
 pub struct StartElectionParams<Pc: PeerRequestHandler> {
     pub node_id: u64,
@@ -76,7 +77,7 @@ pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParam
             let election_event;
             if won_election {
                 info!(
-                    "Leader election - quorum ({}) gathered for NodeId = {} ",
+                    "Leader election - quorum ({}) gathered for Node {} ",
                     params.quorum_size, params.node_id
                 );
 
@@ -84,7 +85,12 @@ pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParam
             } else {
                 info!("Leader election failed for Node {} ", params.node_id);
                 election_event =
-                    LeaderElectionEvent::ResetNodeToFollower(params.actual_current_term)
+                    LeaderElectionEvent::ResetNodeToFollower(
+                        FollowerInfo {
+                            term: params.actual_current_term,
+                            leader_id: None,
+                            voted_for_id: Some(params.node_id)
+                        })
             }
             params
                 .leader_election_event_tx
@@ -92,10 +98,7 @@ pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParam
                 .expect("can promote to leader");
         }
         Err(err) => {
-            error!(
-                "Leader election failed with errors for Node {}:{}",
-                params.node_id, err
-            );
+            error!("Leader election failed with errors for Node {}:{}", params.node_id, err);
         }
     };
 }

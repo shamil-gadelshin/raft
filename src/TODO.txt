@@ -49,6 +49,8 @@ Details:
     .Rust API Guidelines
         .investigate getters
 - release
+    .check https://opensource.guide/
+    .check https://rust-lang-nursery.github.io/api-guidelines/necessities.html#crate-and-its-dependencies-have-a-permissive-license-c-permissive
     .consensus
     .implement Display
     .travis-ci
@@ -155,6 +157,7 @@ Done:
     .graceful-shutdown
     .consider #![warn no_debug)]
     .consider #![forbid(unsafe_code)]
+    .check https://opensource.guide/code-of-conduct/
 - optimization
     .rayon on nodes requests
     .RW-lock for communicator
