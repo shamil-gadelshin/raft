@@ -2,17 +2,13 @@ TODO: Features:
 
 Main algorithm:
 
-- operation_log replication
-    .enforce elections timeout
-    .operation_log
-        .empty (heartbeat) AppendEntries on node's current operation_log index evaluating
-
 Recurring:
     .tests
     .rustfmt
     .clippy
     .Rust API Guidelines
     .speed & memory profiling
+    .check consensus
 
 Details:
 - stability
@@ -51,7 +47,6 @@ Details:
 - release
     .check https://opensource.guide/
     .check https://rust-lang-nursery.github.io/api-guidelines/necessities.html#crate-and-its-dependencies-have-a-permissive-license-c-permissive
-    .consensus
     .implement Display
     .travis-ci
     .consider #![forbid(missing_docs)]
@@ -63,6 +58,7 @@ Details:
         .cases description in file
         .election
             .invalid term (stale)
+            .with existing log and node_state (term, voted_for)
             .newer term - convert to follower
                 .leader
                 .candidate
@@ -79,7 +75,6 @@ Details:
         .consider to pass node_id as a copy to reduce mutex locks
         .consider replacing mutex with cas (or RW-lock) for nodes
         .migrate Mutex to parking_lot implementation
-    .optional abort channel for peers notifier (election) (abort_election_event_rx in notify_peers fn)
 
 
 Future Features:
@@ -103,6 +98,14 @@ Future Features:
     .add failure reason to AppendEntryResponse
     .park-unpark the send_heartbeat_append_entries thread - remove unnecessary mutex-lock
     .support max AppendEntries number (replicate log in rounds)
+- optimization
+    .operation_log replication
+        .empty (heartbeat) AppendEntries on node's current operation_log index evaluating(reduce 'no prev entry' rounds
+    .heartbeat
+        .park-unpark the worker thread
+    .elections
+        .abort election thread on election canceling (changing to Follower by peer requests)
+
 
 Done:
 - support single node
@@ -134,6 +137,7 @@ Done:
     .introduce logging system (remove print_event())
         .response to the client after majority of the servers responses
 - operation_log
+    .enforce elections timeout (won't do - will depend on communication timeout)
     .persist server's current term and vote and cluster configuration (state persistence)
     .response to the client after majority of the servers responses
     .memory snapshot

@@ -18,7 +18,6 @@ pub struct StartElectionParams<Pc: PeerRequestHandler> {
     pub peer_communicator: Pc,
 }
 
-//TODO Watch out for election timeout
 pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParams<Pc>) {
     let vote_request = VoteRequest {
         candidate_id: params.node_id,

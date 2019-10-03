@@ -37,27 +37,34 @@ where
     }
 
     //fix node status
-    match node.status {
+    let should_reset_to_follower = match node.status {
+        //Greater term.
         NodeStatus::Leader | NodeStatus::Candidate => {
-            if request.term > node.get_current_term() {
-                leader_election_event_tx
-                    .send(LeaderElectionEvent::ResetNodeToFollower(
-                        FollowerInfo{
-                            term:request.term,
-                            leader_id: Some(request.leader_id),
-                            voted_for_id: None
-                        }))
-                    .expect("can send LeaderElectionEvent");
-            }
+            request.term > node.get_current_term()
         }
+        //Greater term (next term) or leader changed.
         NodeStatus::Follower => {
-            if request.term > node.get_current_term() {
-                node.set_current_term(request.term);
-            }
+            let should_reset_term = request.term > node.get_current_term()
+                || node.current_leader_id.is_none()
+                || node.current_leader_id.expect("some leader_id") != request.leader_id;
+
             reset_leadership_watchdog_tx
                 .send(LeaderConfirmationEvent::ResetWatchdogCounter)
                 .expect("can send LeaderConfirmationEvent");
+
+            should_reset_term
         }
+    };
+
+    if should_reset_to_follower {
+        leader_election_event_tx
+            .send(LeaderElectionEvent::ResetNodeToFollower(
+                FollowerInfo{
+                    term:request.term,
+                    leader_id: Some(request.leader_id),
+                    voted_for_id: None
+                }))
+            .expect("can send LeaderElectionEvent");
     }
 
     let previous_entry_exist =

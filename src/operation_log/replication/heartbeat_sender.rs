@@ -24,7 +24,6 @@ where
     pub heartbeat_timeout: Duration,
 }
 
-//TODO park-unpark the thread
 pub fn send_heartbeat_append_entries<Log, Rsm, Pc, Ns, Cl>(
     params: SendHeartbeatAppendEntriesParams<Log, Rsm, Pc, Ns, Cl>,
     terminate_worker_rx: Receiver<()>,
