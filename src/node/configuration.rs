@@ -6,7 +6,9 @@ use crate::node::state::NodeState;
 use crate::{ElectionTimer, NodeStateSaver, PeerRequestHandler};
 use crate::{OperationLog, ReplicatedStateMachine};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Display)]
+#[display(fmt = "Node Limits: heartbeat_timeout {:?} communication_timeout {:?} max_data_size {}",
+    heartbeat_timeout, communication_timeout, max_data_content_size )]
 pub struct NodeLimits {
     pub heartbeat_timeout: Duration,
     pub communication_timeout: Duration,
@@ -29,7 +31,8 @@ pub trait Cluster: Send + Sync + Clone + 'static {
     fn get_peers(&self, node_id: u64) -> Vec<u64>;
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Display)]
+#[display(fmt = "Node configuration: node_id {}", "node_state.node_id")]
 pub struct NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>
 where
     Log: OperationLog,

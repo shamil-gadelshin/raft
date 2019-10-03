@@ -43,14 +43,16 @@ where
     commit_index_updated_tx: Sender<u64>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Display)]
 pub enum NodeStatus {
     Follower,
     Candidate,
     Leader,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Display)]
+#[display(fmt = "Node state: node_id {} current_term {} voted_for_id {:?}",
+    node_id, current_term, vote_for_id)]
 pub struct NodeState {
     pub node_id: u64,
     pub current_term: u64,

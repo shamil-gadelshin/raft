@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::errors::RaftError;
 use crossbeam_channel::{Receiver, Sender};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Display)]
 pub enum ClientResponseStatus {
     Ok,
     NoQuorum,
@@ -11,17 +11,21 @@ pub enum ClientResponseStatus {
     Error,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Display)]
+#[display(fmt = "New server {}", new_server)]
 pub struct AddServerRequest {
     pub new_server: u64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Display)]
+#[display(fmt = "Data size: {}", "data.len()")]
 pub struct NewDataRequest {
     pub data: Arc<&'static [u8]>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Display)]
+#[display(fmt = "Client RPC response: status {} current_leader {:?} message: {}",
+    status, current_leader, message )]
 pub struct ClientRpcResponse {
     pub status: ClientResponseStatus,
     pub current_leader: Option<u64>,

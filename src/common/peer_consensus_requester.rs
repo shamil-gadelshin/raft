@@ -47,10 +47,7 @@ where
             }
         }
 
-        info!(
-            "Node {}: cannot get quorum for request. Vote count: {:?}",
-            node_id, votes
-        );
+        info!("Node {}: cannot get quorum for request. Vote count: {}", node_id, votes);
         if !errors.is_empty() && votes == 1 {
             //no responses
             return errors::new_multiple_err("Cannot get quorum for request".to_string(), errors);
@@ -71,8 +68,6 @@ where
     Req: Clone + Sync,
     Resp: QuorumResponse,
 {
-    //TODO timeout handling
-
     peers
         .into_par_iter()
         .map(|peer_id| requester(peer_id, request.clone()))

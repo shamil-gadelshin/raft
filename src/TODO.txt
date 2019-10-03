@@ -13,15 +13,13 @@ Recurring:
 Details:
 - stability
     .crossbeam recv, send - parse result
-    .check channels bounded-unbounded types
-    .check channels overflows
     .project timeouts
-    .on termination - shutdown communication workers first
     .remove channel.send().expect - handle disconnection error (because of node termination)
 - investigate
     .detect faster split votes by counting votes??
     .Check commit index on restart with existing log, should be safe with 0(zero)
     .futures
+    .travis-ci
     .election trait?
     .rebuild raft election as rsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - identity
@@ -30,11 +28,11 @@ Details:
 - communication
     .libp2p
 - system events logging
-    .remove requests from log messages
     .increase log coverage
 - error handling
     .communication timeouts
 - node example
+    .save changes to cluster configuration (persistence)
     .remove node_id from log
     .graceful-shutdown for KILL signals
     .configuration
@@ -47,8 +45,6 @@ Details:
 - release
     .check https://opensource.guide/
     .check https://rust-lang-nursery.github.io/api-guidelines/necessities.html#crate-and-its-dependencies-have-a-permissive-license-c-permissive
-    .implement Display
-    .travis-ci
     .consider #![forbid(missing_docs)]
 - debug
     .cases
@@ -63,7 +59,6 @@ Details:
                 .leader
                 .candidate
             .incorrect leader sends heartbeats
-    .conditional compilation
 - user-friendliness
     .readme.md
         .add modules description
@@ -105,6 +100,8 @@ Future Features:
         .park-unpark the worker thread
     .elections
         .abort election thread on election canceling (changing to Follower by peer requests)
+- stability
+    .on termination - shutdown communication workers first
 
 
 Done:
@@ -117,6 +114,9 @@ Done:
     .worker thread structure: all peer-request thread, client-thread?
     .extract communicator trait
     .timeouts to NodeConfig as separate struct
+- stability
+    .check channels bounded-unbounded types
+    .check channels overflows
 - leader election
     .check log on votes
 - communication
@@ -135,7 +135,7 @@ Done:
     .change quorum size
 - system events logging
     .introduce logging system (remove print_event())
-        .response to the client after majority of the servers responses
+    .remove requests from log messages
 - operation_log
     .enforce elections timeout (won't do - will depend on communication timeout)
     .persist server's current term and vote and cluster configuration (state persistence)
@@ -148,6 +148,7 @@ Done:
     .append_entries: respond for no quorum
     .operation_log forced from the leader (clear entries with invalid terms and indices)
     .support max AppendEntries size parameter
+    .response to the client after majority of the servers responses
 - error handling
     .error style
     .de-box errors to RaftError
@@ -162,6 +163,7 @@ Done:
     .consider #![warn no_debug)]
     .consider #![forbid(unsafe_code)]
     .check https://opensource.guide/code-of-conduct/
+    .implement Display
 - optimization
     .rayon on nodes requests
     .RW-lock for communicator
@@ -175,7 +177,7 @@ Done:
             .basic replication
             .forced replication
         .replicated state machine
-        .
+    .conditional compilation (won't do)
 - user-friendliness
     .license
     .readme.md

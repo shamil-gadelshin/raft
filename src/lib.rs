@@ -4,6 +4,8 @@
 extern crate log;
 #[macro_use]
 extern crate crossbeam_channel;
+#[macro_use]
+extern crate derive_more;
 
 mod common;
 mod communication;

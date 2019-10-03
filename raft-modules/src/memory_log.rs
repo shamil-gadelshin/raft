@@ -36,21 +36,18 @@ impl OperationLog for MemoryOperationLog {
     fn append_entry(&mut self, entry: LogEntry) -> Result<(), RaftError> {
         let _lock = self.lock.lock();
 
-        trace!("--Log entry: {:?}", entry);
+        trace!("--Log entry: {}", entry);
         while self.last_index >= entry.index {
             let vec_idx = (entry.index - 1) as usize;
             let removed_entry = self.entries.remove(vec_idx);
             self.last_index -= 1;
-            warn!("-------------Removed Log entry: {:?}", removed_entry);
+            warn!("-------------Removed Log entry: {}", removed_entry);
         }
 
         self.entries.push(entry.clone());
 
         if let EntryContent::AddServer(add_server_request) = entry.entry_content {
-            trace!(
-                "New server configuration: {:?}",
-                &add_server_request.new_cluster_configuration
-            );
+            trace!("New server configuration: {:?}", &add_server_request.new_cluster_configuration);
 
             // add servers to cluster
             for new_server_id in add_server_request.new_cluster_configuration {

@@ -46,12 +46,12 @@ impl ClientRequestChannels for InProcClientCommunicator {
 
 impl ClientRequestHandler for InProcClientCommunicator {
     fn add_server(&self, request: AddServerRequest) -> Result<ClientRpcResponse, RaftError> {
-        trace!("Add server request {:?}", request);
+        trace!("Add server request {}", request);
         self.add_server_duplex_channel.send_request(request)
     }
 
     fn new_data(&self, request: NewDataRequest) -> Result<ClientRpcResponse, RaftError> {
-        trace!("New data request {:?}", request);
+        trace!("New data request {}", request);
         self.new_data_duplex_channel.send_request(request)
     }
 }

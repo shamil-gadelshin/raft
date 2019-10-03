@@ -12,7 +12,8 @@ where
     thread::spawn(move || worker(params))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Display)]
+#[display(fmt = "Raft worker")]
 pub struct RaftWorker {
     pub join_handle: JoinHandle<()>,
     pub terminate_worker_tx: Sender<()>,

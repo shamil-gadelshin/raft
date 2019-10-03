@@ -13,6 +13,7 @@ categories = ["algorithms", "raft", "distributed-systems", "consensus"]
 
 [dependencies]
 crossbeam-channel = "0.3"
+derive_more = "0.15.0"
 rayon="1.2.0"
 log = "0.4"
 

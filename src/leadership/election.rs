@@ -44,18 +44,13 @@ pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParam
         let resp_result = peer_communicator.send_vote_request(dest_node_id, req);
         match resp_result {
             Ok(resp) => {
-                trace!(
-                    "Destination Node {} vote requested. Result={}",
-                    dest_node_id,
-                    resp.vote_granted
-                );
+                trace!("Destination Node {} vote requested. Result={}",
+                    dest_node_id, resp.vote_granted);
                 Ok(resp)
             }
             Err(err) => {
-                let msg = format!(
-                    "Destination Node {} vote request failed:{}",
-                    dest_node_id, err
-                );
+                let msg = format!("Destination Node {} vote request failed:{}",
+                    dest_node_id, err);
                 error!("{}", msg);
 
                 errors::new_err("Cannot get vote from peer".to_string(), msg)

@@ -15,7 +15,7 @@ pub fn run_server(addr: SocketAddr, communicator: NetworkClientCommunicator) {
 
     let bind = TcpListener::bind(&addr).expect("can bind");
 
-    info!("Network client communicator: listening on {:?}", addr);
+    info!("Network client communicator: listening on {}", addr);
 
     let serve = bind
         .incoming()

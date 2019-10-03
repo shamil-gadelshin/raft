@@ -4,7 +4,6 @@ use raft::{EntryContent, LogEntry, OperationLog};
 use raft_modules::ClusterConfiguration;
 
 #[derive(Clone, Debug)]
-//TODO multithreaded protection required
 pub struct MemoryOperationLog {
     cluster: ClusterConfiguration,
     last_index: u64,
@@ -46,10 +45,10 @@ impl OperationLog for MemoryOperationLog {
             let vec_idx = (entry.index - 1) as usize;
             let removed_entry = self.entries.remove(vec_idx);
             self.last_index -= 1;
-            warn!("-------------Removed Log entry: {:?}", removed_entry);
+            warn!("-------------Removed Log entry: {}", removed_entry);
         }
 
-        trace!("--Test node: Log entry: {:?}", entry);
+        trace!("--Test node: Log entry: {}", entry);
         trace!("--Test node: Full log: {:?}", self.entries);
         self.entries.push(entry.clone());
         self.debug_tx
@@ -57,10 +56,7 @@ impl OperationLog for MemoryOperationLog {
             .expect("valid send");
 
         if let EntryContent::AddServer(add_server_request) = entry.entry_content {
-            trace!(
-                "New server configuration: {:?}",
-                &add_server_request.new_cluster_configuration
-            );
+            trace!("New server configuration: {:?}", &add_server_request.new_cluster_configuration);
             self.add_servers_to_cluster(add_server_request.new_cluster_configuration);
         }
 

@@ -54,7 +54,7 @@ pub fn add_server_request(
             Ok(())
         })
         .map_err(move |e| {
-            error!("NewData request failed = {:?}", e);
+            error!("NewData request failed = {}", e);
             err_tx
                 .send(Err(format!("Communication error:{}", e)))
                 .expect("can send error");
@@ -135,7 +135,7 @@ pub fn new_data_request(
             Ok(())
         })
         .map_err(move |e| {
-            error!("NewData request failed = {:?}", e);
+            error!("NewData request failed = {}", e);
             err_tx
                 .send(Err(format!("Communication error:{}", e)))
                 .expect("can send error");

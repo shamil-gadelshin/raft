@@ -82,7 +82,7 @@ impl ClientRequestHandler for NetworkClientCommunicator {
         &self,
         request: raft::AddServerRequest,
     ) -> Result<raft::ClientRpcResponse, RaftError> {
-        trace!("Add server request {:?}", request);
+        trace!("Add server request {}", request);
 
         add_server_request(self.host.clone(), self.timeout, request)
     }
@@ -91,7 +91,7 @@ impl ClientRequestHandler for NetworkClientCommunicator {
         &self,
         request: raft::NewDataRequest,
     ) -> Result<raft::ClientRpcResponse, RaftError> {
-        trace!("New data request {:?}", request);
+        trace!("New data request {}", request);
 
         new_data_request(self.host.clone(), self.timeout, request)
     }

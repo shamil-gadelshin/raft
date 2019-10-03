@@ -83,7 +83,7 @@ fn handle_vote_request<Log, Rsm, Pc, Ns, Cl>(
     Ns: NodeStateSaver,
     Cl: Cluster,
 {
-    info!("Node {} Received  vote request {:?}", node_id, request);
+    info!("Node {} Received  vote request {}", node_id, request);
 
     let vote_response = process_vote_request(
         request,
@@ -91,7 +91,7 @@ fn handle_vote_request<Log, Rsm, Pc, Ns, Cl>(
         params.leader_election_event_tx.clone(),
     );
     let resp_result = {
-        trace!("Node {} Sending response {:?}", node_id, vote_response);
+        trace!("Node {} Sending response {}", node_id, vote_response);
         let timeout = Duration::from_secs(1);
         params
             .peer_communicator
@@ -113,7 +113,7 @@ pub fn handle_append_entries_request<Log, Rsm, Pc, Ns, Cl>(
     Cl: Cluster,
 {
     let append_entries_response_tx = params.peer_communicator.append_entries_response_tx(node_id);
-    trace!("Node {} Received 'Append Entries Request' {:?}", node_id, request);
+    trace!("Node {} Received 'Append Entries Request' {}", node_id, request);
 
     let append_entry_response = process_append_entries_request(
         request,

@@ -56,19 +56,11 @@ impl PeerRequestHandler for InProcPeerCommunicator {
         destination_node_id: u64,
         request: VoteRequest,
     ) -> Result<VoteResponse, RaftError> {
-        trace!(
-            "Destination Node {} Sending request {:?}",
-            destination_node_id,
-            request
-        );
+        trace!("Destination Node {} Sending request {}", destination_node_id, request);
 
         let resp = self.votes_channels[&destination_node_id].send_request(request);
 
-        trace!(
-            "Destination Node {} Response {:?}",
-            destination_node_id,
-            resp
-        );
+        trace!("Destination Node {} Response {:?}", destination_node_id, resp);
 
         resp
     }
@@ -78,18 +70,14 @@ impl PeerRequestHandler for InProcPeerCommunicator {
         request: AppendEntriesRequest,
     ) -> Result<AppendEntriesResponse, RaftError> {
         trace!(
-            "Destination Node {} Sending request {:?}",
+            "Destination Node {} Sending request {}",
             destination_node_id,
             request
         );
 
         let resp = self.append_entries_channels[&destination_node_id].send_request(request);
 
-        trace!(
-            "Destination Node {} Response {:?}",
-            destination_node_id,
-            resp
-        );
+        trace!("Destination Node {} Response {:?}", destination_node_id, resp);
 
         resp
     }
