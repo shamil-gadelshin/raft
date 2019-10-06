@@ -1,24 +1,26 @@
-use crossbeam_channel::Sender;
-
-use super::node_leadership_fsm::LeaderElectionEvent;
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::communication::peers::{PeerRequestHandler, VoteRequest};
 use crate::errors;
-use crate::leadership::node_leadership_fsm::FollowerInfo;
+use crate::leadership::status::{FollowerInfo};
+use crate::leadership::status::administrator::RaftElections;
 
-pub struct StartElectionParams<Pc: PeerRequestHandler> {
+pub struct StartElectionParams<Pc, Re>
+where Pc: PeerRequestHandler,
+      Re: RaftElections {
     pub node_id: u64,
     pub actual_current_term: u64,
     pub next_term: u64,
     pub last_log_index: u64,
     pub last_log_term: u64,
-    pub leader_election_event_tx: Sender<LeaderElectionEvent>,
+    pub raft_elections_administrator: Re,
     pub peers: Vec<u64>,
     pub quorum_size: u32,
     pub peer_communicator: Pc,
 }
 
-pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParams<Pc>) {
+pub fn start_election<Pc, Re> (params: StartElectionParams<Pc, Re>)
+where Pc: PeerRequestHandler + Clone,
+      Re: RaftElections {
     let vote_request = VoteRequest {
         candidate_id: params.node_id,
         term: params.next_term,
@@ -31,11 +33,7 @@ pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParam
     if !peers_exist {
         warn!("Election with no peers");
 
-        let election_event = LeaderElectionEvent::PromoteNodeToLeader(params.next_term);
-        params
-            .leader_election_event_tx
-            .send(election_event)
-            .expect("can promote to leader");
+        params.raft_elections_administrator.promote_node_to_leader(params.next_term);
         return;
     }
 
@@ -68,28 +66,21 @@ pub fn start_election<Pc: PeerRequestHandler + Clone>(params: StartElectionParam
 
     match notify_peers_result {
         Ok(won_election) => {
-            let election_event;
             if won_election {
-                info!(
-                    "Leader election - quorum ({}) gathered for Node {} ",
-                    params.quorum_size, params.node_id
-                );
+                info!("Leader election - quorum ({}) gathered for Node {} ",
+                    params.quorum_size, params.node_id);
 
-                election_event = LeaderElectionEvent::PromoteNodeToLeader(vote_request.term);
+                params.raft_elections_administrator.promote_node_to_leader(vote_request.term);
             } else {
                 info!("Leader election failed for Node {} ", params.node_id);
-                election_event =
-                    LeaderElectionEvent::ResetNodeToFollower(
-                        FollowerInfo {
-                            term: params.actual_current_term,
-                            leader_id: None,
-                            voted_for_id: Some(params.node_id)
-                        })
+                params.raft_elections_administrator.reset_node_to_follower(
+                    FollowerInfo {
+                        term: params.actual_current_term,
+                        leader_id: None,
+                        voted_for_id: Some(params.node_id)
+                    });
             }
-            params
-                .leader_election_event_tx
-                .send(election_event)
-                .expect("can promote to leader");
+
         }
         Err(err) => {
             error!("Leader election failed with errors for Node {}:{}", params.node_id, err);

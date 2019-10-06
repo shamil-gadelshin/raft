@@ -1,16 +1,17 @@
 use std::sync::{Arc, Mutex};
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{Receiver};
 
 use crate::communication::peers::PeerRequestHandler;
 use crate::node::state::{Node, NodeStateSaver, NodeStatus};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::{Cluster, ElectionTimer};
-use crate::leadership::node_leadership_fsm::{LeaderElectionEvent, CandidateInfo};
-use crate::leadership::watchdog::watchdog_handler::ResetLeadershipEventChannel;
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipEventChannelRx;
+use crate::leadership::status::{CandidateInfo};
+use crate::leadership::status::administrator::RaftElections;
 
-pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl>
+pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
@@ -18,16 +19,17 @@ where
     Et: ElectionTimer,
     Ns: NodeStateSaver,
     Cl: Cluster,
-    Rl: ResetLeadershipEventChannel
+    Rl: ResetLeadershipEventChannelRx,
+    Re: RaftElections,
 {
     pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
-    pub leader_election_event_tx: Sender<LeaderElectionEvent>,
+    pub raft_elections_administrator: Re,
     pub watchdog_event_rx: Rl,
     pub election_timer: Et,
 }
 
-pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
-    params: WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl>,
+pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
+    params: WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>,
     terminate_worker_rx: Receiver<()>,
 ) where
     Log: OperationLog,
@@ -36,7 +38,8 @@ pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
     Et: ElectionTimer,
     Ns: NodeStateSaver,
     Cl: Cluster,
-    Rl: ResetLeadershipEventChannel,
+    Rl: ResetLeadershipEventChannelRx,
+    Re: RaftElections,
 {
     info!("Watch leader expiration status worker started");
     loop {
@@ -65,8 +68,8 @@ pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
     info!("Watch leader expiration status worker stopped");
 }
 
-fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
-    params: &WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl>,
+fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
+    params: &WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>,
 ) where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
@@ -74,7 +77,8 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
     Et: ElectionTimer,
     Ns: NodeStateSaver,
     Cl: Cluster,
-    Rl: ResetLeadershipEventChannel
+    Rl: ResetLeadershipEventChannelRx,
+    Re: RaftElections
 {
     let node = params
         .protected_node
@@ -89,15 +93,11 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
         let current_leader_id = node.current_leader_id;
 
         if current_leader_id.is_none() || current_leader_id.unwrap() != node.id {
-            let next_term = node.get_next_term();
-            let candidate_promotion = LeaderElectionEvent::PromoteNodeToCandidate(CandidateInfo {
-                term: next_term,
+
+            params.raft_elections_administrator.promote_node_to_candidate(CandidateInfo {
+                term: node.get_next_term(),
                 candidate_id: node.id,
             });
-            params
-                .leader_election_event_tx
-                .send(candidate_promotion)
-                .expect("can promote to candidate");
         }
     }
 }

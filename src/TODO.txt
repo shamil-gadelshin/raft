@@ -32,9 +32,6 @@ V2:
 Details:
 - stability
     .project timeouts
-- investigate
-    .election trait?
-    .rebuild raft election as rsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
 - system events logging
     .increase log coverage
 - code style
@@ -42,6 +39,7 @@ Details:
     .Rust API Guidelines
         .investigate getters
 - release
+    .refactor node & state to facets
     .check https://opensource.guide/
     .check https://rust-lang-nursery.github.io/api-guidelines/necessities.html#crate-and-its-dependencies-have-a-permissive-license-c-permissive
     .consider #![forbid(missing_docs)]
@@ -109,12 +107,15 @@ Future Features:
     .docker compose example
 - investigate
     .detect faster split votes by counting votes??
+    .rebuild raft election fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
     .futures
 
 
 Done:
 - support single node
 - investigate
+    .election trait?
+    .rebuild raft election fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
     .Replicate State Machine or Rsm?
     .investigate channels faults
     .'static in the 'Log : LogStorage + Sync + Send+ 'static'

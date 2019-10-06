@@ -8,25 +8,11 @@ use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::{common, Cluster};
 use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
+use crate::leadership::status::LeaderElectionEvent;
+use crate::leadership::status::administrator::{RaftElections, RaftElectionsChannelRx};
 
-pub enum LeaderElectionEvent {
-    PromoteNodeToCandidate(CandidateInfo),
-    PromoteNodeToLeader(u64), //term
-    ResetNodeToFollower(FollowerInfo),
-}
 
-pub struct CandidateInfo {
-    pub term: u64,
-    pub candidate_id: u64,
-}
-
-pub struct FollowerInfo {
-    pub term: u64,
-    pub leader_id: Option<u64>,
-    pub voted_for_id: Option<u64>,
-}
-
-pub struct ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl>
+pub struct ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl, Re>
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
@@ -34,18 +20,18 @@ where
     Ns: NodeStateSaver,
     Cl: Cluster,
     Rl: ResetLeadershipStatusWatchdog,
+    Re: RaftElections + RaftElectionsChannelRx
 {
     pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
-    pub leader_election_event_tx: Sender<LeaderElectionEvent>,
-    pub leader_election_event_rx: Receiver<LeaderElectionEvent>,
+    pub election_administrator: Re,
     pub leader_initial_heartbeat_tx: Sender<()>,
     pub leadership_status_watchdog_handler: Rl,
     pub peer_communicator: Pc,
     pub cluster_configuration: Cl,
 }
 
-pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl, Rl>(
-    params: ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl>,
+pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
+    params: ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl, Re>,
     terminate_worker_rx: Receiver<()>,
 ) where
     Log: OperationLog,
@@ -53,7 +39,8 @@ pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl, Rl>(
     Pc: PeerRequestHandler,
     Ns: NodeStateSaver,
     Cl: Cluster,
-    Rl: ResetLeadershipStatusWatchdog
+    Rl: ResetLeadershipStatusWatchdog,
+    Re: RaftElections + RaftElectionsChannelRx
 {
     info!("Leader election status watcher worker started");
     loop {
@@ -64,7 +51,7 @@ pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl, Rl>(
                 }
                 break
             },
-            recv(params.leader_election_event_rx) -> event_result => {
+            recv(params.election_administrator.leader_election_event_rx()) -> event_result => {
                 let event = event_result.expect("can receive election event from channel");
                 change_node_leadership_state(&params, event);
             }
@@ -73,8 +60,8 @@ pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl, Rl>(
     info!("Leader election status watcher worker stopped");
 }
 
-fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl>(
-    params: &ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl>,
+fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
+    params: &ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl, Re>,
     event: LeaderElectionEvent,
 ) where
     Log: OperationLog,
@@ -83,6 +70,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl>(
     Ns: NodeStateSaver,
     Cl: Cluster,
     Rl: ResetLeadershipStatusWatchdog,
+    Re: RaftElections + RaftElectionsChannelRx
 {
     match event {
         LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
@@ -107,7 +95,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl>(
                 next_term: vr.term,
                 last_log_index: node.log.get_last_entry_index(),
                 last_log_term: node.log.get_last_entry_term(),
-                leader_election_event_tx: params.leader_election_event_tx.clone(),
+                raft_elections_administrator: params.election_administrator.clone(),
                 peers: peers_copy,
                 quorum_size,
                 peer_communicator: params.peer_communicator.clone(),

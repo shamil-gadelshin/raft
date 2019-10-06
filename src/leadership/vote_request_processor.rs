@@ -1,18 +1,17 @@
-use crossbeam_channel::Sender;
 use std::sync::{Arc, Mutex};
 
-use super::node_leadership_fsm::LeaderElectionEvent;
 use crate::communication::peers::{PeerRequestHandler, VoteRequest, VoteResponse};
 use crate::node::state::{Node, NodeStateSaver};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
-use crate::leadership::node_leadership_fsm::FollowerInfo;
+use crate::leadership::status::{FollowerInfo};
+use crate::leadership::status::administrator::RaftElections;
 
-pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl>(
+pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl, Re>(
     request: VoteRequest,
     protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
-    leader_election_event_tx: Sender<LeaderElectionEvent>,
+    raft_elections_administrator: Re,
 ) -> VoteResponse
 where
     Log: OperationLog,
@@ -20,6 +19,7 @@ where
     Pc: PeerRequestHandler,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Re: RaftElections,
 {
     let node = protected_node.lock().expect("node lock is not poisoned");
 
@@ -37,14 +37,13 @@ where
             vote_granted = true;
             response_current_term = request.term;
 
-            leader_election_event_tx
-                .send(LeaderElectionEvent::ResetNodeToFollower(
-                    FollowerInfo{
-                        term:request.term,
-                        leader_id: None,
-                        voted_for_id: Some(request.candidate_id)
-                    }))
-                .expect("can send LeaderElectionEvent");
+            raft_elections_administrator.reset_node_to_follower(
+                FollowerInfo {
+                    term: request.term,
+                    leader_id: None,
+                    voted_for_id: Some(request.candidate_id)
+                }
+            );
         }
     }
 

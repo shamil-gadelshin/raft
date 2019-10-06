@@ -5,7 +5,7 @@ pub trait ResetLeadershipStatusWatchdog : Clone {
 	fn reset_leadership_status_watchdog(&self);
 }
 
-pub trait ResetLeadershipEventChannel {
+pub trait ResetLeadershipEventChannelRx {
 	fn reset_leadership_watchdog_rx(&self) -> &Receiver<LeaderConfirmationEvent>;
 }
 
@@ -38,7 +38,7 @@ impl ResetLeadershipStatusWatchdog for LeadershipStatusWatchdogHandler {
 	}
 }
 
-impl ResetLeadershipEventChannel for LeadershipStatusWatchdogHandler {
+impl ResetLeadershipEventChannelRx for LeadershipStatusWatchdogHandler {
 	fn reset_leadership_watchdog_rx(&self) -> &Receiver<LeaderConfirmationEvent> {
 		&self.reset_leadership_watchdog_rx
 	}

@@ -1,30 +1,31 @@
-use crossbeam_channel::Sender;
 use std::sync::{Arc, Mutex};
 
 use crate::communication::peers::{
     AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler,
 };
-use crate::leadership::node_leadership_fsm::{LeaderElectionEvent, FollowerInfo};
 use crate::node::state::{Node, NodeStateSaver, NodeStatus};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
 use std::cmp::min;
 use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
+use crate::leadership::status::{FollowerInfo};
+use crate::leadership::status::administrator::RaftElections;
 
-pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl>(
+pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
     request: AppendEntriesRequest,
     protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
-    leader_election_event_tx: Sender<LeaderElectionEvent>,
+    raft_elections_administrator: Re,
     leadership_status_watchdog_handler: Rl,
 ) -> AppendEntriesResponse
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
-    Pc: PeerRequestHandler,
-    Ns: NodeStateSaver,
-    Cl: Cluster,
+    Pc : PeerRequestHandler,
+    Ns : NodeStateSaver,
+    Cl : Cluster,
     Rl : ResetLeadershipStatusWatchdog,
+    Re : RaftElections
 {
     let mut node = protected_node.lock().expect("node lock is not poisoned");
 
@@ -56,14 +57,12 @@ where
     };
 
     if should_reset_to_follower {
-        leader_election_event_tx
-            .send(LeaderElectionEvent::ResetNodeToFollower(
-                FollowerInfo{
-                    term:request.term,
-                    leader_id: Some(request.leader_id),
-                    voted_for_id: None
-                }))
-            .expect("can send LeaderElectionEvent");
+        raft_elections_administrator.reset_node_to_follower(
+            FollowerInfo {
+                term: request.term,
+                leader_id: Some(request.leader_id),
+                voted_for_id: None
+            });
     }
 
     let previous_entry_exist =

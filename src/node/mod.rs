@@ -7,8 +7,6 @@ use crossbeam_channel::{Receiver, Sender};
 
 use crate::common::RaftWorkerPool;
 use crate::communication::client::ClientRequestChannels;
-use crate::leadership::node_leadership_fsm::run_node_status_watcher;
-use crate::leadership::node_leadership_fsm::{ElectionManagerParams, LeaderElectionEvent};
 use crate::node::state::{Node, NodeStateSaver};
 use crate::operation_log::replication::heartbeat_sender::send_heartbeat_append_entries;
 use crate::operation_log::replication::heartbeat_sender::SendHeartbeatAppendEntriesParams;
@@ -25,6 +23,8 @@ use crate::{
 use crate::leadership::watchdog::leader_status_watcher::{watch_leader_status};
 use crate::leadership::watchdog::leader_status_watcher::{WatchLeaderStatusParams};
 use crate::leadership::watchdog::watchdog_handler::LeadershipStatusWatchdogHandler;
+use crate::leadership::status::node_leadership_fsm::{run_node_status_watcher, ElectionManagerParams};
+use crate::leadership::status::administrator::RaftElectionsAdministrator;
 
 pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
     node_config : NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
@@ -55,9 +55,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
 
     let protected_node = Arc::new(Mutex::new(node));
 
-    let (leader_election_tx, leader_election_rx):
-        (Sender<LeaderElectionEvent>, Receiver<LeaderElectionEvent>) =
-        crossbeam_channel::unbounded();
+    let raft_elections_administrator = RaftElectionsAdministrator::new();
 
     let leadership_watchdog_handler = LeadershipStatusWatchdogHandler::new();
 
@@ -68,8 +66,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
         run_node_status_watcher,
         ElectionManagerParams {
             protected_node: protected_node.clone(),
-            leader_election_event_tx: leader_election_tx.clone(),
-            leader_election_event_rx: leader_election_rx.clone(),
+            election_administrator: raft_elections_administrator.clone(),
             leader_initial_heartbeat_tx,
             leadership_status_watchdog_handler: leadership_watchdog_handler.clone(),
             peer_communicator: node_config.peer_communicator.clone(),
@@ -80,7 +77,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
         watch_leader_status,
         WatchLeaderStatusParams {
             protected_node: protected_node.clone(),
-            leader_election_event_tx: leader_election_tx.clone(),
+            raft_elections_administrator: raft_elections_administrator.clone(),
             watchdog_event_rx: leadership_watchdog_handler.clone(),
             election_timer: node_config.election_timer
         });
@@ -89,7 +86,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
         process_peer_request,
         PeerRequestHandlerParams {
             protected_node: protected_node.clone(),
-            leader_election_event_tx: leader_election_tx.clone(),
+            raft_elections_administrator: raft_elections_administrator.clone(),
             leadership_status_watchdog_handler: leadership_watchdog_handler,
             peer_communicator: node_config.peer_communicator.clone(),
             communication_timeout: node_config.limits.communication_timeout

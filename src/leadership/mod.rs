@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 pub mod election;
+pub mod status;
 pub mod watchdog;
-pub mod node_leadership_fsm;
 pub mod vote_request_processor;
 
 pub enum LeaderConfirmationEvent {
