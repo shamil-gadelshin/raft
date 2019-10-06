@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 pub mod election;
-pub mod leader_status_watcher;
+pub mod watchdog;
 pub mod node_leadership_fsm;
 pub mod vote_request_processor;
 

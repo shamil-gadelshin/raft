@@ -2,15 +2,15 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::{Receiver, Sender};
 
-use super::node_leadership_fsm::{CandidateInfo, LeaderElectionEvent};
 use crate::communication::peers::PeerRequestHandler;
-use crate::leadership::LeaderConfirmationEvent;
 use crate::node::state::{Node, NodeStateSaver, NodeStatus};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::{Cluster, ElectionTimer};
+use crate::leadership::node_leadership_fsm::{LeaderElectionEvent, CandidateInfo};
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipEventChannel;
 
-pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl>
+pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl>
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
@@ -18,15 +18,16 @@ where
     Et: ElectionTimer,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Rl: ResetLeadershipEventChannel
 {
     pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
     pub leader_election_event_tx: Sender<LeaderElectionEvent>,
-    pub watchdog_event_rx: Receiver<LeaderConfirmationEvent>,
+    pub watchdog_event_rx: Rl,
     pub election_timer: Et,
 }
 
-pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl>(
-    params: WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl>,
+pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
+    params: WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl>,
     terminate_worker_rx: Receiver<()>,
 ) where
     Log: OperationLog,
@@ -35,6 +36,7 @@ pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl>(
     Et: ElectionTimer,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Rl: ResetLeadershipEventChannel,
 {
     info!("Watch leader expiration status worker started");
     loop {
@@ -49,7 +51,8 @@ pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl>(
             recv(timeout) -> _  => {
                 propose_node_election(&params)
             },
-            recv(params.watchdog_event_rx) -> watchdog_event_result => {
+            recv(params.watchdog_event_rx.reset_leadership_watchdog_rx())
+                -> watchdog_event_result => {
                 if let Err(err) = watchdog_event_result {
                     error!("Invalid result from watchdog_event_rx: {}", err);
                 }
@@ -62,8 +65,8 @@ pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl>(
     info!("Watch leader expiration status worker stopped");
 }
 
-fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl>(
-    params: &WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl>,
+fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl>(
+    params: &WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl>,
 ) where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
@@ -71,6 +74,7 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl>(
     Et: ElectionTimer,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Rl: ResetLeadershipEventChannel
 {
     let node = params
         .protected_node

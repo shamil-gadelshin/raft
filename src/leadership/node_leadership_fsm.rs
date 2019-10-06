@@ -3,11 +3,11 @@ use std::sync::{Arc, Mutex};
 
 use crate::communication::peers::PeerRequestHandler;
 use crate::leadership::election::{start_election, StartElectionParams};
-use crate::leadership::LeaderConfirmationEvent;
 use crate::node::state::{Node, NodeStateSaver, NodeStatus};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::{common, Cluster};
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
 
 pub enum LeaderElectionEvent {
     PromoteNodeToCandidate(CandidateInfo),
@@ -26,25 +26,26 @@ pub struct FollowerInfo {
     pub voted_for_id: Option<u64>,
 }
 
-pub struct ElectionManagerParams<Log, Rsm, Pc, Ns, Cl>
+pub struct ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl>
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
     Pc: PeerRequestHandler,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Rl: ResetLeadershipStatusWatchdog,
 {
     pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
     pub leader_election_event_tx: Sender<LeaderElectionEvent>,
     pub leader_election_event_rx: Receiver<LeaderElectionEvent>,
     pub leader_initial_heartbeat_tx: Sender<()>,
-    pub watchdog_event_tx: Sender<LeaderConfirmationEvent>,
+    pub leadership_status_watchdog_handler: Rl,
     pub peer_communicator: Pc,
     pub cluster_configuration: Cl,
 }
 
-pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl>(
-    params: ElectionManagerParams<Log, Rsm, Pc, Ns, Cl>,
+pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl, Rl>(
+    params: ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl>,
     terminate_worker_rx: Receiver<()>,
 ) where
     Log: OperationLog,
@@ -52,6 +53,7 @@ pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl>(
     Pc: PeerRequestHandler,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Rl: ResetLeadershipStatusWatchdog
 {
     info!("Leader election status watcher worker started");
     loop {
@@ -71,8 +73,8 @@ pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl>(
     info!("Leader election status watcher worker stopped");
 }
 
-fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
-    params: &ElectionManagerParams<Log, Rsm, Pc, Ns, Cl>,
+fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl>(
+    params: &ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl>,
     event: LeaderElectionEvent,
 ) where
     Log: OperationLog,
@@ -80,6 +82,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
     Pc: PeerRequestHandler,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Rl: ResetLeadershipStatusWatchdog,
 {
     match event {
         LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
@@ -124,10 +127,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
 
             info!("Node {} Status changed to Leader for term {}", node.id, term);
 
-            params
-                .watchdog_event_tx
-                .send(LeaderConfirmationEvent::ResetWatchdogCounter)
-                .expect("can send LeaderElectedEvent");
+            params.leadership_status_watchdog_handler.reset_leadership_status_watchdog();
 
             params
                 .leader_initial_heartbeat_tx
@@ -154,10 +154,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
 
             info!("Node {} Status changed to Follower for term {}", node.id, info.term);
 
-            params
-                .watchdog_event_tx
-                .send(LeaderConfirmationEvent::ResetWatchdogCounter)
-                .expect("can send LeaderConfirmationEvent");
+            params.leadership_status_watchdog_handler.reset_leadership_status_watchdog();
         }
     }
 }

@@ -5,18 +5,18 @@ use crate::communication::peers::{
     AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler,
 };
 use crate::leadership::node_leadership_fsm::{LeaderElectionEvent, FollowerInfo};
-use crate::leadership::LeaderConfirmationEvent;
 use crate::node::state::{Node, NodeStateSaver, NodeStatus};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
 use std::cmp::min;
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
 
-pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl>(
+pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl>(
     request: AppendEntriesRequest,
     protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
     leader_election_event_tx: Sender<LeaderElectionEvent>,
-    reset_leadership_watchdog_tx: Sender<LeaderConfirmationEvent>,
+    leadership_status_watchdog_handler: Rl,
 ) -> AppendEntriesResponse
 where
     Log: OperationLog,
@@ -24,6 +24,7 @@ where
     Pc: PeerRequestHandler,
     Ns: NodeStateSaver,
     Cl: Cluster,
+    Rl : ResetLeadershipStatusWatchdog,
 {
     let mut node = protected_node.lock().expect("node lock is not poisoned");
 
@@ -48,9 +49,7 @@ where
                 || node.current_leader_id.is_none()
                 || node.current_leader_id.expect("some leader_id") != request.leader_id;
 
-            reset_leadership_watchdog_tx
-                .send(LeaderConfirmationEvent::ResetWatchdogCounter)
-                .expect("can send LeaderConfirmationEvent");
+            leadership_status_watchdog_handler.reset_leadership_status_watchdog();
 
             should_reset_term
         }
