@@ -63,7 +63,7 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
         crossbeam_channel::unbounded();
 
     let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx)
-        : (Sender<bool>, Receiver<bool>) = crossbeam_channel::unbounded();
+        : (Sender<()>, Receiver<()>) = crossbeam_channel::unbounded();
 
     let election_worker = common::run_worker(
         run_node_status_watcher,

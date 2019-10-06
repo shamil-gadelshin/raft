@@ -10,27 +10,14 @@ Recurring:
     .speed & memory profiling
     .check consensus
 
-Details:
-- stability
-    .crossbeam recv, send - parse result
-    .project timeouts
-    .remove channel.send().expect - handle disconnection error (because of node termination)
-- investigate
-    .detect faster split votes by counting votes??
-    .Check commit index on restart with existing log, should be safe with 0(zero)
-    .futures
-    .travis-ci
-    .election trait?
-    .rebuild raft election as rsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
+
+V2:
 - identity
     .generic
     .libp2p
 - communication
     .libp2p
-- system events logging
-    .increase log coverage
-- error handling
-    .communication timeouts
+- optimization
 - node example
     .save changes to cluster configuration (persistence)
     .remove node_id from log
@@ -38,6 +25,18 @@ Details:
     .configuration
         .cmd params
         .file (toml?)
+- investigate
+    .futures
+
+
+Details:
+- stability
+    .project timeouts
+- investigate
+    .election trait?
+    .rebuild raft election as rsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
+- system events logging
+    .increase log coverage
 - code style
     .introduce aliases (Arc<Mutex<Node<Log>>>)
     .Rust API Guidelines
@@ -46,19 +45,6 @@ Details:
     .check https://opensource.guide/
     .check https://rust-lang-nursery.github.io/api-guidelines/necessities.html#crate-and-its-dependencies-have-a-permissive-license-c-permissive
     .consider #![forbid(missing_docs)]
-- debug
-    .cases
-        .low election timeout
-        .low communication timeout
-        .check committed only applied to rsm
-        .cases description in file
-        .election
-            .invalid term (stale)
-            .with existing log and node_state (term, voted_for)
-            .newer term - convert to follower
-                .leader
-                .candidate
-            .incorrect leader sends heartbeats
 - user-friendliness
     .readme.md
         .add modules description
@@ -69,7 +55,7 @@ Details:
     .mutex
         .consider to pass node_id as a copy to reduce mutex locks
         .consider replacing mutex with cas (or RW-lock) for nodes
-        .migrate Mutex to parking_lot implementation
+
 
 
 Future Features:
@@ -102,6 +88,28 @@ Future Features:
         .abort election thread on election canceling (changing to Follower by peer requests)
 - stability
     .on termination - shutdown communication workers first
+        .remove channel.send().expect  (and recv also) - handle disconnection error (because of node termination)
+    .migrate Mutex to parking_lot implementation
+- debug
+    .cases
+        .low election timeout
+        .low communication timeout
+        .check committed only applied to rsm
+        .cases description in file
+        .election
+            .invalid term (stale)
+            .with existing log and node_state (term, voted_for)
+            .newer term - convert to follower
+                .leader
+                .candidate
+            .incorrect leader sends heartbeats
+        .Check commit index on restart with existing log, should be safe with 0(zero)
+- node example
+    .save changes to cluster configuration (persistence)
+    .docker compose example
+- investigate
+    .detect faster split votes by counting votes??
+    .futures
 
 
 Done:
@@ -150,6 +158,7 @@ Done:
     .support max AppendEntries size parameter
     .response to the client after majority of the servers responses
 - error handling
+    .communication timeouts
     .error style
     .de-box errors to RaftError
 - project structure

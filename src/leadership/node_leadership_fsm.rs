@@ -37,7 +37,7 @@ where
     pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
     pub leader_election_event_tx: Sender<LeaderElectionEvent>,
     pub leader_election_event_rx: Receiver<LeaderElectionEvent>,
-    pub leader_initial_heartbeat_tx: Sender<bool>,
+    pub leader_initial_heartbeat_tx: Sender<()>,
     pub watchdog_event_tx: Sender<LeaderConfirmationEvent>,
     pub peer_communicator: Pc,
     pub cluster_configuration: Cl,
@@ -131,7 +131,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl>(
 
             params
                 .leader_initial_heartbeat_tx
-                .send(true)
+                .send(())
                 .expect("can send leader initial heartbeat");
         }
         LeaderElectionEvent::ResetNodeToFollower(info) => {

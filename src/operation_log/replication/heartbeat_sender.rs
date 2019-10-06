@@ -20,7 +20,7 @@ where
     pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
     pub cluster_configuration: Cl,
     pub communicator: Pc,
-    pub leader_initial_heartbeat_rx: Receiver<bool>,
+    pub leader_initial_heartbeat_rx: Receiver<()>,
     pub heartbeat_timeout: Duration,
 }
 
