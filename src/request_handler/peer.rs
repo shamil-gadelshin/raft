@@ -1,11 +1,10 @@
 use crossbeam_channel::{Receiver};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::communication::peers::{AppendEntriesRequest, VoteRequest};
 use crate::communication::peers::{PeerRequestChannels, PeerRequestHandler};
 use crate::leadership::vote_request_processor::process_vote_request;
-use crate::node::state::{Node, NodeStateSaver};
+use crate::node::state::{ProtectedNode, NodeStateSaver};
 use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
@@ -23,7 +22,7 @@ where
     Rl: ResetLeadershipStatusWatchdog,
     Re: RaftElections,
 {
-    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    pub protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     pub peer_communicator: Pc,
     pub raft_elections_administrator: Re,
     pub leadership_status_watchdog_handler: Rl,

@@ -1,7 +1,5 @@
-use std::sync::{Arc, Mutex};
-
 use crate::communication::peers::{PeerRequestHandler, VoteRequest, VoteResponse};
-use crate::node::state::{Node, NodeStateSaver};
+use crate::node::state::{NodeStateSaver, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
@@ -10,7 +8,7 @@ use crate::leadership::status::administrator::RaftElections;
 
 pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl, Re>(
     request: VoteRequest,
-    protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     raft_elections_administrator: Re,
 ) -> VoteResponse
 where

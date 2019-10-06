@@ -1,9 +1,7 @@
-use std::sync::{Arc, Mutex};
-
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::communication::peers::PeerRequestHandler;
-use crate::node::state::{AppendEntriesRequestType, Node, NodeStateSaver, NodeStatus};
+use crate::node::state::{AppendEntriesRequestType,NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
@@ -16,7 +14,7 @@ where
     Ns: NodeStateSaver,
     Cl: Cluster,
 {
-    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    pub protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     pub replicate_log_to_peer_rx: Receiver<u64>,
     pub replicate_log_to_peer_tx: Sender<u64>,
     pub communicator: Pc,

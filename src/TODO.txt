@@ -35,7 +35,6 @@ Details:
 - system events logging
     .increase log coverage
 - code style
-    .introduce aliases (Arc<Mutex<Node<Log>>>)
     .Rust API Guidelines
         .investigate getters
 - release
@@ -203,3 +202,4 @@ Done:
     .clear #[allow(dead_code)]
     .investigate & remove use crate:: (won't do)
     .enforce code line length limit
+    .introduce aliases (Arc<Mutex<Node<Log>>>)

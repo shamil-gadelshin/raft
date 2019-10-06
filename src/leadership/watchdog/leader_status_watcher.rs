@@ -1,9 +1,7 @@
-use std::sync::{Arc, Mutex};
-
 use crossbeam_channel::{Receiver};
 
 use crate::communication::peers::PeerRequestHandler;
-use crate::node::state::{Node, NodeStateSaver, NodeStatus};
+use crate::node::state::{NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::{Cluster, ElectionTimer};
@@ -22,7 +20,7 @@ where
     Rl: ResetLeadershipEventChannelRx,
     Re: RaftElections,
 {
-    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    pub protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     pub raft_elections_administrator: Re,
     pub watchdog_event_rx: Rl,
     pub election_timer: Et,

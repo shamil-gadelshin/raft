@@ -9,8 +9,11 @@ use crate::operation_log::OperationLog;
 use crate::operation_log::{EntryContent, LogEntry};
 use crate::rsm::ReplicatedStateMachine;
 use crate::{errors, Cluster};
+use std::sync::{Mutex, Arc};
 
 mod tests;
+
+pub type ProtectedNode<Log, Rsm, Pc, Ns, Cl> = Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>;
 
 #[derive(Clone, Debug)]
 //TODO decompose GOD object
@@ -19,9 +22,9 @@ pub struct Node<Log, Rsm, Pc, Ns, Cl>
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
-    Pc: PeerRequestHandler,
-    Ns: NodeStateSaver,
-    Cl: Cluster,
+    Pc:  PeerRequestHandler,
+    Ns:  NodeStateSaver,
+    Cl:  Cluster,
 {
     pub id: u64,
     current_term: u64,

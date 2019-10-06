@@ -1,10 +1,9 @@
 use crossbeam_channel::Receiver;
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::common::peer_consensus_requester::request_peer_consensus;
 use crate::communication::peers::{AppendEntriesRequest, PeerRequestHandler};
-use crate::node::state::{AppendEntriesRequestType, Node, NodeStateSaver, NodeStatus};
+use crate::node::state::{AppendEntriesRequestType, NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
@@ -17,7 +16,7 @@ where
     Ns: NodeStateSaver,
     Cl: Cluster,
 {
-    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    pub protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     pub cluster_configuration: Cl,
     pub communicator: Pc,
     pub leader_initial_heartbeat_rx: Receiver<()>,
@@ -66,7 +65,7 @@ pub fn send_heartbeat_append_entries<Log, Rsm, Pc, Ns, Cl>(
 }
 
 fn send_heartbeat<Log, Rsm, Pc, Ns, Cl>(
-    protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     cluster_configuration: Cl,
     communicator: &Pc,
 ) where

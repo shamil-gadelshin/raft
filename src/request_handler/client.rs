@@ -1,11 +1,9 @@
-use std::sync::{Arc, Mutex};
-
 use crate::communication::client::{
     ClientRequestChannels, ClientResponseStatus, ClientRpcResponse,
 };
 use crate::communication::peers::PeerRequestHandler;
 use crate::errors::RaftError;
-use crate::node::state::{Node, NodeStateSaver, NodeStatus};
+use crate::node::state::{NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::operation_log::{DataEntryContent, EntryContent, NewClusterConfigurationEntryContent};
 use crate::rsm::ReplicatedStateMachine;
@@ -21,7 +19,7 @@ where
     Ns: NodeStateSaver,
     Cl: Cluster,
 {
-    pub protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    pub protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     pub client_communicator: Cc,
     pub cluster_configuration: Cl,
     pub max_data_content_size: u64,
@@ -96,7 +94,7 @@ pub fn process_client_requests<Log, Rsm, Cc, Pc, Ns, Cl>(
 }
 
 fn process_client_request_internal<Log, Rsm, Pc, Ns, Cl>(
-    protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     entry_content: EntryContent,
     max_data_content_size: u64,
 ) -> Result<ClientRpcResponse, RaftError>

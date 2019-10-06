@@ -1,9 +1,7 @@
-use std::sync::{Arc, Mutex};
-
 use crate::communication::peers::{
     AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler,
 };
-use crate::node::state::{Node, NodeStateSaver, NodeStatus};
+use crate::node::state::{NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
@@ -14,7 +12,7 @@ use crate::leadership::status::administrator::RaftElections;
 
 pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
     request: AppendEntriesRequest,
-    protected_node: Arc<Mutex<Node<Log, Rsm, Pc, Ns, Cl>>>,
+    protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     raft_elections_administrator: Re,
     leadership_status_watchdog_handler: Rl,
 ) -> AppendEntriesResponse
