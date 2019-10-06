@@ -65,14 +65,14 @@ fn process_update_fsm_request<Log, Rsm, Pc, Ns, Cl>(
         .expect("node lock is not poisoned");
     trace!("Update Rsm request for Node {}, Commit index = {}", node.id, new_commit_index);
     loop {
-        let last_applied = node.rsm.get_last_applied_entry_index();
+        let last_applied = node.rsm.last_applied_entry_index();
 
         let mut entry_index = 0;
         let entry_result: Option<LogEntry> = {
             if new_commit_index > last_applied {
                 entry_index = last_applied + 1;
 
-                node.log.get_entry(entry_index)
+                node.log.entry(entry_index)
             } else {
                 None
             }

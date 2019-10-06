@@ -26,9 +26,9 @@ impl Default for NodeLimits {
 }
 
 pub trait Cluster: Send + Sync + Clone + 'static {
-    fn get_quorum_size(&self) -> u32;
-    fn get_all_nodes(&self) -> Vec<u64>;
-    fn get_peers(&self, node_id: u64) -> Vec<u64>;
+    fn quorum_size(&self) -> u32;
+    fn all_nodes(&self) -> Vec<u64>;
+    fn peers(&self, node_id: u64) -> Vec<u64>;
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Display)]

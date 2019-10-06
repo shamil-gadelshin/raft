@@ -55,7 +55,7 @@ impl OperationLog for MemoryOperationLog {
 
         Ok(())
     }
-    fn get_entry(&self, index: u64) -> Option<LogEntry> {
+    fn entry(&self, index: u64) -> Option<LogEntry> {
         let idx = index as usize;
         if idx > self.entries.len() || idx == 0 {
             return None;
@@ -63,7 +63,7 @@ impl OperationLog for MemoryOperationLog {
         Some(self.entries[idx - 1].clone())
     }
 
-    fn get_last_entry_index(&self) -> u64 {
+    fn last_entry_index(&self) -> u64 {
         let last = self.entries.last();
         if let Some(entry) = last {
             return entry.index;
@@ -71,7 +71,7 @@ impl OperationLog for MemoryOperationLog {
 
         0 //Raft documentation demands zero as initial value
     }
-    fn get_last_entry_term(&self) -> u64 {
+    fn last_entry_term(&self) -> u64 {
         let last = self.entries.last();
         if let Some(entry) = last {
             return entry.term;

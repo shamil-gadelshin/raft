@@ -17,7 +17,7 @@ pub type ProtectedNode<Log, Rsm, Pc, Ns, Cl> = Arc<Mutex<Node<Log, Rsm, Pc, Ns, 
 
 #[derive(Clone, Debug)]
 //TODO decompose GOD object
-//TODO decompose to Node & NodeState or extract get_peers() from cluster_config
+//TODO decompose to Node & NodeState or extract peers() from cluster_config
 pub struct Node<Log, Rsm, Pc, Ns, Cl>
 where
     Log: OperationLog,
@@ -109,10 +109,10 @@ where
         }
     }
 
-    pub fn get_next_term(&self) -> u64 {
+    pub fn next_term(&self) -> u64 {
         self.current_term + 1
     }
-    pub fn get_current_term(&self) -> u64 {
+    pub fn current_term(&self) -> u64 {
         if self.status == NodeStatus::Candidate {
             self.current_term + 1
         } else {
@@ -124,7 +124,7 @@ where
         self.save_node_state();
     }
 
-    pub fn get_commit_index(&self) -> u64 {
+    pub fn commit_index(&self) -> u64 {
         self.commit_index
     }
 
@@ -139,7 +139,7 @@ where
         }
     }
 
-    pub fn get_voted_for_id(&self) -> Option<u64> {
+    pub fn voted_for_id(&self) -> Option<u64> {
         self.voted_for_id
     }
     pub fn set_voted_for_id(&mut self, voted_for_id: Option<u64>) {
@@ -163,9 +163,9 @@ where
         }
     }
 
-    pub fn get_next_index(&self, peer_id: u64) -> u64 {
+    pub fn next_index(&self, peer_id: u64) -> u64 {
         if !self.next_index.contains_key(&peer_id) {
-            self.log.get_last_entry_index() as u64
+            self.log.last_entry_index() as u64
         } else {
             self.next_index[&peer_id]
         }
@@ -183,7 +183,7 @@ where
         if prev_log_term == 0 && prev_log_index == 0 {
             return true;
         }
-        let entry_result = self.log.get_entry(prev_log_index);
+        let entry_result = self.log.entry(prev_log_index);
 
         if let Some(entry) = entry_result {
             return entry.term == prev_log_term;
@@ -199,14 +199,14 @@ where
         candidate_last_log_entry_term: u64,
         candidate_last_log_entry_index: u64,
     ) -> bool {
-        if self.log.get_last_entry_term() > candidate_last_log_entry_term {
+        if self.log.last_entry_term() > candidate_last_log_entry_term {
             return false;
         }
-        if self.log.get_last_entry_term() < candidate_last_log_entry_term {
+        if self.log.last_entry_term() < candidate_last_log_entry_term {
             return true;
         }
         //equal terms
-        if self.log.get_last_entry_index() > candidate_last_log_entry_index {
+        if self.log.last_entry_index() > candidate_last_log_entry_index {
             return false;
         }
         //last log entry of same or lesser term and same or lesser index
@@ -227,7 +227,7 @@ where
     }
 
     pub fn append_content_to_log(&mut self, content: EntryContent) -> Result<bool, RaftError> {
-        let entry = self.log.create_next_entry(self.get_current_term(), content);
+        let entry = self.log.create_next_entry(self.current_term(), content);
 
         let send_result = self.send_append_entries(entry.clone());
         match send_result {
@@ -268,8 +268,8 @@ where
 
     fn send_append_entries(&self, entry: LogEntry) -> Result<bool, RaftError> {
         if let NodeStatus::Leader = self.status {
-            let peers_copy = self.cluster_configuration.get_peers(self.id);
-            let quorum_size = self.cluster_configuration.get_quorum_size();
+            let peers_copy = self.cluster_configuration.peers(self.id);
+            let quorum_size = self.cluster_configuration.quorum_size();
 
             let entry_index = entry.index;
             trace!(
@@ -339,12 +339,12 @@ where
         &self,
         request_type: AppendEntriesRequestType,
     ) -> AppendEntriesRequest {
-        let entries = self.get_log_entries(request_type);
+        let entries = self.log_entries(request_type);
 
-        let (prev_log_term, prev_log_index) = self.get_prev_term_index(&entries);
+        let (prev_log_term, prev_log_index) = self.prev_term_index(&entries);
 
         AppendEntriesRequest {
-            term: self.get_current_term(),
+            term: self.current_term(),
             leader_id: self.id,
             prev_log_term,
             prev_log_index: prev_log_index as u64,
@@ -353,7 +353,7 @@ where
         }
     }
 
-    fn get_prev_term_index(&self, entries: &[LogEntry]) -> (u64, u64) {
+    fn prev_term_index(&self, entries: &[LogEntry]) -> (u64, u64) {
         let (mut prev_log_term, mut prev_log_index) = (0, 0);
         if !entries.is_empty() {
             let new_entry = &entries[0];
@@ -362,16 +362,16 @@ where
                 let prev_entry_index = new_entry_index - 1;
                 let prev_entry = self
                     .log
-                    .get_entry(prev_entry_index)
+                    .entry(prev_entry_index)
                     .unwrap_or_else(|| panic!("entry exist, index =  {}", prev_entry_index));
 
                 prev_log_term = prev_entry.term;
                 prev_log_index = prev_entry.index;
             }
         } else if entries.is_empty() {
-            let last_index = self.log.get_last_entry_index();
+            let last_index = self.log.last_entry_index();
             if last_index > 1 {
-                let last_entry = self.log.get_entry(last_index).expect("valid last entry");
+                let last_entry = self.log.entry(last_index).expect("valid last entry");
 
                 prev_log_term = last_entry.term;
                 prev_log_index = last_entry.index;
@@ -380,7 +380,7 @@ where
         (prev_log_term, prev_log_index)
     }
 
-    fn get_log_entries(&self, request_type: AppendEntriesRequestType) -> Vec<LogEntry> {
+    fn log_entries(&self, request_type: AppendEntriesRequestType) -> Vec<LogEntry> {
         match request_type {
             AppendEntriesRequestType::Heartbeat => {
                 Vec::new() //empty AppendEntriesRequest - heartbeat
@@ -390,15 +390,15 @@ where
                 entries
             }
             AppendEntriesRequestType::UpdateNode(peer_id) => {
-                let mut next_index = self.get_next_index(peer_id);
+                let mut next_index = self.next_index(peer_id);
                 if next_index == 0 {
                     next_index = 1; //fix next_index in case of empty log
                 }
-                let last_index = self.get_commit_index();
+                let last_index = self.commit_index();
 
                 let mut entries = Vec::new();
                 for idx in next_index..=last_index {
-                    let entry = self.log.get_entry(idx).expect("valid entry index");
+                    let entry = self.log.entry(idx).expect("valid entry index");
                     entries.push(entry)
                 }
 

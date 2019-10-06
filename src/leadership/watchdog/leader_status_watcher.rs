@@ -41,7 +41,7 @@ pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
 {
     info!("Watch leader expiration status worker started");
     loop {
-        let timeout = crossbeam_channel::after(params.election_timer.get_next_elections_timeout());
+        let timeout = crossbeam_channel::after(params.election_timer.next_elections_timeout());
         select!(
             recv(terminate_worker_rx) -> res  => {
                 if res.is_err() {
@@ -93,7 +93,7 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
         if current_leader_id.is_none() || current_leader_id.unwrap() != node.id {
 
             params.raft_elections_administrator.promote_node_to_candidate(CandidateInfo {
-                term: node.get_next_term(),
+                term: node.next_term(),
                 candidate_id: node.id,
             });
         }

@@ -22,14 +22,14 @@ where
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     let mut vote_granted = false;
-    let mut response_current_term = node.get_current_term();
+    let mut response_current_term = node.current_term();
 
-    if node.get_current_term() <= request.term {
-        let is_same_term_and_candidate = node.get_current_term() == request.term
-            && node.get_voted_for_id().is_some()
-            && node.get_voted_for_id().expect("vote_id_result") == request.candidate_id;
+    if node.current_term() <= request.term {
+        let is_same_term_and_candidate = node.current_term() == request.term
+            && node.voted_for_id().is_some()
+            && node.voted_for_id().expect("vote_id_result") == request.candidate_id;
 
-        if (node.get_current_term() < request.term || is_same_term_and_candidate)
+        if (node.current_term() < request.term || is_same_term_and_candidate)
             && node.check_candidate_last_log_entry(request.last_log_term, request.last_log_index)
         {
             vote_granted = true;

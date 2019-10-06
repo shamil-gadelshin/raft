@@ -41,7 +41,7 @@ impl ReplicatedStateMachine for MemoryRsm {
         Ok(())
     }
 
-    fn get_last_applied_entry_index(&self) -> u64 {
+    fn last_applied_entry_index(&self) -> u64 {
         let _lock = self.lock.lock();
 
         self.last_applied_index

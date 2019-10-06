@@ -73,7 +73,7 @@ fn process_replication_request<Log, Rsm, Pc, Ns, Cl>(
         return;
     }
 
-    let next_index = node.get_next_index(peer_id);
+    let next_index = node.next_index(peer_id);
     let append_entries_request =
         node.create_append_entry_request(AppendEntriesRequestType::UpdateNode(peer_id));
     let request_entry_count = append_entries_request.entries.len() as u64;

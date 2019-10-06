@@ -162,7 +162,7 @@ fn get_new_configuration<Cl>(cluster_configuration: Cl, new_server: u64) -> Vec<
 where
     Cl: Cluster,
 {
-    let mut nodes = cluster_configuration.get_all_nodes();
+    let mut nodes = cluster_configuration.all_nodes();
     nodes.push(new_server);
 
     nodes

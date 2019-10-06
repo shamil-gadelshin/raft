@@ -10,5 +10,5 @@ pub enum LeaderConfirmationEvent {
 }
 
 pub trait ElectionTimer: Send + 'static {
-    fn get_next_elections_timeout(&self) -> Duration;
+    fn next_elections_timeout(&self) -> Duration;
 }

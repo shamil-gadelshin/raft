@@ -24,7 +24,7 @@ impl RandomizedElectionTimer {
 }
 
 impl ElectionTimer for RandomizedElectionTimer {
-    fn get_next_elections_timeout(&self) -> Duration {
+    fn next_elections_timeout(&self) -> Duration {
         let mut rng = rand::thread_rng();
 
         Duration::from_millis(rng.gen_range(self.range_start_ms, self.range_stop_ms))

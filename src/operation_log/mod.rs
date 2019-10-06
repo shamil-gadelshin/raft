@@ -4,7 +4,7 @@ use crate::errors::RaftError;
 use std::sync::Arc;
 
 pub trait QuorumResponse: Send {
-    fn get_result(&self) -> bool;
+    fn result(&self) -> bool;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Display)]
@@ -36,7 +36,7 @@ pub enum EntryContent {
 pub trait OperationLog: Sync + Send + 'static {
     fn create_next_entry(&mut self, term: u64, entry_content: EntryContent) -> LogEntry;
     fn append_entry(&mut self, entry: LogEntry) -> Result<(), RaftError>;
-    fn get_entry(&self, index: u64) -> Option<LogEntry>;
-    fn get_last_entry_index(&self) -> u64;
-    fn get_last_entry_term(&self) -> u64;
+    fn entry(&self, index: u64) -> Option<LogEntry>;
+    fn last_entry_index(&self) -> u64;
+    fn last_entry_term(&self) -> u64;
 }

@@ -13,7 +13,7 @@ impl FixedElectionTimer {
 }
 
 impl ElectionTimer for FixedElectionTimer {
-    fn get_next_elections_timeout(&self) -> Duration {
+    fn next_elections_timeout(&self) -> Duration {
         Duration::from_millis(self.fixed_duration_ms)
     }
 }

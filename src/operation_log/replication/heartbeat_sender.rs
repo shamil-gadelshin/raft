@@ -78,7 +78,7 @@ fn send_heartbeat<Log, Rsm, Pc, Ns, Cl>(
     let node = protected_node.lock().expect("node lock is not poisoned");
 
     if let NodeStatus::Leader = node.status {
-        let peers_list_copy = cluster_configuration.get_peers(node.id);
+        let peers_list_copy = cluster_configuration.peers(node.id);
 
         let append_entries_heartbeat =
             node.create_append_entry_request(AppendEntriesRequestType::Heartbeat);

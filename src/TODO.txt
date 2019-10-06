@@ -9,6 +9,7 @@ Recurring:
     .Rust API Guidelines
     .speed & memory profiling
     .check consensus
+    .increase event log coverage
 
 
 V2:
@@ -17,7 +18,6 @@ V2:
     .libp2p
 - communication
     .libp2p
-- optimization
 - node example
     .save changes to cluster configuration (persistence)
     .remove node_id from log
@@ -29,29 +29,22 @@ V2:
     .futures
 
 
+
 Details:
-- stability
-    .project timeouts
-- system events logging
-    .increase log coverage
-- code style
-    .Rust API Guidelines
-        .investigate getters
+
 - release
     .refactor node & state to facets
     .check https://opensource.guide/
-    .check https://rust-lang-nursery.github.io/api-guidelines/necessities.html#crate-and-its-dependencies-have-a-permissive-license-c-permissive
-    .consider #![forbid(missing_docs)]
 - user-friendliness
     .readme.md
         .add modules description
         .add test cases description
     .documentation
         .add the top of the main file: #![warn(missing_docs)]
+            .consider #![forbid(missing_docs)]
 - optimization
     .mutex
         .consider to pass node_id as a copy to reduce mutex locks
-        .consider replacing mutex with cas (or RW-lock) for nodes
 
 
 
@@ -83,6 +76,7 @@ Future Features:
         .park-unpark the worker thread
     .elections
         .abort election thread on election canceling (changing to Follower by peer requests)
+    .consider replacing mutex with cas (or RW-lock) for nodes
 - stability
     .on termination - shutdown communication workers first
         .remove channel.send().expect  (and recv also) - handle disconnection error (because of node termination)
@@ -108,7 +102,15 @@ Future Features:
     .detect faster split votes by counting votes??
     .rebuild raft election fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
     .futures
-
+    .other implementations
+        .tikv
+        .etcd
+        .hashicorp
+        .etc
+- release
+    .dual licensing - MIT/APACHE
+        .check https://rust-lang-nursery.github.io/api-guidelines/necessities.html#crate-and-its-dependencies-have-a-permissive-license-c-permissive
+        .check https://internals.rust-lang.org/t/rationale-of-apache-dual-licensing/8952/6
 
 Done:
 - support single node
@@ -125,6 +127,7 @@ Done:
 - stability
     .check channels bounded-unbounded types
     .check channels overflows
+    .project timeouts
 - leader election
     .check log on votes
 - communication
@@ -203,3 +206,5 @@ Done:
     .investigate & remove use crate:: (won't do)
     .enforce code line length limit
     .introduce aliases (Arc<Mutex<Node<Log>>>)
+    .Rust API Guidelines
+        .investigate getters

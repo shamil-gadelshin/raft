@@ -27,11 +27,11 @@ where
 {
     let mut node = protected_node.lock().expect("node lock is not poisoned");
 
-    if request.term < node.get_current_term() {
+    if request.term < node.current_term() {
         warn!("Node {} Stale 'Append Entries Request'. Old term: {}", node.id, request.term);
 
         return AppendEntriesResponse {
-            term: node.get_current_term(),
+            term: node.current_term(),
             success: false,
         };
     }
@@ -40,11 +40,11 @@ where
     let should_reset_to_follower = match node.status {
         //Greater term.
         NodeStatus::Leader | NodeStatus::Candidate => {
-            request.term > node.get_current_term()
+            request.term > node.current_term()
         }
         //Greater term (next term) or leader changed.
         NodeStatus::Follower => {
-            let should_reset_term = request.term > node.get_current_term()
+            let should_reset_term = request.term > node.current_term()
                 || node.current_leader_id.is_none()
                 || node.current_leader_id.expect("some leader_id") != request.leader_id;
 
@@ -73,7 +73,7 @@ where
         );
 
         return AppendEntriesResponse {
-            term: node.get_current_term(),
+            term: node.current_term(),
             success: false,
         };
     }
@@ -85,24 +85,24 @@ where
         if let Err(err) = append_entry_result {
             error!("Append entry to Log error. Entry = {}: {}", entry_index, err);
             return AppendEntriesResponse {
-                term: node.get_current_term(),
+                term: node.current_term(),
                 success: false,
             };
         }
     }
 
     //set commit_index - lesser from leader_commit_index and log.length
-    if request.leader_commit > node.get_commit_index() {
-        let node_last_index = node.log.get_last_entry_index();
+    if request.leader_commit > node.commit_index() {
+        let node_last_index = node.log.last_entry_index();
 
         let new_commit_index = min(node_last_index, request.leader_commit);
-        if new_commit_index > node.get_commit_index() {
+        if new_commit_index > node.commit_index() {
             node.set_commit_index(new_commit_index, true);
         }
     }
 
     AppendEntriesResponse {
-        term: node.get_current_term(),
+        term: node.current_term(),
         success: true,
     }
 }

@@ -32,7 +32,7 @@ where
         for response in responses {
             match response {
                 Ok(peer_resp) => {
-                    if peer_resp.get_result() {
+                    if peer_resp.result() {
                         votes += 1;
                     }
 

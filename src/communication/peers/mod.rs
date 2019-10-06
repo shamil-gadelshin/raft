@@ -23,7 +23,7 @@ pub struct VoteResponse {
 }
 
 impl QuorumResponse for VoteResponse {
-    fn get_result(&self) -> bool {
+    fn result(&self) -> bool {
         self.vote_granted
     }
 }
@@ -48,7 +48,7 @@ pub struct AppendEntriesResponse {
 }
 
 impl QuorumResponse for AppendEntriesResponse {
-    fn get_result(&self) -> bool {
+    fn result(&self) -> bool {
         self.success
     }
 }

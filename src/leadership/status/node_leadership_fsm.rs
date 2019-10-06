@@ -85,15 +85,15 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
 
             info!("Node {} Status changed to Candidate for term {}", node.id, vr.term);
 
-            let peers_copy = params.cluster_configuration.get_peers(node_id);
-            let quorum_size = params.cluster_configuration.get_quorum_size();
+            let peers_copy = params.cluster_configuration.peers(node_id);
+            let quorum_size = params.cluster_configuration.quorum_size();
 
             let params = StartElectionParams {
                 node_id,
-                actual_current_term: node.get_current_term() - 1,
+                actual_current_term: node.current_term() - 1,
                 next_term: vr.term,
-                last_log_index: node.log.get_last_entry_index(),
-                last_log_term: node.log.get_last_entry_term(),
+                last_log_index: node.log.last_entry_index(),
+                last_log_term: node.log.last_entry_term(),
                 raft_elections_administrator: params.election_administrator.clone(),
                 peers: peers_copy,
                 quorum_size,
@@ -133,7 +133,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
             if info.voted_for_id.is_some() {
                 node.set_voted_for_id(info.voted_for_id);
             }
-            else if node.get_current_term() < info.term {
+            else if node.current_term() < info.term {
                 node.set_voted_for_id(None);
             }
 

@@ -8,22 +8,22 @@ pub struct ClusterConfiguration {
 }
 
 impl Cluster for ClusterConfiguration {
-    fn get_quorum_size(&self) -> u32 {
+    fn quorum_size(&self) -> u32 {
         let cluster = self.cluster.lock().expect("cluster lock is not poisoned");
 
-        cluster.get_quorum_size()
+        cluster.quorum_size()
     }
 
-    fn get_all_nodes(&self) -> Vec<u64> {
+    fn all_nodes(&self) -> Vec<u64> {
         let cluster = self.cluster.lock().expect("cluster lock is not poisoned");
 
-        cluster.get_all_nodes()
+        cluster.all_nodes()
     }
 
-    fn get_peers(&self, node_id: u64) -> Vec<u64> {
+    fn peers(&self, node_id: u64) -> Vec<u64> {
         let cluster = self.cluster.lock().expect("cluster lock is not poisoned");
 
-        cluster.get_peers(node_id)
+        cluster.peers(node_id)
     }
 }
 
@@ -33,7 +33,7 @@ struct ClusterConfigurationInternal {
 }
 
 impl Cluster for ClusterConfigurationInternal {
-    fn get_quorum_size(&self) -> u32 {
+    fn quorum_size(&self) -> u32 {
         let node_count = self.nodes_id_map.len() as u32;
 
         if node_count == 0 {
@@ -45,12 +45,12 @@ impl Cluster for ClusterConfigurationInternal {
         half + 1 //majority
     }
 
-    fn get_all_nodes(&self) -> Vec<u64> {
+    fn all_nodes(&self) -> Vec<u64> {
         self.nodes_id_map.keys().cloned().collect()
     }
 
-    fn get_peers(&self, node_id: u64) -> Vec<u64> {
-        let mut peer_ids = self.get_all_nodes();
+    fn peers(&self, node_id: u64) -> Vec<u64> {
+        let mut peer_ids = self.all_nodes();
         peer_ids.retain(|&x| x != node_id);
 
         peer_ids

@@ -16,7 +16,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn get_last_applied_entry_index(&self) -> u64 {
+        fn last_applied_entry_index(&self) -> u64 {
             unimplemented!()
         }
     }
@@ -24,15 +24,15 @@ mod tests {
     #[derive(Clone, Debug)]
     struct MockCluster;
     impl Cluster for MockCluster {
-        fn get_quorum_size(&self) -> u32 {
+        fn quorum_size(&self) -> u32 {
             unimplemented!()
         }
 
-        fn get_all_nodes(&self) -> Vec<u64> {
+        fn all_nodes(&self) -> Vec<u64> {
             unimplemented!()
         }
 
-        fn get_peers(&self, node_id: u64) -> Vec<u64> {
+        fn peers(&self, node_id: u64) -> Vec<u64> {
             unimplemented!()
         }
     }
@@ -95,7 +95,7 @@ mod tests {
 
             Ok(())
         }
-        fn get_entry(&self, index: u64) -> Option<LogEntry> {
+        fn entry(&self, index: u64) -> Option<LogEntry> {
             let idx = index as usize;
             if idx > self.entries.len() || idx == 0 {
                 return None;
@@ -103,7 +103,7 @@ mod tests {
             Some(self.entries[idx - 1].clone())
         }
 
-        fn get_last_entry_index(&self) -> u64 {
+        fn last_entry_index(&self) -> u64 {
             let last = self.entries.last();
             if let Some(entry) = last {
                 return entry.index;
@@ -111,7 +111,7 @@ mod tests {
 
             0
         }
-        fn get_last_entry_term(&self) -> u64 {
+        fn last_entry_term(&self) -> u64 {
             let last = self.entries.last();
             if let Some(entry) = last {
                 return entry.term;
@@ -150,7 +150,7 @@ mod tests {
 
         let node = create_node_with_log(log);
 
-        let (term, index) = node.get_prev_term_index(&Vec::new());
+        let (term, index) = node.prev_term_index(&Vec::new());
 
         assert_eq!(0, term);
         assert_eq!(0, index);
@@ -169,7 +169,7 @@ mod tests {
 
         let node = create_node_with_log(log);
 
-        let (term, index) = node.get_prev_term_index(&Vec::new());
+        let (term, index) = node.prev_term_index(&Vec::new());
 
         assert_eq!(0, term);
         assert_eq!(0, index);
@@ -196,7 +196,7 @@ mod tests {
 
         let node = create_node_with_log(log);
 
-        let (term, index) = node.get_prev_term_index(&Vec::new());
+        let (term, index) = node.prev_term_index(&Vec::new());
 
         assert_eq!(2, term);
         assert_eq!(2, index);
@@ -221,10 +221,10 @@ mod tests {
             }),
         });
 
-        let entry = log.get_entry(log.get_last_entry_index()).unwrap();
+        let entry = log.entry(log.last_entry_index()).unwrap();
         let node = create_node_with_log(log);
 
-        let (term, index) = node.get_prev_term_index(&vec![entry]);
+        let (term, index) = node.prev_term_index(&vec![entry]);
 
         assert_eq!(1, term);
         assert_eq!(1, index);
