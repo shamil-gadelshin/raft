@@ -46,22 +46,22 @@ Project designed to be modular and independent of the actual implementations.
 
 ## These modules must be implemented in order to run Raft Node
 
-#### Operation log
-  Supports operation log entries processing and calculating parameters (index, term, etc).
-#### Replicated state machine
-  Supports operations with replicated state machine (like 'append new entry').
-#### Peer request handler
-  Module responsible for communication between Raft Nodes.
-#### Client request handler
-  This module responsible for client communication. Module handles request like 'add new data' or 'add server'.
-#### Cluster
-  Defines cluster membership and quorum rules.
-#### Election timer
-  Calculates duration to the next elections.
-#### Node limits
-  Defines node timeouts and limits (e.g.: max request data size)
-#### Node state saver
-  Responsible for node state persistence
+- Operation log
+  + Supports operation log entries processing and calculating parameters (index, term, etc).
+- Replicated state machine
+  + Supports operations with replicated state machine (like 'append new entry').
+- Peer request handler
+  + Module responsible for communication between Raft Nodes.
+- Client request handler
+  + This module responsible for client communication. Module handles request like 'add new data' or 'add server'.
+- Cluster
+  + Defines cluster membership and quorum rules.
+- Election timer
+  + Calculates duration to the next elections.
+- Node limits
+  + Defines node timeouts and limits (e.g.: max request data size)
+- Node state saver
+  + Responsible for node state persistence
 
 ## Raft Modules implementations
 
