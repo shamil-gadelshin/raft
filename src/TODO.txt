@@ -36,9 +36,6 @@ Details:
     .refactor node & state to facets
     .check https://opensource.guide/
 - user-friendliness
-    .readme.md
-        .add modules description
-        .add test cases description
     .documentation
         .add the top of the main file: #![warn(missing_docs)]
             .consider #![forbid(missing_docs)]
@@ -193,6 +190,8 @@ Done:
 - user-friendliness
     .license
     .readme.md
+        .add modules description
+        .add test cases description (won't do)
     .documentation
         .comment .proto
 - rsm
