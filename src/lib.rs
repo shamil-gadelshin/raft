@@ -1,4 +1,8 @@
+//! This crate is Raft consensus implementation in Rust.
+//! It is based on [Diego Ongaro's dissertation](https://github.com/shamil-gadelshin/raft/blob/master/doc/raft_dissertation.pdf).
+
 #![warn(missing_debug_implementations, unsafe_code)]
+#![forbid(missing_docs)]
 
 #[macro_use]
 extern crate log;

@@ -33,14 +33,9 @@ V2:
 
 
 Details:
-
 - release
     .refactor node & state to facets
     .check https://opensource.guide/
-- user-friendliness
-    .documentation
-        .add the top of the main file: #![warn(missing_docs)]
-            .consider #![forbid(missing_docs)]
 - optimization
     .mutex
         .consider to pass node_id as a copy to reduce mutex locks
@@ -196,6 +191,9 @@ Done:
         .add test cases description (won't do)
     .documentation
         .comment .proto
+        .documentation
+            .add the top of the main file: #![warn(missing_docs)]
+                .consider #![forbid(missing_docs)]
 - rsm
     .basic support
     .append sync on entry-commit

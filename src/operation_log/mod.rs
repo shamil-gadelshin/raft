@@ -11,6 +11,7 @@ pub trait QuorumResponse: Send {
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Display)]
 #[display(fmt = "Data size: {}", "data.len()")]
 pub struct DataEntryContent {
+    /// New data (command) serialized in bytes format.
     pub data: Arc<&'static [u8]>,
 }
 
@@ -18,6 +19,7 @@ pub struct DataEntryContent {
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Default, Display)]
 #[display(fmt = "New cluster configuration: {:?}", new_cluster_configuration)]
 pub struct NewClusterConfigurationEntryContent {
+    /// New cluster configuration after the adding new server tho the cluster.
     pub new_cluster_configuration: Vec<u64>,
 }
 
