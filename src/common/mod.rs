@@ -12,6 +12,7 @@ where
     thread::spawn(move || worker(params))
 }
 
+/// RaftWorker contains join_handle for worker-thread and Sender-channel for worker termination.
 #[derive(Debug, Display)]
 #[display(fmt = "Raft worker")]
 pub struct RaftWorker {

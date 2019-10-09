@@ -11,6 +11,8 @@ Recurring:
     .check consensus
     .increase event log coverage
 
+Bugs or unimplemented features:
+- convert leader to follower if AppendEntriesResponse contains newer term
 
 V2:
 - identity

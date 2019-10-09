@@ -2,6 +2,7 @@ use core::fmt;
 use std::error::Error;
 use std::fmt::Display;
 
+/// Generic Raft error struct with string error text and cause.
 #[derive(Debug)]
 pub struct RaftError {
     text: String,
@@ -10,6 +11,7 @@ pub struct RaftError {
 
 pub(crate) type Result<T> = std::result::Result<T, RaftError>;
 
+///Creates new Result with [RaftError](struct.RaftError.html)
 pub fn new_err<T>(text: String, cause: String) -> Result<T> {
     Err(RaftError { text, cause })
 }

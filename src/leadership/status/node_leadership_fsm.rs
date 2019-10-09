@@ -108,6 +108,13 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
                 .lock()
                 .expect("node lock is not poisoned");
 
+            if node.status != NodeStatus::Candidate {
+                warn!("Node {} Leadership. Node status for term {} is not 'Candidate'",
+                      node.id, term);
+
+                return;
+            }
+
             node.current_leader_id = Some(node.id);
             node.set_current_term(term);
             node.status = NodeStatus::Leader;

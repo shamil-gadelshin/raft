@@ -53,16 +53,24 @@ pub enum NodeStatus {
     Leader,
 }
 
+/// Persistent state of the node.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Display)]
 #[display(fmt = "Node state: node_id {} current_term {} voted_for_id {:?}",
     node_id, current_term, vote_for_id)]
 pub struct NodeState {
+    /// Node id.
     pub node_id: u64,
+
+    /// Current known cluster term.
     pub current_term: u64,
+
+    /// Last voting result. Can be empty.
     pub vote_for_id: Option<u64>,
 }
 
+/// Node state persistence handler.
 pub trait NodeStateSaver: Send + Sync + 'static {
+    /// Saves node persistent state.
     fn save_node_state(&self, state: NodeState) -> Result<(), RaftError>;
 }
 

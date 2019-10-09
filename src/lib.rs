@@ -35,8 +35,12 @@ pub use operation_log::LogEntry;
 pub use operation_log::OperationLog;
 pub use operation_log::{DataEntryContent, EntryContent, NewClusterConfigurationEntryContent};
 pub use rsm::ReplicatedStateMachine;
+
+/// Type alias for RaftWorker.
 pub type NodeWorker = common::RaftWorker;
 
+/// Starts node with provided configuration. Node starts in separate thread.
+/// Returns [NodeWorker](type.NodeWorker.html)
 pub fn start_node<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
     node_config: NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
 ) -> NodeWorker
