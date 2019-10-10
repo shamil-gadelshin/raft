@@ -1,5 +1,6 @@
 use raft::{NodeState, NodeStateSaver, RaftError};
 
+/// Mock for the NodeStateSaver state. Logs only - no persistence.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default)]
 pub struct MockNodeStateSaver;
 

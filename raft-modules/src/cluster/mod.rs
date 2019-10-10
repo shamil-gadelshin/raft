@@ -2,6 +2,8 @@ use raft::Cluster;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+/// Basic in-memory implementation of the Cluster trait. It manages the current cluster
+/// configuration. Calculates quorum as majority.
 #[derive(Clone, Debug)]
 pub struct ClusterConfiguration {
     cluster: Arc<Mutex<ClusterConfigurationInternal>>,
@@ -79,6 +81,7 @@ impl ClusterConfigurationInternal {
 }
 
 impl ClusterConfiguration {
+    /// Creates an instance of ClusterConfiguration initialized with provided peer list.
     pub fn new(peers: Vec<u64>) -> ClusterConfiguration {
         let cluster_config = ClusterConfigurationInternal::new(peers);
 
@@ -87,6 +90,7 @@ impl ClusterConfiguration {
         }
     }
 
+    /// Adds peer to the cluster configuration.
     pub fn add_peer(&mut self, peer: u64) {
         let mut cluster = self.cluster.lock().expect("cluster lock is not poisoned");
 

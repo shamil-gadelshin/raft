@@ -16,6 +16,9 @@ use super::client_requests::{new_data_request};
 use crate::communication::duplex_channel::DuplexChannel;
 use crate::communication::network::client_communicator::client_requests::add_server_request;
 
+
+/// Network GRPC-based implementation of the PeerRequestHandler and  PeerRequestChannels traits.
+/// Runs server on the provided port if necessary.
 #[derive(Clone, Debug)]
 pub struct NetworkClientCommunicator {
     node_id: u64,
@@ -26,6 +29,8 @@ pub struct NetworkClientCommunicator {
 }
 
 impl NetworkClientCommunicator {
+    /// Create new instance of the NetworkClientCommunicator with node_id, communication timeout,
+    /// host for grpc-server and client requests. Runs grpc server if run_server is true.
     pub fn new(
         host: String,
         node_id: u64,
@@ -48,32 +53,33 @@ impl NetworkClientCommunicator {
 
         if run_server {
             let comm_clone = comm.clone();
-            let listen_address = comm_clone.get_address();
+            let listen_address = comm_clone.address();
             thread::spawn(move || super::server::run_server(listen_address, comm_clone));
         }
         comm
     }
 
-    pub fn get_address(&self) -> SocketAddr {
+    /// Returns host address as SocketAddr.
+    pub fn address(&self) -> SocketAddr {
         self.host.parse().unwrap()
     }
 }
 
 impl ClientRequestChannels for NetworkClientCommunicator {
     fn add_server_request_rx(&self) -> Receiver<raft::AddServerRequest> {
-        self.add_server_duplex_channel.get_request_rx()
+        self.add_server_duplex_channel.request_rx()
     }
 
     fn add_server_response_tx(&self) -> Sender<raft::ClientRpcResponse> {
-        self.add_server_duplex_channel.get_response_tx()
+        self.add_server_duplex_channel.response_tx()
     }
 
     fn new_data_request_rx(&self) -> Receiver<raft::NewDataRequest> {
-        self.new_data_duplex_channel.get_request_rx()
+        self.new_data_duplex_channel.request_rx()
     }
 
     fn new_data_response_tx(&self) -> Sender<raft::ClientRpcResponse> {
-        self.new_data_duplex_channel.get_response_tx()
+        self.new_data_duplex_channel.response_tx()
     }
 }
 

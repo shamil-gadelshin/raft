@@ -2,6 +2,7 @@ use raft::RaftError;
 use raft::{DataEntryContent, EntryContent, LogEntry, ReplicatedStateMachine};
 use std::sync::{Arc, Mutex};
 
+/// Basic in-memory implementation of the ReplicatedStateMachine trait.
 #[derive(Debug, Clone)]
 pub struct MemoryRsm {
     data: Vec<DataEntryContent>,
@@ -10,6 +11,7 @@ pub struct MemoryRsm {
 }
 
 impl MemoryRsm {
+    /// Creates new MemoryRsm.
     pub fn new() -> MemoryRsm {
         MemoryRsm {
             data: Vec::new(),

@@ -23,6 +23,8 @@ use crate::communication::network::peer_communicator::grpc::generated::grpc_peer
 use crate::communication::network::peer_communicator::service_discovery::PeerCommunicatorServiceDiscovery;
 use std::collections::HashMap;
 
+/// Network GRPC-based implementation of the PeerRequestHandler and  PeerRequestChannels traits.
+/// Runs server on the provided port if necessary.
 #[derive(Clone, Debug)]
 pub struct NetworkPeerCommunicator<Psd>
 where
@@ -44,6 +46,9 @@ impl<Psd> NetworkPeerCommunicator<Psd>
 where
     Psd: PeerCommunicatorServiceDiscovery,
 {
+    /// Create new instance of the NetworkPeerCommunicator with node_id, communication timeout,
+    /// host for grpc-server and client requests. Runs grpc server if run_server is true.
+    /// Requires service discovery implementation for peers request handlers for other nodes.
     pub fn new(
         host: String,
         node_id: u64,
@@ -65,7 +70,7 @@ where
 
         if run_server {
             let comm_clone = comm.clone();
-            let listen_address = comm_clone.get_address();
+            let listen_address = comm_clone.address();
             thread::spawn(move || super::server::run_server(listen_address, comm_clone));
         }
         comm
@@ -104,13 +109,13 @@ where
     fn vote_request_tx(&self, node_id: u64) -> Sender<raft::VoteRequest> {
         self.ensure_channels(node_id);
 
-        self.votes_channels.read().expect("acquire read lock")[&node_id].get_request_tx()
+        self.votes_channels.read().expect("acquire read lock")[&node_id].request_tx()
     }
 
     fn vote_response_rx(&self, node_id: u64) -> Receiver<raft::VoteResponse> {
         self.ensure_channels(node_id);
 
-        self.votes_channels.read().expect("acquire read lock")[&node_id].get_response_rx()
+        self.votes_channels.read().expect("acquire read lock")[&node_id].response_rx()
     }
 
     fn append_entries_request_tx(&self, node_id: u64) -> Sender<raft::AppendEntriesRequest> {
@@ -119,7 +124,7 @@ where
         self.append_entries_channels
             .read()
             .expect("acquire read lock")[&node_id]
-            .get_request_tx()
+            .request_tx()
     }
 
     fn append_entries_response_rx(&self, node_id: u64) -> Receiver<raft::AppendEntriesResponse> {
@@ -128,10 +133,11 @@ where
         self.append_entries_channels
             .read()
             .expect("acquire read lock")[&node_id]
-            .get_response_rx()
+            .response_rx()
     }
 
-    pub fn get_address(&self) -> SocketAddr {
+    /// Returns host address as SocketAddr.
+    pub fn address(&self) -> SocketAddr {
         self.host.parse().unwrap()
     }
 }
@@ -143,13 +149,13 @@ where
     fn vote_request_rx(&self, node_id: u64) -> Receiver<raft::VoteRequest> {
         self.ensure_channels(node_id);
 
-        self.votes_channels.read().expect("acquire read lock")[&node_id].get_request_rx()
+        self.votes_channels.read().expect("acquire read lock")[&node_id].request_rx()
     }
 
     fn vote_response_tx(&self, node_id: u64) -> Sender<raft::VoteResponse> {
         self.ensure_channels(node_id);
 
-        self.votes_channels.read().expect("acquire read lock")[&node_id].get_response_tx()
+        self.votes_channels.read().expect("acquire read lock")[&node_id].response_tx()
     }
 
     fn append_entries_request_rx(&self, node_id: u64) -> Receiver<raft::AppendEntriesRequest> {
@@ -158,7 +164,7 @@ where
         self.append_entries_channels
             .read()
             .expect("acquire read lock")[&node_id]
-            .get_request_rx()
+            .request_rx()
     }
 
     fn append_entries_response_tx(&self, node_id: u64) -> Sender<raft::AppendEntriesResponse> {
@@ -167,7 +173,7 @@ where
         self.append_entries_channels
             .read()
             .expect("acquire read lock")[&node_id]
-            .get_response_tx()
+            .response_tx()
     }
 }
 

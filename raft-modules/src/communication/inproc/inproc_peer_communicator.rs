@@ -10,6 +10,7 @@ use raft::{
 use std::collections::HashMap;
 use std::time::Duration;
 
+/// Basic in-memory implementation of the PeerRequestHandler and  PeerRequestChannels traits.
 #[derive(Clone, Debug)]
 pub struct InProcPeerCommunicator {
     timeout: Duration,
@@ -19,6 +20,7 @@ pub struct InProcPeerCommunicator {
 }
 
 impl InProcPeerCommunicator {
+    /// Create new instance of the InProcPeerCommunicator with node_id and communication timeout.
     pub fn new(nodes: Vec<u64>, timeout: Duration) -> InProcPeerCommunicator {
         let votes_channels = HashMap::new();
         let append_entries_channels = HashMap::new();
@@ -85,18 +87,18 @@ impl PeerRequestHandler for InProcPeerCommunicator {
 
 impl PeerRequestChannels for InProcPeerCommunicator {
     fn vote_request_rx(&self, node_id: u64) -> Receiver<VoteRequest> {
-        self.votes_channels[&node_id].get_request_rx()
+        self.votes_channels[&node_id].request_rx()
     }
 
     fn vote_response_tx(&self, node_id: u64) -> Sender<VoteResponse> {
-        self.votes_channels[&node_id].get_response_tx()
+        self.votes_channels[&node_id].response_tx()
     }
 
     fn append_entries_request_rx(&self, node_id: u64) -> Receiver<AppendEntriesRequest> {
-        self.append_entries_channels[&node_id].get_request_rx()
+        self.append_entries_channels[&node_id].request_rx()
     }
 
     fn append_entries_response_tx(&self, node_id: u64) -> Sender<AppendEntriesResponse> {
-        self.append_entries_channels[&node_id].get_response_tx()
+        self.append_entries_channels[&node_id].response_tx()
     }
 }

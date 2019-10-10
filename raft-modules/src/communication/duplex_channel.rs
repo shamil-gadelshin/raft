@@ -4,13 +4,22 @@ use std::time::Duration;
 
 use raft::{new_err, RaftError};
 
+/// Create abstraction for the dual-end communication via channels.
 #[derive(Clone, Debug)]
 pub struct DuplexChannel<Request, Response> {
     name: String,
     timeout_duration: Duration,
+
+    /// Sender channel for the request.
     pub request_tx: Sender<Request>,
+
+    /// Receiver channel for the request.
     pub request_rx: Receiver<Request>,
+
+    /// Sender channel for the response.
     pub response_tx: Sender<Response>,
+
+    /// Receiver channel for the response.
     pub response_rx: Receiver<Response>,
 }
 
@@ -18,6 +27,7 @@ impl<Request, Response> DuplexChannel<Request, Response>
 where
     Request: Send + 'static,
 {
+    /// Creates new DuplexChannel with the name and communication timeout on recv's and send's.
     pub fn new(name: String, timeout_duration: Duration) -> DuplexChannel<Request, Response> {
         let (request_tx, request_rx): (Sender<Request>, Receiver<Request>) =
             crossbeam_channel::bounded(0);
@@ -34,23 +44,29 @@ where
         }
     }
 
-    pub fn get_request_rx(&self) -> Receiver<Request> {
+     /// Returns the receiver channel for the request.
+    pub fn request_rx(&self) -> Receiver<Request> {
         self.request_rx.clone()
     }
+
+    /// Returns the sender channel for the request.
     #[allow(dead_code)]
-    pub fn get_request_tx(&self) -> Sender<Request> {
+    pub fn request_tx(&self) -> Sender<Request> {
         self.request_tx.clone()
     }
 
-    pub fn get_response_tx(&self) -> Sender<Response> {
+    /// Returns the sender channel for the response.
+    pub fn response_tx(&self) -> Sender<Response> {
         self.response_tx.clone()
     }
 
+    /// Returns the receiver channel for the response.
     #[allow(dead_code)]
-    pub fn get_response_rx(&self) -> Receiver<Response> {
+    pub fn response_rx(&self) -> Receiver<Response> {
         self.response_rx.clone()
     }
 
+    /// Sends request and gets response via channels.
     pub fn send_request(&self, request: Request) -> Result<Response, RaftError> {
         let send_result = self.request_tx.send_timeout(request, self.timeout_duration);
         if let Err(err) = send_result {

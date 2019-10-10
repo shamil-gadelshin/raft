@@ -4,6 +4,8 @@ use raft::RaftError;
 use raft::{EntryContent, LogEntry};
 use std::sync::{Arc, Mutex};
 
+/// Basic in-memory implementation of the OperationLog trait. It is responsible for updating
+/// the cluster configuration.
 #[derive(Clone, Debug)]
 pub struct MemoryOperationLog {
     cluster: ClusterConfiguration,
@@ -13,6 +15,7 @@ pub struct MemoryOperationLog {
 }
 
 impl MemoryOperationLog {
+    /// Creates new MemoryOperationLog initialized with cluster configuration.
     pub fn new(cluster: ClusterConfiguration) -> MemoryOperationLog {
         MemoryOperationLog {
             cluster,

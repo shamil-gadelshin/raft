@@ -2,6 +2,7 @@ use raft::ElectionTimer;
 use rand::Rng;
 use std::time::Duration;
 
+/// Provides random time duration within a range.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct RandomizedElectionTimer {
     range_start_ms: u64,
@@ -9,6 +10,7 @@ pub struct RandomizedElectionTimer {
 }
 
 impl RandomizedElectionTimer {
+    /// Creates new RandomizedElectionTimer with time range in milliseconds.
     pub fn new(range_start_ms: u64, range_stop_ms: u64) -> RandomizedElectionTimer {
         if range_start_ms > range_stop_ms || range_stop_ms == 0 {
             panic!(

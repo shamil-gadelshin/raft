@@ -1,3 +1,10 @@
+//! # Raft Modules
+//!
+//! This subproject of the [raft](https://github.com/shamil-gadelshin/raft) provides examples or
+//! test implementations of the Raft Modules.
+
+#![forbid(missing_docs)]
+
 #[macro_use]
 extern crate log;
 extern crate crossbeam_channel;
