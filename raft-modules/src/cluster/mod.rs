@@ -90,7 +90,7 @@ impl ClusterConfiguration {
         }
     }
 
-    /// Adds peer to the cluster configuration.
+    /// Adds a peer id to the cluster configuration.
     pub fn add_peer(&mut self, peer: u64) {
         let mut cluster = self.cluster.lock().expect("cluster lock is not poisoned");
 

@@ -1,7 +1,5 @@
 TODO: Features:
 
-Main algorithm:
-
 Recurring:
     .tests
     .rustfmt
@@ -10,11 +8,12 @@ Recurring:
     .speed & memory profiling
     .check consensus
     .increase event log coverage
-
-Bugs or unimplemented features:
-- convert leader to follower if AppendEntriesResponse contains newer term
+    .improve documentation
+    .check https://opensource.guide/
 
 V2:
+- main algorithm
+    .convert leader to follower if AppendEntriesResponse contains newer term
 - identity
     .generic
     .libp2p
@@ -29,17 +28,16 @@ V2:
         .file (toml?)
 - investigate
     .futures
-
-
-
-Details:
-- release
-    .refactor node & state to facets
-    .check https://opensource.guide/
-- optimization
-    .mutex
-        .consider to pass node_id as a copy to reduce mutex locks
-
+- travis ci
+    .each raft commit - check all tests, cases, and subproject builds.
+    .publish to the crates.io
+- documentation
+    .add code examples.
+- open source
+    .contributing guide
+- github
+    .migrate TODOs to github issues
+    .Allow GitHub to perform read-only analysis of this repository
 
 
 Future Features:
@@ -70,7 +68,9 @@ Future Features:
         .park-unpark the worker thread
     .elections
         .abort election thread on election canceling (changing to Follower by peer requests)
-    .consider replacing mutex with cas (or RW-lock) for nodes
+    .mutex
+       .consider replacing mutex with cas (or RW-lock) for nodes
+       .consider to pass node_id as a copy to reduce mutex locks
 - stability
     .on termination - shutdown communication workers first
         .remove channel.send().expect  (and recv also) - handle disconnection error (because of node termination)
@@ -93,6 +93,7 @@ Future Features:
     .save changes to cluster configuration (persistence)
     .docker compose example
 - investigate
+    .refactor node & state to facets
     .detect faster split votes by counting votes??
     .rebuild raft election fsm: implement explicit transitions causes (received AppendEntryRequest, HeartbeatWaitingTimeExpired, etc)
     .futures
