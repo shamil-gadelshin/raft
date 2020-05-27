@@ -61,7 +61,7 @@ where
     (node_worker, client_request_handler)
 }
 
-fn create_generic_node_configuration_inproc<Pc, Et>(
+pub fn create_generic_node_configuration_inproc<Pc, Et>(
     node_id: u64,
     all_nodes: Vec<u64>,
     communicator: Pc,
