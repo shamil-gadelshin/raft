@@ -12,7 +12,7 @@ mod tests {
 
     struct MockRsm;
     impl ReplicatedStateMachine for MockRsm {
-        fn apply_entry(&mut self, entry: LogEntry) -> Result<(), RaftError> {
+        fn apply_entry(&mut self, _entry: LogEntry) -> Result<(), RaftError> {
             unimplemented!()
         }
 
@@ -32,14 +32,14 @@ mod tests {
             unimplemented!()
         }
 
-        fn peers(&self, node_id: u64) -> Vec<u64> {
+        fn peers(&self, _node_id: u64) -> Vec<u64> {
             unimplemented!()
         }
     }
 
     struct MockNodeStateServer;
     impl NodeStateSaver for MockNodeStateServer {
-        fn save_node_state(&self, state: NodeState) -> Result<(), RaftError> {
+        fn save_node_state(&self, _state: NodeState) -> Result<(), RaftError> {
             unimplemented!()
         }
     }
@@ -48,16 +48,16 @@ mod tests {
     impl PeerRequestHandler for MockPeerRequestHandler {
         fn send_vote_request(
             &self,
-            destination_node_id: u64,
-            request: VoteRequest,
+            _destination_node_id: u64,
+            _request: VoteRequest,
         ) -> Result<VoteResponse, RaftError> {
             unimplemented!()
         }
 
         fn send_append_entries_request(
             &self,
-            destination_node_id: u64,
-            request: AppendEntriesRequest,
+            _destination_node_id: u64,
+            _request: AppendEntriesRequest,
         ) -> Result<AppendEntriesResponse, RaftError> {
             unimplemented!()
         }
@@ -165,7 +165,7 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        });
+        }).unwrap();
 
         let node = create_node_with_log(log);
 
@@ -184,7 +184,7 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        });
+        }).unwrap();
 
         log.append_entry(LogEntry {
             index: 2,
@@ -192,7 +192,7 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        });
+        }).unwrap();
 
         let node = create_node_with_log(log);
 
@@ -211,7 +211,7 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        });
+        }).unwrap();
 
         log.append_entry(LogEntry {
             index: 2,
@@ -219,7 +219,7 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        });
+        }).unwrap();
 
         let entry = log.entry(log.last_entry_index()).unwrap();
         let node = create_node_with_log(log);

@@ -17,3 +17,12 @@ derive_more = "0.15.0"
 rayon="1.2.0"
 log = "0.4"
 
+
+[workspace]
+members = [
+  "raft-modules",
+  "node",
+  "tests/cases",
+  "tests/client",
+  "tests/smoke",
+]
