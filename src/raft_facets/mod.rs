@@ -1,5 +1,3 @@
-
-
 pub trait RsmFacet {}
 
 pub trait OperationLogFacet {}

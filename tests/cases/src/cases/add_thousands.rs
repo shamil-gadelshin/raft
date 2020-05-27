@@ -7,7 +7,7 @@ pub fn run() {
     let peer_communicator = steps::get_generic_peer_communicator(vec![1, 2, 3]);
     let mut cluster = steps::cluster::start_initial_cluster(
         node_ids,
-        peer_communicator.clone(),
+        peer_communicator,
         steps::create_generic_node_inproc,
     );
 
@@ -27,7 +27,7 @@ pub fn run() {
 
     steps::sleep(5);
 
-    steps::data::add_ten_thousands_data_samples(leader.clone());
+    steps::data::add_ten_thousands_data_samples(leader);
 
     cluster.terminate();
 }

@@ -1,10 +1,10 @@
-#[macro_use] extern crate log;
-extern crate env_logger;
+#[macro_use]
+extern crate log;
 extern crate chrono;
+extern crate env_logger;
 
-use std::io::Write;
 use chrono::prelude::{DateTime, Local};
-
+use std::io::Write;
 
 extern crate cases;
 

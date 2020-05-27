@@ -83,7 +83,10 @@ fn send_heartbeat<Log, Rsm, Pc, Ns, Cl>(
         let append_entries_heartbeat =
             node.create_append_entry_request(AppendEntriesRequestType::Heartbeat);
 
-        trace!("Node {} Send 'empty Append Entries Request(heartbeat)'", node.id);
+        trace!(
+            "Node {} Send 'empty Append Entries Request(heartbeat)'",
+            node.id
+        );
 
         let requester = |dest_node_id: u64, req: AppendEntriesRequest| {
             communicator.send_append_entries_request(dest_node_id, req)
@@ -97,7 +100,11 @@ fn send_heartbeat<Log, Rsm, Pc, Ns, Cl>(
         );
 
         if result.is_err() {
-            error!("Node {} Send heartbeat failed: {}", node.id, result.unwrap_err())
+            error!(
+                "Node {} Send heartbeat failed: {}",
+                node.id,
+                result.unwrap_err()
+            )
         }
     }
 }

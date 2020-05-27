@@ -17,7 +17,7 @@ pub fn run() {
     let rsm = custom_rsm::MemoryRsm::new(tx);
     let cluster = steps::cluster::start_initial_cluster(
         node_ids,
-        peer_communicator.clone(),
+        peer_communicator,
         |node_id, all_nodes, peer_communicator| {
             let election_timer = FixedElectionTimer::new(1000);
             let (client_request_handler, node_config) =

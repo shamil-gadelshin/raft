@@ -37,8 +37,12 @@ pub struct NewDataRequest {
 
 /// Generic response for the client RPC
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Display)]
-#[display(fmt = "Client RPC response: status {} current_leader {:?} message: {}",
-    status, current_leader, message )]
+#[display(
+    fmt = "Client RPC response: status {} current_leader {:?} message: {}",
+    status,
+    current_leader,
+    message
+)]
 pub struct ClientRpcResponse {
     /// Response status.
     pub status: ClientResponseStatus,

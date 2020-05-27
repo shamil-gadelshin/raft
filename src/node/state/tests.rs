@@ -165,7 +165,8 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        }).unwrap();
+        })
+        .unwrap();
 
         let node = create_node_with_log(log);
 
@@ -184,7 +185,8 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        }).unwrap();
+        })
+        .unwrap();
 
         log.append_entry(LogEntry {
             index: 2,
@@ -192,7 +194,8 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        }).unwrap();
+        })
+        .unwrap();
 
         let node = create_node_with_log(log);
 
@@ -211,7 +214,8 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        }).unwrap();
+        })
+        .unwrap();
 
         log.append_entry(LogEntry {
             index: 2,
@@ -219,7 +223,8 @@ mod tests {
             entry_content: EntryContent::Data(DataEntryContent {
                 data: Arc::new(b"some"),
             }),
-        }).unwrap();
+        })
+        .unwrap();
 
         let entry = log.entry(log.last_entry_index()).unwrap();
         let node = create_node_with_log(log);

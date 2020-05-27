@@ -188,7 +188,12 @@ where
     ) -> Result<raft::VoteResponse, RaftError> {
         let host = self.service_discovery.get_address(destination_node_id);
 
-        trace!("Destination Node {}. Address ({}). Vote request {:?}", destination_node_id, host, request);
+        trace!(
+            "Destination Node {}. Address ({}). Vote request {:?}",
+            destination_node_id,
+            host,
+            request
+        );
 
         vote_request(host, self.timeout, request)
     }
@@ -200,7 +205,12 @@ where
     ) -> Result<raft::AppendEntriesResponse, RaftError> {
         let host = self.service_discovery.get_address(destination_node_id);
 
-        trace!("Destination Node {}. Address ({}). Append entries request {}", destination_node_id, host, request);
+        trace!(
+            "Destination Node {}. Address ({}). Append entries request {}",
+            destination_node_id,
+            host,
+            request
+        );
 
         append_entries_request(host, self.timeout, request)
     }
@@ -326,14 +336,13 @@ fn convert_append_entries_request(
             }
         })
         .collect();
-    let raft_req = raft::AppendEntriesRequest {
+
+    raft::AppendEntriesRequest {
         term: req.term,
         prev_log_term: req.prev_log_term,
         prev_log_index: req.prev_log_index,
         leader_id: req.leader_id,
         leader_commit: req.leader_commit,
         entries,
-    };
-
-    raft_req
+    }
 }

@@ -10,7 +10,7 @@ pub fn run() {
     let peer_communicator = steps::get_generic_peer_communicator(vec![1, 2, 3]); //stub
     let mut cluster = steps::cluster::start_initial_cluster(
         node_ids,
-        peer_communicator.clone(),
+        peer_communicator,
         configuration::create_node_with_network,
     );
 
@@ -26,7 +26,7 @@ pub fn run() {
     steps::data::add_server(&leader, new_node_id);
 
     //add new data to the cluster
-    steps::data::add_data_sample(&leader.clone()).expect("add sample successful");
+    steps::data::add_data_sample(&leader).expect("add sample successful");
 
     steps::sleep(5);
 

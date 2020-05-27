@@ -1,14 +1,14 @@
 use crate::communication::peers::{
     AppendEntriesRequest, AppendEntriesResponse, PeerRequestHandler,
 };
+use crate::leadership::status::administrator::RaftElections;
+use crate::leadership::status::FollowerInfo;
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
 use crate::node::state::{NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
 use std::cmp::min;
-use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
-use crate::leadership::status::{FollowerInfo};
-use crate::leadership::status::administrator::RaftElections;
 
 pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
     request: AppendEntriesRequest,
@@ -19,16 +19,19 @@ pub fn process_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
-    Pc : PeerRequestHandler,
-    Ns : NodeStateSaver,
-    Cl : Cluster,
-    Rl : ResetLeadershipStatusWatchdog,
-    Re : RaftElections
+    Pc: PeerRequestHandler,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
+    Rl: ResetLeadershipStatusWatchdog,
+    Re: RaftElections,
 {
     let mut node = protected_node.lock().expect("node lock is not poisoned");
 
     if request.term < node.current_term() {
-        warn!("Node {} Stale 'Append Entries Request'. Old term: {}", node.id, request.term);
+        warn!(
+            "Node {} Stale 'Append Entries Request'. Old term: {}",
+            node.id, request.term
+        );
 
         return AppendEntriesResponse {
             term: node.current_term(),
@@ -39,9 +42,7 @@ where
     //fix node status
     let should_reset_to_follower = match node.status {
         //Greater term.
-        NodeStatus::Leader | NodeStatus::Candidate => {
-            request.term > node.current_term()
-        }
+        NodeStatus::Leader | NodeStatus::Candidate => request.term > node.current_term(),
         //Greater term (next term) or leader changed.
         NodeStatus::Follower => {
             let should_reset_term = request.term > node.current_term()
@@ -55,12 +56,11 @@ where
     };
 
     if should_reset_to_follower {
-        raft_elections_administrator.reset_node_to_follower(
-            FollowerInfo {
-                term: request.term,
-                leader_id: Some(request.leader_id),
-                voted_for_id: None
-            });
+        raft_elections_administrator.reset_node_to_follower(FollowerInfo {
+            term: request.term,
+            leader_id: Some(request.leader_id),
+            voted_for_id: None,
+        });
     }
 
     let previous_entry_exist =
@@ -83,7 +83,10 @@ where
         let entry_index = entry.index;
         let append_entry_result = node.append_entry_to_log(entry);
         if let Err(err) = append_entry_result {
-            error!("Append entry to Log error. Entry = {}: {}", entry_index, err);
+            error!(
+                "Append entry to Log error. Entry = {}: {}",
+                entry_index, err
+            );
             return AppendEntriesResponse {
                 term: node.current_term(),
                 success: false,

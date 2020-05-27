@@ -44,7 +44,7 @@ where
         peer_communicator: communicator,
         client_communicator: client_request_handler.clone(),
         election_timer,
-        operation_log: MemoryOperationLog::new(cluster_config.clone()),
+        operation_log: MemoryOperationLog::new(cluster_config),
         rsm,
         state_saver: MockNodeStateSaver::default(),
         limits: NodeLimits::default(),

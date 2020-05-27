@@ -1,13 +1,13 @@
-use crossbeam_channel::{Receiver};
+use crossbeam_channel::Receiver;
 
 use crate::communication::peers::PeerRequestHandler;
+use crate::leadership::status::administrator::RaftElections;
+use crate::leadership::status::CandidateInfo;
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipEventChannelRx;
 use crate::node::state::{NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::{Cluster, ElectionTimer};
-use crate::leadership::watchdog::watchdog_handler::ResetLeadershipEventChannelRx;
-use crate::leadership::status::{CandidateInfo};
-use crate::leadership::status::administrator::RaftElections;
 
 pub struct WatchLeaderStatusParams<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>
 where
@@ -76,7 +76,7 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
     Ns: NodeStateSaver,
     Cl: Cluster,
     Rl: ResetLeadershipEventChannelRx,
-    Re: RaftElections
+    Re: RaftElections,
 {
     let node = params
         .protected_node
@@ -91,11 +91,12 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
         let current_leader_id = node.current_leader_id;
 
         if current_leader_id.is_none() || current_leader_id.unwrap() != node.id {
-
-            params.raft_elections_administrator.promote_node_to_candidate(CandidateInfo {
-                term: node.next_term(),
-                candidate_id: node.id,
-            });
+            params
+                .raft_elections_administrator
+                .promote_node_to_candidate(CandidateInfo {
+                    term: node.next_term(),
+                    candidate_id: node.id,
+                });
         }
     }
 }

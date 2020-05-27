@@ -8,8 +8,12 @@ use crate::{OperationLog, ReplicatedStateMachine};
 
 /// Constraints for the Raft node.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Display)]
-#[display(fmt = "Node Limits: heartbeat_timeout {:?} communication_timeout {:?} max_data_size {}",
-    heartbeat_timeout, communication_timeout, max_data_content_size )]
+#[display(
+    fmt = "Node Limits: heartbeat_timeout {:?} communication_timeout {:?} max_data_size {}",
+    heartbeat_timeout,
+    communication_timeout,
+    max_data_content_size
+)]
 pub struct NodeLimits {
     /// The follower node starts new elections and converts to candidate when this timeout expires.
     pub heartbeat_timeout: Duration,

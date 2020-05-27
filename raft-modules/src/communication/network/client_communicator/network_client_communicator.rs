@@ -16,7 +16,6 @@ use super::client_requests::{new_data_request};
 use crate::communication::duplex_channel::DuplexChannel;
 use crate::communication::network::client_communicator::client_requests::add_server_request;
 
-
 /// Network GRPC-based implementation of the PeerRequestHandler and  PeerRequestChannels traits.
 /// Runs server on the provided port if necessary.
 #[derive(Clone, Debug)]

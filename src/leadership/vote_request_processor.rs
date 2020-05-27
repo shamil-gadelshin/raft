@@ -1,10 +1,10 @@
 use crate::communication::peers::{PeerRequestHandler, VoteRequest, VoteResponse};
+use crate::leadership::status::administrator::RaftElections;
+use crate::leadership::status::FollowerInfo;
 use crate::node::state::{NodeStateSaver, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
-use crate::leadership::status::{FollowerInfo};
-use crate::leadership::status::administrator::RaftElections;
 
 pub fn process_vote_request<Log, Rsm, Pc, Ns, Cl, Re>(
     request: VoteRequest,
@@ -35,13 +35,11 @@ where
             vote_granted = true;
             response_current_term = request.term;
 
-            raft_elections_administrator.reset_node_to_follower(
-                FollowerInfo {
-                    term: request.term,
-                    leader_id: None,
-                    voted_for_id: Some(request.candidate_id)
-                }
-            );
+            raft_elections_administrator.reset_node_to_follower(FollowerInfo {
+                term: request.term,
+                leader_id: None,
+                voted_for_id: Some(request.candidate_id),
+            });
         }
     }
 

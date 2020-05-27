@@ -1,7 +1,7 @@
 use crossbeam_channel::Receiver;
 
 use crate::communication::peers::PeerRequestHandler;
-use crate::node::state::{ProtectedNode, NodeStateSaver};
+use crate::node::state::{NodeStateSaver, ProtectedNode};
 use crate::operation_log::LogEntry;
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
@@ -63,7 +63,11 @@ fn process_update_fsm_request<Log, Rsm, Pc, Ns, Cl>(
         .protected_node
         .lock()
         .expect("node lock is not poisoned");
-    trace!("Update Rsm request for Node {}, Commit index = {}", node.id, new_commit_index);
+    trace!(
+        "Update Rsm request for Node {}, Commit index = {}",
+        node.id,
+        new_commit_index
+    );
     loop {
         let last_applied = node.rsm.last_applied_entry_index();
 

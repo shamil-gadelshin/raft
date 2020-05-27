@@ -4,11 +4,15 @@ use crate::errors::RaftError;
 use crate::operation_log::LogEntry;
 use crate::operation_log::QuorumResponse;
 
-
 /// Leadership election vote request.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Display)]
-#[display(fmt = "Term {} Candidate_id {}, Last log: term {} index {}",
-    term, candidate_id, last_log_term, last_log_index)]
+#[display(
+    fmt = "Term {} Candidate_id {}, Last log: term {} index {}",
+    term,
+    candidate_id,
+    last_log_term,
+    last_log_index
+)]
 pub struct VoteRequest {
     /// Current elections term.
     pub term: u64,
@@ -25,7 +29,12 @@ pub struct VoteRequest {
 
 /// The response for the leadership elections vote request.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Display)]
-#[display(fmt = "Term {} Peer_id {} Vote_granted - {}", term, peer_id, vote_granted)]
+#[display(
+    fmt = "Term {} Peer_id {} Vote_granted - {}",
+    term,
+    peer_id,
+    vote_granted
+)]
 pub struct VoteResponse {
     /// Current elections term.
     pub term: u64,
@@ -45,8 +54,15 @@ impl QuorumResponse for VoteResponse {
 
 /// Operation log replication request or heartbeat request.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Default, Display)]
-#[display(fmt = "Term {} Leader_id {}, Prev log: term {} index {}, Leader commit {}. Entries - {}",
-    term, leader_id, prev_log_term, prev_log_index, leader_commit, "entries.len()")]
+#[display(
+    fmt = "Term {} Leader_id {}, Prev log: term {} index {}, Leader commit {}. Entries - {}",
+    term,
+    leader_id,
+    prev_log_term,
+    prev_log_index,
+    leader_commit,
+    "entries.len()"
+)]
 pub struct AppendEntriesRequest {
     /// Leaders current elections term.
     pub term: u64,
@@ -87,12 +103,18 @@ impl QuorumResponse for AppendEntriesResponse {
 /// API abstraction for the communications with peers.
 pub trait PeerRequestHandler: Send + Sync + 'static + Clone {
     /// Send vote request to peer and get vote response.
-    fn send_vote_request(&self, dest_node_id: u64, request: VoteRequest)
-        -> Result<VoteResponse, RaftError>;
+    fn send_vote_request(
+        &self,
+        dest_node_id: u64,
+        request: VoteRequest,
+    ) -> Result<VoteResponse, RaftError>;
 
     /// Send operation log replication request or heartbeat request to peer and get vote response.
-    fn send_append_entries_request(&self, dest_node_id: u64, request: AppendEntriesRequest)
-        -> Result<AppendEntriesResponse, RaftError>;
+    fn send_append_entries_request(
+        &self,
+        dest_node_id: u64,
+        request: AppendEntriesRequest,
+    ) -> Result<AppendEntriesResponse, RaftError>;
 }
 
 /// Abstraction for channels responsible for the communications with peers.

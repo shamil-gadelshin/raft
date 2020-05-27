@@ -1,16 +1,16 @@
-use crossbeam_channel::{Receiver};
+use crossbeam_channel::Receiver;
 use std::time::Duration;
 
 use crate::communication::peers::{AppendEntriesRequest, VoteRequest};
 use crate::communication::peers::{PeerRequestChannels, PeerRequestHandler};
+use crate::leadership::status::administrator::RaftElections;
 use crate::leadership::vote_request_processor::process_vote_request;
-use crate::node::state::{ProtectedNode, NodeStateSaver};
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
+use crate::node::state::{NodeStateSaver, ProtectedNode};
 use crate::operation_log::replication::append_entries_processor::process_append_entries_request;
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::Cluster;
-use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
-use crate::leadership::status::administrator::RaftElections;
 
 pub struct PeerRequestHandlerParams<Log, Rsm, Pc, Ns, Cl, Rl, Re>
 where
@@ -35,9 +35,9 @@ pub fn process_peer_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
 ) where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
-    Pc:  PeerRequestChannels + PeerRequestHandler,
-    Ns:  NodeStateSaver,
-    Cl:  Cluster,
+    Pc: PeerRequestChannels + PeerRequestHandler,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
     Rl: ResetLeadershipStatusWatchdog,
     Re: RaftElections,
 {
@@ -49,7 +49,7 @@ pub fn process_peer_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
             .expect("node lock is not poisoned")
             .id
     };
-    let vote_request_rx = params.peer_communicator.vote_request_rx(node_id).clone();
+    let vote_request_rx = params.peer_communicator.vote_request_rx(node_id);
     let append_entries_request_rx = params.peer_communicator.append_entries_request_rx(node_id);
 
     loop {
@@ -82,9 +82,9 @@ fn handle_vote_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
 ) where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
-    Pc:  PeerRequestChannels + PeerRequestHandler,
-    Ns:  NodeStateSaver,
-    Cl:  Cluster,
+    Pc: PeerRequestChannels + PeerRequestHandler,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
     Rl: ResetLeadershipStatusWatchdog,
     Re: RaftElections,
 {
@@ -113,14 +113,18 @@ pub fn handle_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
 ) where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
-    Pc:  PeerRequestChannels + PeerRequestHandler,
-    Ns:  NodeStateSaver,
-    Cl:  Cluster,
-    Rl:  ResetLeadershipStatusWatchdog,
-    Re:  RaftElections,
+    Pc: PeerRequestChannels + PeerRequestHandler,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
+    Rl: ResetLeadershipStatusWatchdog,
+    Re: RaftElections,
 {
     let append_entries_response_tx = params.peer_communicator.append_entries_response_tx(node_id);
-    trace!("Node {} Received 'Append Entries Request' {}", node_id, request);
+    trace!(
+        "Node {} Received 'Append Entries Request' {}",
+        node_id,
+        request
+    );
 
     let append_entry_response = process_append_entries_request(
         request,
@@ -137,7 +141,10 @@ pub fn handle_append_entries_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
             trace!("Node {} AppendEntriesResponse sent successfully", node_id);
         }
         Err(err) => {
-            error!("Failed append_request processing for Node {} Err: {}", node_id, err);
+            error!(
+                "Failed append_request processing for Node {} Err: {}",
+                node_id, err
+            );
         }
     }
 }

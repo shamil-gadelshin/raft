@@ -50,7 +50,10 @@ impl OperationLog for MemoryOperationLog {
         self.entries.push(entry.clone());
 
         if let EntryContent::AddServer(add_server_request) = entry.entry_content {
-            trace!("New server configuration: {:?}", &add_server_request.new_cluster_configuration);
+            trace!(
+                "New server configuration: {:?}",
+                &add_server_request.new_cluster_configuration
+            );
 
             // add servers to cluster
             for new_server_id in add_server_request.new_cluster_configuration {

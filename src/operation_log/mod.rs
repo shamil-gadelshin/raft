@@ -25,7 +25,12 @@ pub struct NewClusterConfigurationEntryContent {
 
 /// Main abstraction for the Raft operation log entries.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Display)]
-#[display(fmt = "Log entry: index {} term {} content {}", index, term, entry_content)]
+#[display(
+    fmt = "Log entry: index {} term {} content {}",
+    index,
+    term,
+    entry_content
+)]
 pub struct LogEntry {
     /// Raft operation log entry index. Increases monotonically with no gaps.
     pub index: u64,

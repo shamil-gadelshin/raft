@@ -2,14 +2,13 @@ use crossbeam_channel::{Receiver, Sender};
 
 use crate::communication::peers::PeerRequestHandler;
 use crate::leadership::election::{start_election, StartElectionParams};
+use crate::leadership::status::administrator::{RaftElections, RaftElectionsChannelRx};
+use crate::leadership::status::LeaderElectionEvent;
+use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
 use crate::node::state::{NodeStateSaver, NodeStatus, ProtectedNode};
 use crate::operation_log::OperationLog;
 use crate::rsm::ReplicatedStateMachine;
 use crate::{common, Cluster};
-use crate::leadership::watchdog::watchdog_handler::ResetLeadershipStatusWatchdog;
-use crate::leadership::status::LeaderElectionEvent;
-use crate::leadership::status::administrator::{RaftElections, RaftElectionsChannelRx};
-
 
 pub struct ElectionManagerParams<Log, Rsm, Pc, Ns, Cl, Rl, Re>
 where
@@ -19,7 +18,7 @@ where
     Ns: NodeStateSaver,
     Cl: Cluster,
     Rl: ResetLeadershipStatusWatchdog,
-    Re: RaftElections + RaftElectionsChannelRx
+    Re: RaftElections + RaftElectionsChannelRx,
 {
     pub protected_node: ProtectedNode<Log, Rsm, Pc, Ns, Cl>,
     pub election_administrator: Re,
@@ -39,7 +38,7 @@ pub fn run_node_status_watcher<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
     Ns: NodeStateSaver,
     Cl: Cluster,
     Rl: ResetLeadershipStatusWatchdog,
-    Re: RaftElections + RaftElectionsChannelRx
+    Re: RaftElections + RaftElectionsChannelRx,
 {
     info!("Leader election status watcher worker started");
     loop {
@@ -69,7 +68,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
     Ns: NodeStateSaver,
     Cl: Cluster,
     Rl: ResetLeadershipStatusWatchdog,
-    Re: RaftElections + RaftElectionsChannelRx
+    Re: RaftElections + RaftElectionsChannelRx,
 {
     match event {
         LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
@@ -83,7 +82,10 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
             node.current_leader_id = None;
             node.status = NodeStatus::Candidate;
 
-            info!("Node {} Status changed to Candidate for term {}", node.id, vr.term);
+            info!(
+                "Node {} Status changed to Candidate for term {}",
+                node.id, vr.term
+            );
 
             let peers_copy = params.cluster_configuration.peers(node_id);
             let quorum_size = params.cluster_configuration.quorum_size();
@@ -109,8 +111,10 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
                 .expect("node lock is not poisoned");
 
             if node.status != NodeStatus::Candidate {
-                warn!("Node {} Leadership. Node status for term {} is not 'Candidate'",
-                      node.id, term);
+                warn!(
+                    "Node {} Leadership. Node status for term {} is not 'Candidate'",
+                    node.id, term
+                );
 
                 return;
             }
@@ -119,9 +123,14 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
             node.set_current_term(term);
             node.status = NodeStatus::Leader;
 
-            info!("Node {} Status changed to Leader for term {}", node.id, term);
+            info!(
+                "Node {} Status changed to Leader for term {}",
+                node.id, term
+            );
 
-            params.leadership_status_watchdog_handler.reset_leadership_status_watchdog();
+            params
+                .leadership_status_watchdog_handler
+                .reset_leadership_status_watchdog();
 
             params
                 .leader_initial_heartbeat_tx
@@ -139,16 +148,20 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
 
             if info.voted_for_id.is_some() {
                 node.set_voted_for_id(info.voted_for_id);
-            }
-            else if node.current_term() < info.term {
+            } else if node.current_term() < info.term {
                 node.set_voted_for_id(None);
             }
 
             node.set_current_term(info.term);
 
-            info!("Node {} Status changed to Follower for term {}", node.id, info.term);
+            info!(
+                "Node {} Status changed to Follower for term {}",
+                node.id, info.term
+            );
 
-            params.leadership_status_watchdog_handler.reset_leadership_status_watchdog();
+            params
+                .leadership_status_watchdog_handler
+                .reset_leadership_status_watchdog();
         }
     }
 }

@@ -2,8 +2,8 @@ use std::time::Duration;
 
 pub mod election;
 pub mod status;
-pub mod watchdog;
 pub mod vote_request_processor;
+pub mod watchdog;
 
 pub enum LeaderConfirmationEvent {
     ResetWatchdogCounter,

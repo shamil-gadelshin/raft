@@ -29,7 +29,7 @@ pub fn create_node_with_network<Pc: PeerRequestHandler + PeerRequestChannels>(
             current_term: 0,
             vote_for_id: None,
         },
-        cluster_configuration: cluster_config.clone(),
+        cluster_configuration: cluster_config,
         peer_communicator,
         client_communicator: client_request_handler.clone(),
         election_timer: RandomizedElectionTimer::new(2000, 4000),

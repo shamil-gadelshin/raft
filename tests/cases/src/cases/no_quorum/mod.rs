@@ -12,7 +12,7 @@ pub fn run() {
     );
     let cluster = steps::cluster::start_initial_cluster(
         node_ids,
-        peer_communicator.clone(),
+        peer_communicator,
         steps::create_generic_node_inproc,
     );
 

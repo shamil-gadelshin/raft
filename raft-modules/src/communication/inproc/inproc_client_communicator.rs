@@ -13,7 +13,6 @@ pub struct InProcClientCommunicator {
 }
 
 impl InProcClientCommunicator {
-
     /// Create new instance of the InProcClientCommunicator with node_id and communication timeout.
     pub fn new(node_id: u64, timeout: Duration) -> InProcClientCommunicator {
         InProcClientCommunicator {

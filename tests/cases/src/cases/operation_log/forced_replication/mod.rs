@@ -14,7 +14,7 @@ pub fn run() {
     let peer_communicator = steps::get_generic_peer_communicator(vec![1, 2, 3]);
     let mut cluster = steps::cluster::start_initial_cluster(
         node_ids,
-        peer_communicator.clone(),
+        peer_communicator,
         configuration::create_different_term_node_configuration_inproc,
     );
 

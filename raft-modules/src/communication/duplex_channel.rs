@@ -44,7 +44,7 @@ where
         }
     }
 
-     /// Returns the receiver channel for the request.
+    /// Returns the receiver channel for the request.
     pub fn request_rx(&self) -> Receiver<Request> {
         self.request_rx.clone()
     }

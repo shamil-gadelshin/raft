@@ -74,7 +74,7 @@ where
     }
 
     pub fn find_a_leader_by_adding_data_sample(&self) -> Leader<Cc> {
-        let bytes = "find a leader".as_bytes();
+        let bytes = b"find a leader";
         let new_data_request = NewDataRequest {
             data: Arc::new(bytes),
         };
@@ -100,14 +100,14 @@ where
     }
 
     pub fn get_node1_leader_by_adding_data_sample(&self) -> Leader<Cc> {
-        let bytes = "find a leader".as_bytes();
+        let bytes = b"find a leader";
         let new_data_request = NewDataRequest {
             data: Arc::new(bytes),
         };
 
         let handler = self.client_handlers[&1].clone();
 
-        let result = handler.new_data(new_data_request.clone());
+        let result = handler.new_data(new_data_request);
         info!("--Leader Result: {:?}", result);
         if let Ok(resp) = result {
             let leader_id = resp.current_leader.expect("can get a leader");

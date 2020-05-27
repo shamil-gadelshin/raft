@@ -56,7 +56,10 @@ impl OperationLog for MemoryOperationLog {
             .expect("valid send");
 
         if let EntryContent::AddServer(add_server_request) = entry.entry_content {
-            trace!("New server configuration: {:?}", &add_server_request.new_cluster_configuration);
+            trace!(
+                "New server configuration: {:?}",
+                &add_server_request.new_cluster_configuration
+            );
             self.add_servers_to_cluster(add_server_request.new_cluster_configuration);
         }
 

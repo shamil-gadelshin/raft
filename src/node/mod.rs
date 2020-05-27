@@ -7,6 +7,13 @@ use crossbeam_channel::{Receiver, Sender};
 
 use crate::common::RaftWorkerPool;
 use crate::communication::client::ClientRequestChannels;
+use crate::leadership::status::administrator::RaftElectionsAdministrator;
+use crate::leadership::status::node_leadership_fsm::{
+    run_node_status_watcher, ElectionManagerParams,
+};
+use crate::leadership::watchdog::leader_status_watcher::watch_leader_status;
+use crate::leadership::watchdog::leader_status_watcher::WatchLeaderStatusParams;
+use crate::leadership::watchdog::watchdog_handler::LeadershipStatusWatchdogHandler;
 use crate::node::state::{Node, NodeStateSaver};
 use crate::operation_log::replication::heartbeat_sender::send_heartbeat_append_entries;
 use crate::operation_log::replication::heartbeat_sender::SendHeartbeatAppendEntriesParams;
@@ -20,23 +27,19 @@ use crate::rsm::ReplicatedStateMachine;
 use crate::{
     common, Cluster, ElectionTimer, NodeConfiguration, PeerRequestChannels, PeerRequestHandler,
 };
-use crate::leadership::watchdog::leader_status_watcher::{watch_leader_status};
-use crate::leadership::watchdog::leader_status_watcher::{WatchLeaderStatusParams};
-use crate::leadership::watchdog::watchdog_handler::LeadershipStatusWatchdogHandler;
-use crate::leadership::status::node_leadership_fsm::{run_node_status_watcher, ElectionManagerParams};
-use crate::leadership::status::administrator::RaftElectionsAdministrator;
 
 pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
-    node_config : NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
-    terminate_worker_rx : Receiver<()>)
-    where Log: OperationLog ,
-          Rsm: ReplicatedStateMachine,
-          Cc : ClientRequestChannels,
-          Pc : PeerRequestHandler + PeerRequestChannels,
-          Et : ElectionTimer,
-          Ns : NodeStateSaver,
-          Cl : Cluster {
-
+    node_config: NodeConfiguration<Log, Rsm, Cc, Pc, Et, Ns, Cl>,
+    terminate_worker_rx: Receiver<()>,
+) where
+    Log: OperationLog,
+    Rsm: ReplicatedStateMachine,
+    Cc: ClientRequestChannels,
+    Pc: PeerRequestHandler + PeerRequestChannels,
+    Et: ElectionTimer,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
+{
     let (replicate_log_to_peer_tx, replicate_log_to_peer_rx): (Sender<u64>, Receiver<u64>) =
         crossbeam_channel::unbounded();
     let (commit_index_updated_tx, commit_index_updated_rx): (Sender<u64>, Receiver<u64>) =
@@ -59,8 +62,8 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
 
     let leadership_watchdog_handler = LeadershipStatusWatchdogHandler::new();
 
-    let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx)
-        : (Sender<()>, Receiver<()>) = crossbeam_channel::unbounded();
+    let (leader_initial_heartbeat_tx, leader_initial_heartbeat_rx): (Sender<()>, Receiver<()>) =
+        crossbeam_channel::unbounded();
 
     let election_worker = common::run_worker(
         run_node_status_watcher,
@@ -71,7 +74,8 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
             leadership_status_watchdog_handler: leadership_watchdog_handler.clone(),
             peer_communicator: node_config.peer_communicator.clone(),
             cluster_configuration: node_config.cluster_configuration.clone(),
-        });
+        },
+    );
 
     let check_leader_worker = common::run_worker(
         watch_leader_status,
@@ -79,18 +83,20 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
             protected_node: protected_node.clone(),
             raft_elections_administrator: raft_elections_administrator.clone(),
             watchdog_event_rx: leadership_watchdog_handler.clone(),
-            election_timer: node_config.election_timer
-        });
+            election_timer: node_config.election_timer,
+        },
+    );
 
     let peer_request_processor_worker = common::run_worker(
         process_peer_request,
         PeerRequestHandlerParams {
             protected_node: protected_node.clone(),
-            raft_elections_administrator: raft_elections_administrator.clone(),
+            raft_elections_administrator,
             leadership_status_watchdog_handler: leadership_watchdog_handler,
             peer_communicator: node_config.peer_communicator.clone(),
-            communication_timeout: node_config.limits.communication_timeout
-        });
+            communication_timeout: node_config.limits.communication_timeout,
+        },
+    );
 
     let send_heartbeat_append_entries_worker = common::run_worker(
         send_heartbeat_append_entries,
@@ -99,8 +105,9 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
             cluster_configuration: node_config.cluster_configuration.clone(),
             communicator: node_config.peer_communicator.clone(),
             leader_initial_heartbeat_rx,
-            heartbeat_timeout: node_config.limits.heartbeat_timeout
-        });
+            heartbeat_timeout: node_config.limits.heartbeat_timeout,
+        },
+    );
 
     let client_request_handler_worker = common::run_worker(
         process_client_requests,
@@ -108,8 +115,9 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
             protected_node: protected_node.clone(),
             cluster_configuration: node_config.cluster_configuration.clone(),
             client_communicator: node_config.client_communicator.clone(),
-            max_data_content_size: node_config.limits.max_data_content_size
-        });
+            max_data_content_size: node_config.limits.max_data_content_size,
+        },
+    );
 
     let peer_log_replicator_worker = common::run_worker(
         replicate_log_to_peer,
@@ -117,15 +125,17 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
             protected_node: protected_node.clone(),
             replicate_log_to_peer_rx,
             replicate_log_to_peer_tx,
-            communicator: node_config.peer_communicator.clone()
-        });
+            communicator: node_config.peer_communicator.clone(),
+        },
+    );
 
     let fsm_updater_worker = common::run_worker(
         update_rsm,
         RsmUpdaterParams {
-            protected_node: protected_node.clone(),
-            commit_index_updated_rx
-        });
+            protected_node,
+            commit_index_updated_rx,
+        },
+    );
 
     let workers = vec![
         client_request_handler_worker,
@@ -134,7 +144,8 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
         check_leader_worker,
         election_worker,
         peer_log_replicator_worker,
-        fsm_updater_worker];
+        fsm_updater_worker,
+    ];
 
     let worker_pool = RaftWorkerPool::new(workers);
 
@@ -145,19 +156,13 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
         error!("Abnormal exit for node: {}", e);
     }
 
-    info!("Node {} termination requested", node_config.node_state.node_id);
+    info!(
+        "Node {} termination requested",
+        node_config.node_state.node_id
+    );
 
     worker_pool.terminate();
     worker_pool.join();
 
     info!("Node {} shutting down", node_config.node_state.node_id);
 }
-
-
-
-
-
-
-
-
-

@@ -74,7 +74,7 @@ impl PeerRequestHandler for InProcPeerCommunicator {
             request
         );
 
-        if request.entries.len() == 0 {
+        if request.entries.is_empty() {
             // only heartbeats
             self.append_entries_channels[&destination_node_id].send_request(request)
         } else {
@@ -83,7 +83,6 @@ impl PeerRequestHandler for InProcPeerCommunicator {
                     success: false,
                     term: request.term,
                 })
-            //				new_err("Communication blocked. No quorum emulation error".to_string(), String::new())
             } else {
                 self.append_entries_channels[&destination_node_id].send_request(request)
             }

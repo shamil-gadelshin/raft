@@ -93,7 +93,7 @@ where
             current_term: 0,
             vote_for_id: None,
         },
-        cluster_configuration: cluster_config.clone(),
+        cluster_configuration: cluster_config,
         peer_communicator: communicator,
         client_communicator: client_request_handler.clone(),
         election_timer,

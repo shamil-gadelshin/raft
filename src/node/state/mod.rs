@@ -9,7 +9,7 @@ use crate::operation_log::OperationLog;
 use crate::operation_log::{EntryContent, LogEntry};
 use crate::rsm::ReplicatedStateMachine;
 use crate::{errors, Cluster};
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 mod tests;
 
@@ -22,9 +22,9 @@ pub struct Node<Log, Rsm, Pc, Ns, Cl>
 where
     Log: OperationLog,
     Rsm: ReplicatedStateMachine,
-    Pc:  PeerRequestHandler,
-    Ns:  NodeStateSaver,
-    Cl:  Cluster,
+    Pc: PeerRequestHandler,
+    Ns: NodeStateSaver,
+    Cl: Cluster,
 {
     pub id: u64,
     current_term: u64,
@@ -55,8 +55,12 @@ pub enum NodeStatus {
 
 /// Persistent state of the node.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Display)]
-#[display(fmt = "Node state: node_id {} current_term {} voted_for_id {:?}",
-    node_id, current_term, vote_for_id)]
+#[display(
+    fmt = "Node state: node_id {} current_term {} voted_for_id {:?}",
+    node_id,
+    current_term,
+    vote_for_id
+)]
 pub struct NodeState {
     /// Node id.
     pub node_id: u64,
@@ -263,7 +267,7 @@ where
 
         self.set_commit_index(entry.index, false);
 
-        let add_entry_to_rsm_result = self.rsm.apply_entry(entry.clone());
+        let add_entry_to_rsm_result = self.rsm.apply_entry(entry);
         if let Err(err) = add_entry_to_rsm_result {
             let msg = format!("Append entry failed:{}", err);
 

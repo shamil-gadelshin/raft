@@ -36,9 +36,7 @@ impl ReplicatedStateMachine for MemoryRsm {
 
         if let EntryContent::Data(data_content) = entry.entry_content {
             self.data.push(data_content.clone());
-            self.debug_tx
-                .send(data_content.clone())
-                .expect("valid send");
+            self.debug_tx.send(data_content).expect("valid send");
         }
 
         trace!("Rsm applied entry: {}", entry.index);
