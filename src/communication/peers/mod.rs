@@ -1,8 +1,7 @@
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::errors::RaftError;
-use crate::operation_log::LogEntry;
-use crate::operation_log::QuorumResponse;
+use crate::operation_log::{LogEntry, QuorumResponse};
 
 /// Leadership election vote request.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Display)]

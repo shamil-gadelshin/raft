@@ -4,8 +4,9 @@ use crate::communication::client::{
 use crate::communication::peers::PeerRequestHandler;
 use crate::errors::RaftError;
 use crate::node::state::{NodeStateSaver, NodeStatus, ProtectedNode};
-use crate::operation_log::OperationLog;
-use crate::operation_log::{DataEntryContent, EntryContent, NewClusterConfigurationEntryContent};
+use crate::operation_log::{
+    DataEntryContent, EntryContent, NewClusterConfigurationEntryContent, OperationLog,
+};
 use crate::rsm::ReplicatedStateMachine;
 use crate::{errors, Cluster};
 use crossbeam_channel::Receiver;

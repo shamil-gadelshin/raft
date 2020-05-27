@@ -11,14 +11,17 @@ use crate::leadership::status::administrator::RaftElectionsAdministrator;
 use crate::leadership::status::node_leadership_fsm::{
     run_node_status_watcher, ElectionManagerParams,
 };
-use crate::leadership::watchdog::leader_status_watcher::watch_leader_status;
-use crate::leadership::watchdog::leader_status_watcher::WatchLeaderStatusParams;
+use crate::leadership::watchdog::leader_status_watcher::{
+    watch_leader_status, WatchLeaderStatusParams,
+};
 use crate::leadership::watchdog::watchdog_handler::LeadershipStatusWatchdogHandler;
 use crate::node::state::{Node, NodeStateSaver};
-use crate::operation_log::replication::heartbeat_sender::send_heartbeat_append_entries;
-use crate::operation_log::replication::heartbeat_sender::SendHeartbeatAppendEntriesParams;
-use crate::operation_log::replication::peer_log_replicator::replicate_log_to_peer;
-use crate::operation_log::replication::peer_log_replicator::LogReplicatorParams;
+use crate::operation_log::replication::heartbeat_sender::{
+    send_heartbeat_append_entries, SendHeartbeatAppendEntriesParams,
+};
+use crate::operation_log::replication::peer_log_replicator::{
+    replicate_log_to_peer, LogReplicatorParams,
+};
 use crate::operation_log::OperationLog;
 use crate::request_handler::client::{process_client_requests, ClientRequestHandlerParams};
 use crate::request_handler::peer::{process_peer_request, PeerRequestHandlerParams};
@@ -157,12 +160,12 @@ pub fn start<Log, Rsm, Cc, Pc, Et, Ns, Cl>(
     }
 
     info!(
-        "Node {} termination requested",
+        "Node {} - termination requested",
         node_config.node_state.node_id
     );
 
     worker_pool.terminate();
     worker_pool.join();
 
-    info!("Node {} shutting down", node_config.node_state.node_id);
+    info!("Node {} is shutting down", node_config.node_state.node_id);
 }

@@ -21,23 +21,21 @@ mod raft_facets;
 mod request_handler;
 mod rsm;
 
-pub use communication::client::{AddServerRequest, ClientRpcResponse, NewDataRequest};
 pub use communication::client::{
-    ClientRequestChannels, ClientRequestHandler, ClientResponseStatus,
+    AddServerRequest, ClientRequestChannels, ClientRequestHandler, ClientResponseStatus,
+    ClientRpcResponse, NewDataRequest,
 };
-pub use communication::peers::{AppendEntriesRequest, AppendEntriesResponse};
-pub use communication::peers::{PeerRequestChannels, PeerRequestHandler};
-pub use communication::peers::{VoteRequest, VoteResponse};
+pub use communication::peers::{
+    AppendEntriesRequest, AppendEntriesResponse, PeerRequestChannels, PeerRequestHandler,
+    VoteRequest, VoteResponse,
+};
 pub use errors::{new_err, RaftError};
 pub use leadership::ElectionTimer;
-pub use node::configuration::Cluster;
-pub use node::configuration::NodeConfiguration;
-pub use node::configuration::NodeLimits;
-pub use node::state::NodeState;
-pub use node::state::NodeStateSaver;
-pub use operation_log::LogEntry;
-pub use operation_log::OperationLog;
-pub use operation_log::{DataEntryContent, EntryContent, NewClusterConfigurationEntryContent};
+pub use node::configuration::{Cluster, NodeConfiguration, NodeLimits};
+pub use node::state::{NodeState, NodeStateSaver};
+pub use operation_log::{
+    DataEntryContent, EntryContent, LogEntry, NewClusterConfigurationEntryContent, OperationLog,
+};
 pub use rsm::ReplicatedStateMachine;
 
 /// Type alias for RaftWorker.
