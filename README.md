@@ -60,6 +60,6 @@ Project designed to be modular and independent of the actual implementations.
 Basic (example) implementations were separated in the [subproject](../master/raft-modules)
 
 ## Test cases and examples
-Assembled Raft Node server can be found [here](../node), with [client example](../master/tests/client)
+Assembled Raft Node server can be found [here](../master/node), with [client example](../master/tests/client)
 
 Plenty of different test configurations and cases can be found in [this subproject](../master/tests/cases).
