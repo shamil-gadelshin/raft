@@ -2,27 +2,27 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewDataRequest {
     /// data in binary format
-    #[prost(bytes, tag="1")]
+    #[prost(bytes, tag = "1")]
     pub data: std::vec::Vec<u8>,
 }
 ///add new server to the cluster request
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddServerRequest {
     ///new server id
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub new_server: u64,
 }
 ///Common Client RPC response
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientRpcResponse {
     ///response status
-    #[prost(enumeration="ClientResponseStatus", tag="1")]
+    #[prost(enumeration = "ClientResponseStatus", tag = "1")]
     pub status: i32,
     ///current leader id if any, 0 (zero) means no known leader yet
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub current_leader: u64,
     ///error message if ClientResponseStatus::Error
-    #[prost(string, tag="3")]
+    #[prost(string, tag = "3")]
     pub message: std::string::String,
 }
 /// Client RPC response status
@@ -41,8 +41,8 @@ pub enum ClientResponseStatus {
     Error = 4,
 }
 pub mod client {
-    use ::tower_grpc::codegen::client::*;
     use super::{AddServerRequest, ClientRpcResponse, NewDataRequest};
+    use ::tower_grpc::codegen::client::*;
 
     /// Client RPC
     #[derive(Debug, Clone)]
@@ -58,59 +58,82 @@ pub mod client {
 
         /// Poll whether this client is ready to send another request.
         pub fn poll_ready<R>(&mut self) -> futures::Poll<(), grpc::Status>
-        where T: grpc::GrpcService<R>,
+        where
+            T: grpc::GrpcService<R>,
         {
             self.inner.poll_ready()
         }
 
         /// Get a `Future` of when this client is ready to send another request.
         pub fn ready<R>(self) -> impl futures::Future<Item = Self, Error = grpc::Status>
-        where T: grpc::GrpcService<R>,
+        where
+            T: grpc::GrpcService<R>,
         {
             futures::Future::map(self.inner.ready(), |inner| Self { inner })
         }
 
         /// Client RPC
-        pub fn add_server<R>(&mut self, request: grpc::Request<AddServerRequest>) -> grpc::unary::ResponseFuture<ClientRpcResponse, T::Future, T::ResponseBody>
-        where T: grpc::GrpcService<R>,
-              grpc::unary::Once<AddServerRequest>: grpc::Encodable<R>,
+        pub fn add_server<R>(
+            &mut self,
+            request: grpc::Request<AddServerRequest>,
+        ) -> grpc::unary::ResponseFuture<ClientRpcResponse, T::Future, T::ResponseBody>
+        where
+            T: grpc::GrpcService<R>,
+            grpc::unary::Once<AddServerRequest>: grpc::Encodable<R>,
         {
-            let path = http::PathAndQuery::from_static("/grpc_client_communicator.ClientRequestHandler/AddServer");
+            let path = http::PathAndQuery::from_static(
+                "/grpc_client_communicator.ClientRequestHandler/AddServer",
+            );
             self.inner.unary(request, path)
         }
 
         /// Client RPC
-        pub fn new_data<R>(&mut self, request: grpc::Request<NewDataRequest>) -> grpc::unary::ResponseFuture<ClientRpcResponse, T::Future, T::ResponseBody>
-        where T: grpc::GrpcService<R>,
-              grpc::unary::Once<NewDataRequest>: grpc::Encodable<R>,
+        pub fn new_data<R>(
+            &mut self,
+            request: grpc::Request<NewDataRequest>,
+        ) -> grpc::unary::ResponseFuture<ClientRpcResponse, T::Future, T::ResponseBody>
+        where
+            T: grpc::GrpcService<R>,
+            grpc::unary::Once<NewDataRequest>: grpc::Encodable<R>,
         {
-            let path = http::PathAndQuery::from_static("/grpc_client_communicator.ClientRequestHandler/NewData");
+            let path = http::PathAndQuery::from_static(
+                "/grpc_client_communicator.ClientRequestHandler/NewData",
+            );
             self.inner.unary(request, path)
         }
     }
 }
 
 pub mod server {
-    use ::tower_grpc::codegen::server::*;
     use super::{AddServerRequest, ClientRpcResponse, NewDataRequest};
+    use ::tower_grpc::codegen::server::*;
 
     // Redefine the try_ready macro so that it doesn't need to be explicitly
     // imported by the user of this generated code.
     macro_rules! try_ready {
-        ($e:expr) => (match $e {
-            Ok(futures::Async::Ready(t)) => t,
-            Ok(futures::Async::NotReady) => return Ok(futures::Async::NotReady),
-            Err(e) => return Err(From::from(e)),
-        })
+        ($e:expr) => {
+            match $e {
+                Ok(futures::Async::Ready(t)) => t,
+                Ok(futures::Async::NotReady) => return Ok(futures::Async::NotReady),
+                Err(e) => return Err(From::from(e)),
+            }
+        };
     }
 
     /// Client RPC
     pub trait ClientRequestHandler: Clone {
-        type AddServerFuture: futures::Future<Item = grpc::Response<ClientRpcResponse>, Error = grpc::Status>;
-        type NewDataFuture: futures::Future<Item = grpc::Response<ClientRpcResponse>, Error = grpc::Status>;
+        type AddServerFuture: futures::Future<
+            Item = grpc::Response<ClientRpcResponse>,
+            Error = grpc::Status,
+        >;
+        type NewDataFuture: futures::Future<
+            Item = grpc::Response<ClientRpcResponse>,
+            Error = grpc::Status,
+        >;
 
         /// add new server to the cluster
-        fn add_server(&mut self, request: grpc::Request<AddServerRequest>) -> Self::AddServerFuture;
+        fn add_server(&mut self, request: grpc::Request<AddServerRequest>)
+            -> Self::AddServerFuture;
 
         /// add new data
         fn new_data(&mut self, request: grpc::Request<NewDataRequest>) -> Self::NewDataFuture;
@@ -122,15 +145,19 @@ pub mod server {
     }
 
     impl<T> ClientRequestHandlerServer<T>
-    where T: ClientRequestHandler,
+    where
+        T: ClientRequestHandler,
     {
         pub fn new(client_request_handler: T) -> Self {
-            Self { client_request_handler }
+            Self {
+                client_request_handler,
+            }
         }
     }
 
     impl<T> tower::Service<http::Request<grpc::BoxBody>> for ClientRequestHandlerServer<T>
-    where T: ClientRequestHandler,
+    where
+        T: ClientRequestHandler,
     {
         type Response = http::Response<client_request_handler::ResponseBody<T>>;
         type Error = grpc::Never;
@@ -145,24 +172,36 @@ pub mod server {
 
             match request.uri().path() {
                 "/grpc_client_communicator.ClientRequestHandler/AddServer" => {
-                    let service = client_request_handler::methods::AddServer(self.client_request_handler.clone());
+                    let service = client_request_handler::methods::AddServer(
+                        self.client_request_handler.clone(),
+                    );
                     let response = grpc::unary(service, request);
-                    client_request_handler::ResponseFuture { kind: AddServer(response) }
+                    client_request_handler::ResponseFuture {
+                        kind: AddServer(response),
+                    }
                 }
                 "/grpc_client_communicator.ClientRequestHandler/NewData" => {
-                    let service = client_request_handler::methods::NewData(self.client_request_handler.clone());
+                    let service = client_request_handler::methods::NewData(
+                        self.client_request_handler.clone(),
+                    );
                     let response = grpc::unary(service, request);
-                    client_request_handler::ResponseFuture { kind: NewData(response) }
+                    client_request_handler::ResponseFuture {
+                        kind: NewData(response),
+                    }
                 }
-                _ => {
-                    client_request_handler::ResponseFuture { kind: __Generated__Unimplemented(grpc::unimplemented(format!("unknown service: {:?}", request.uri().path()))) }
-                }
+                _ => client_request_handler::ResponseFuture {
+                    kind: __Generated__Unimplemented(grpc::unimplemented(format!(
+                        "unknown service: {:?}",
+                        request.uri().path()
+                    ))),
+                },
             }
         }
     }
 
     impl<T> tower::Service<()> for ClientRequestHandlerServer<T>
-    where T: ClientRequestHandler,
+    where
+        T: ClientRequestHandler,
     {
         type Response = Self;
         type Error = grpc::Never;
@@ -178,7 +217,8 @@ pub mod server {
     }
 
     impl<T> tower::Service<http::Request<tower_hyper::Body>> for ClientRequestHandlerServer<T>
-    where T: ClientRequestHandler,
+    where
+        T: ClientRequestHandler,
     {
         type Response = <Self as tower::Service<http::Request<grpc::BoxBody>>>::Response;
         type Error = <Self as tower::Service<http::Request<grpc::BoxBody>>>::Error;
@@ -195,12 +235,13 @@ pub mod server {
     }
 
     pub mod client_request_handler {
-        use ::tower_grpc::codegen::server::*;
-        use super::ClientRequestHandler;
         use super::super::{AddServerRequest, NewDataRequest};
+        use super::ClientRequestHandler;
+        use ::tower_grpc::codegen::server::*;
 
         pub struct ResponseFuture<T>
-        where T: ClientRequestHandler,
+        where
+            T: ClientRequestHandler,
         {
             pub(super) kind: Kind<
                 // AddServer
@@ -213,7 +254,8 @@ pub mod server {
         }
 
         impl<T> futures::Future for ResponseFuture<T>
-        where T: ClientRequestHandler,
+        where
+            T: ClientRequestHandler,
         {
             type Item = http::Response<ResponseBody<T>>;
             type Error = grpc::Never;
@@ -224,22 +266,22 @@ pub mod server {
                 match self.kind {
                     AddServer(ref mut fut) => {
                         let response = try_ready!(fut.poll());
-                        let response = response.map(|body| {
-                            ResponseBody { kind: AddServer(body) }
+                        let response = response.map(|body| ResponseBody {
+                            kind: AddServer(body),
                         });
                         Ok(response.into())
                     }
                     NewData(ref mut fut) => {
                         let response = try_ready!(fut.poll());
-                        let response = response.map(|body| {
-                            ResponseBody { kind: NewData(body) }
+                        let response = response.map(|body| ResponseBody {
+                            kind: NewData(body),
                         });
                         Ok(response.into())
                     }
                     __Generated__Unimplemented(ref mut fut) => {
                         let response = try_ready!(fut.poll());
-                        let response = response.map(|body| {
-                            ResponseBody { kind: __Generated__Unimplemented(body) }
+                        let response = response.map(|body| ResponseBody {
+                            kind: __Generated__Unimplemented(body),
                         });
                         Ok(response.into())
                     }
@@ -248,20 +290,30 @@ pub mod server {
         }
 
         pub struct ResponseBody<T>
-        where T: ClientRequestHandler,
+        where
+            T: ClientRequestHandler,
         {
             pub(super) kind: Kind<
                 // AddServer
-                grpc::Encode<grpc::unary::Once<<methods::AddServer<T> as grpc::UnaryService<AddServerRequest>>::Response>>,
+                grpc::Encode<
+                    grpc::unary::Once<
+                        <methods::AddServer<T> as grpc::UnaryService<AddServerRequest>>::Response,
+                    >,
+                >,
                 // NewData
-                grpc::Encode<grpc::unary::Once<<methods::NewData<T> as grpc::UnaryService<NewDataRequest>>::Response>>,
+                grpc::Encode<
+                    grpc::unary::Once<
+                        <methods::NewData<T> as grpc::UnaryService<NewDataRequest>>::Response,
+                    >,
+                >,
                 // A generated catch-all for unimplemented service calls
                 (),
             >,
         }
 
         impl<T> tower::HttpBody for ResponseBody<T>
-        where T: ClientRequestHandler,
+        where
+            T: ClientRequestHandler,
         {
             type Data = <grpc::BoxBody as grpc::Body>::Data;
             type Error = grpc::Status;
@@ -306,13 +358,16 @@ pub mod server {
         }
 
         pub mod methods {
+            use super::super::{
+                AddServerRequest, ClientRequestHandler, ClientRpcResponse, NewDataRequest,
+            };
             use ::tower_grpc::codegen::server::*;
-            use super::super::{ClientRequestHandler, AddServerRequest, ClientRpcResponse, NewDataRequest};
 
             pub struct AddServer<T>(pub T);
 
             impl<T> tower::Service<grpc::Request<AddServerRequest>> for AddServer<T>
-            where T: ClientRequestHandler,
+            where
+                T: ClientRequestHandler,
             {
                 type Response = grpc::Response<ClientRpcResponse>;
                 type Error = grpc::Status;
@@ -330,7 +385,8 @@ pub mod server {
             pub struct NewData<T>(pub T);
 
             impl<T> tower::Service<grpc::Request<NewDataRequest>> for NewData<T>
-            where T: ClientRequestHandler,
+            where
+                T: ClientRequestHandler,
             {
                 type Response = grpc::Response<ClientRpcResponse>;
                 type Error = grpc::Status;

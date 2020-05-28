@@ -1,5 +1,7 @@
 use raft::{NodeConfiguration, NodeLimits, NodeWorker, PeerRequestChannels, PeerRequestHandler};
-use raft_modules::{FixedElectionTimer, InProcClientCommunicator};
+use raft_modules::{FixedElectionTimer, InProcClientCommunicator, MemoryRsm};
+
+use crate::create_node_configuration_in_proc;
 
 pub fn create_custom_node_inproc<Pc>(
     node_id: u64,
@@ -13,13 +15,13 @@ where
     let mut node_limits = NodeLimits::default();
     node_limits.max_data_content_size = 15;
 
-    let (client_request_handler, generic_node_config) =
-        crate::steps::create_generic_node_configuration_inproc(
-            node_id,
-            all_nodes,
-            peer_communicator,
-            election_timer,
-        );
+    let (client_request_handler, generic_node_config) = create_node_configuration_in_proc!(
+        node_id,
+        all_nodes,
+        peer_communicator,
+        election_timer,
+        MemoryRsm::new()
+    );
 
     let node_config = NodeConfiguration {
         limits: node_limits,

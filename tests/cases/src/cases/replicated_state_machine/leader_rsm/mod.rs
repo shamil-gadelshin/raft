@@ -19,13 +19,12 @@ pub fn run() {
         node_ids,
         peer_communicator,
         |node_id, all_nodes, peer_communicator| {
-            let election_timer = FixedElectionTimer::new(1000);
             let (client_request_handler, node_config) = create_node_configuration_in_proc!(
                 node_id,
                 all_nodes,
                 peer_communicator,
-                election_timer,
-                rsm.clone(),
+                FixedElectionTimer::new(1000),
+                rsm.clone()
             );
             let node_worker = raft::start_node(node_config);
 

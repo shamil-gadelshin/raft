@@ -40,7 +40,7 @@ macro_rules! create_node_configuration_in_proc {
         $all_nodes:expr,
         $communicator:expr,
         $election_timer:expr,
-        $rsm:expr,
+        $rsm:expr
     ) => {{
         let cluster_config = raft_modules::ClusterConfiguration::new($all_nodes);
         let operation_log = raft_modules::MemoryOperationLog::new(cluster_config.clone());
@@ -55,33 +55,3 @@ macro_rules! create_node_configuration_in_proc {
         )
     }};
 }
-
-//
-// pub fn create_node_configuration_inproc<Pc, Et, Rsm>(
-//     node_id: u64,
-//     all_nodes: Vec<u64>,
-//     communicator: Pc,
-//     election_timer: Et,
-//     rsm: Rsm,
-// ) -> (
-//     InProcClientCommunicator,
-//     NodeConfiguration<
-//         MemoryOperationLog,
-//         Rsm,
-//         InProcClientCommunicator,
-//         Pc,
-//         Et,
-//         MockNodeStateSaver,
-//         ClusterConfiguration,
-//     >,
-// )
-// where
-//     Pc: PeerRequestHandler + PeerRequestChannels,
-//     Et: ElectionTimer,
-//     Rsm: ReplicatedStateMachine,
-// {
-//     let cluster_config = ClusterConfiguration::new(all_nodes);
-//     let operation_log = MemoryOperationLog::new(cluster_config.clone());
-//
-//     create_node_configuration!(node_id, cluster_config, communicator, election_timer, rsm, operation_log)
-// }

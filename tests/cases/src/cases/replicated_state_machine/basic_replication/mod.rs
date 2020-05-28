@@ -37,7 +37,7 @@ pub fn run() {
             all_nodes,
             peer_communicator,
             election_timer,
-            rsm.clone(),
+            rsm.clone()
         );
         let node_worker = raft::start_node(node_config);
 

@@ -1,11 +1,13 @@
 use crate::steps;
 use crossbeam_channel::{Receiver, Sender};
 use raft::{DataEntryContent, EntryContent, LogEntry, OperationLog};
-use raft_modules::{ClusterConfiguration, RandomizedElectionTimer};
+use raft_modules::{ClusterConfiguration, MemoryRsm, RandomizedElectionTimer};
 use std::sync::Arc;
 
 mod configuration;
 mod custom_operation_log;
+
+use crate::create_node_configuration;
 
 pub fn run() {
     let node_ids = vec![1, 2];
@@ -45,14 +47,16 @@ pub fn run() {
         .expect("append successful");
 
     // run new server with custom log
+
     cluster.add_new_server(new_node_id, |node_id, all_nodes, peer_communicator| {
-        let election_timer = RandomizedElectionTimer::new(2000, 4000);
-        let (client_request_handler, node_config) = configuration::create_node_configuration_inproc(
+        let cluster_config = ClusterConfiguration::new(all_nodes);
+        let (client_request_handler, node_config) = create_node_configuration!(
             node_id,
-            all_nodes,
+            cluster_config,
             peer_communicator,
-            election_timer,
-            operation_log.clone(),
+            RandomizedElectionTimer::new(2000, 4000),
+            MemoryRsm::new(),
+            operation_log.clone()
         );
         let node_worker = raft::start_node(node_config);
 
