@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 pub struct MemoryRsm {
     data: Vec<DataEntryContent>,
     last_applied_index: u64,
-    lock: Arc<Mutex<bool>>,
+    lock: Arc<Mutex<()>>,
 }
 
 impl MemoryRsm {
@@ -16,8 +16,14 @@ impl MemoryRsm {
         MemoryRsm {
             data: Vec::new(),
             last_applied_index: 0,
-            lock: Arc::new(Mutex::new(true)),
+            lock: Arc::new(Mutex::new(())),
         }
+    }
+}
+
+impl Default for MemoryRsm {
+    fn default() -> Self {
+        MemoryRsm::new()
     }
 }
 

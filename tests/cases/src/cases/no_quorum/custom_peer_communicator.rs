@@ -77,15 +77,13 @@ impl PeerRequestHandler for InProcPeerCommunicator {
         if request.entries.is_empty() {
             // only heartbeats
             self.append_entries_channels[&destination_node_id].send_request(request)
+        } else if destination_node_id == 3 || destination_node_id == 4 {
+            Ok(AppendEntriesResponse {
+                success: false,
+                term: request.term,
+            })
         } else {
-            if destination_node_id == 3 || destination_node_id == 4 {
-                Ok(AppendEntriesResponse {
-                    success: false,
-                    term: request.term,
-                })
-            } else {
-                self.append_entries_channels[&destination_node_id].send_request(request)
-            }
+            self.append_entries_channels[&destination_node_id].send_request(request)
         }
     }
 }

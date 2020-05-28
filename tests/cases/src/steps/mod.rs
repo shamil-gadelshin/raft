@@ -82,10 +82,10 @@ where
     Pc: PeerRequestHandler + PeerRequestChannels,
     Et: ElectionTimer,
 {
-    let cluster_config = ClusterConfiguration::new(all_nodes);
+    let cluster_configuration = ClusterConfiguration::new(all_nodes);
     let client_request_handler =
         InProcClientCommunicator::new(node_id, crate::steps::get_client_communication_timeout());
-    let operation_log = MemoryOperationLog::new(cluster_config.clone());
+    let operation_log = MemoryOperationLog::new(cluster_configuration.clone());
 
     let config = NodeConfiguration {
         node_state: NodeState {
@@ -93,7 +93,7 @@ where
             current_term: 0,
             vote_for_id: None,
         },
-        cluster_configuration: cluster_config,
+        cluster_configuration,
         peer_communicator: communicator,
         client_communicator: client_request_handler.clone(),
         election_timer,

@@ -11,7 +11,7 @@ pub struct MemoryOperationLog {
     cluster: ClusterConfiguration,
     last_index: u64,
     entries: Vec<LogEntry>,
-    lock: Arc<Mutex<bool>>,
+    lock: Arc<Mutex<()>>,
 }
 
 impl MemoryOperationLog {
@@ -21,7 +21,7 @@ impl MemoryOperationLog {
             cluster,
             entries: Vec::new(),
             last_index: 0,
-            lock: Arc::new(Mutex::new(true)),
+            lock: Arc::new(Mutex::new(())),
         }
     }
 }

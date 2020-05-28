@@ -2,9 +2,9 @@
 //!
 //! This subproject of the [raft](https://github.com/shamil-gadelshin/raft) provides examples or
 //! test implementations of the Raft Modules.
-//! 
+//!
 //! ## Modules
-//! 
+//!
 //! - **Operation log** - supports operation log entries processing and calculating parameters (index, term, etc).
 //! - **Replicated state machine** - supports operations with replicated state machine (like 'append new entry').
 //! - **Peer request handler** - module responsible for communication between Raft Nodes.
@@ -12,13 +12,13 @@
 //! - **Cluster** - defines cluster membership and quorum rules.
 //! - **Election timer** - calculates duration to the next elections.
 //! - **Node state saver** - responsible for node state persistence.
-//! 
-//! 
+//!
+//!
 //! ## Implementations
-//! 
+//!
 //! - Operation log - **MemoryOperationLog** - memory based operation log. No persistence. For testing.
 //! - Replicated state machine - **MemoryRsm** - memory based state machine emulation. No persistence. For testing.
-//! - Peer request handler 
+//! - Peer request handler
 //!   + **InProcPeerCommunicator** - channel-based implementation. For in-process testing.
 //!   + **NetworkPeerCommunicator** - grpc-based implementation. Can be used as template for real-case.
 //! - Client request handler

@@ -1,3 +1,0 @@
-// you can use this utility to profile project performance: https://crates.io/crates/cargo-instruments
-
- cargo instruments -t time --open
