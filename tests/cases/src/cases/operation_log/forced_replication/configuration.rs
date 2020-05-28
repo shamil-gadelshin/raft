@@ -1,7 +1,7 @@
 use raft::{NodeConfiguration, NodeState, NodeWorker, PeerRequestChannels, PeerRequestHandler};
 use raft_modules::{FixedElectionTimer, InProcClientCommunicator, MemoryRsm};
 
-use crate::create_node_configuration_in_proc;
+use crate::create_node_configuration;
 
 pub fn create_different_term_node_configuration_inproc<Pc>(
     node_id: u64,
@@ -11,7 +11,7 @@ pub fn create_different_term_node_configuration_inproc<Pc>(
 where
     Pc: PeerRequestHandler + PeerRequestChannels,
 {
-    let (client_request_handler, mut node_config) = create_node_configuration_in_proc!(
+    let (client_request_handler, node_config) = create_node_configuration!(
         node_id,
         all_nodes,
         communicator,
@@ -19,7 +19,7 @@ where
         MemoryRsm::new()
     );
 
-    node_config = NodeConfiguration {
+    let node_config = NodeConfiguration {
         node_state: NodeState {
             node_id,
             current_term: 3,

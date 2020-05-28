@@ -10,7 +10,7 @@ pub mod cluster;
 pub mod configuration;
 pub mod data;
 
-use crate::create_node_configuration_in_proc;
+use crate::create_node_configuration;
 
 pub fn get_generic_peer_communicator(nodes: Vec<u64>) -> InProcPeerCommunicator {
     InProcPeerCommunicator::new(nodes, get_peers_communication_timeout())
@@ -37,7 +37,7 @@ where
     Pc: PeerRequestHandler + PeerRequestChannels,
 {
     if node_id == 1 {
-        let (client_request_handler, node_config) = create_node_configuration_in_proc!(
+        let (client_request_handler, node_config) = create_node_configuration!(
             node_id,
             all_nodes,
             peer_communicator,
@@ -49,7 +49,7 @@ where
         return (node_worker, client_request_handler);
     }
 
-    let (client_request_handler, node_config) = create_node_configuration_in_proc!(
+    let (client_request_handler, node_config) = create_node_configuration!(
         node_id,
         all_nodes,
         peer_communicator,

@@ -1,5 +1,6 @@
 #[macro_export]
-macro_rules! create_node_configuration_with_client_handler {
+macro_rules! create_node_configuration {
+    // Generic
     (
         $node_id:expr,
         $client_request_handler:expr,
@@ -27,10 +28,27 @@ macro_rules! create_node_configuration_with_client_handler {
 
         ($client_request_handler, config)
     }};
-}
+    // Generate log and cluster config
+    (
+        $node_id:expr,
+        $all_nodes:expr,
+        $communicator:expr,
+        $election_timer:expr,
+        $rsm:expr
+    ) => {{
+        let cluster_config = raft_modules::ClusterConfiguration::new($all_nodes);
+        let operation_log = raft_modules::MemoryOperationLog::new(cluster_config.clone());
 
-#[macro_export]
-macro_rules! create_node_configuration_with_log {
+        crate::create_node_configuration!(
+            $node_id,
+            cluster_config,
+            $communicator,
+            $election_timer,
+            $rsm,
+            operation_log
+        )
+    }};
+    // Generate InProcClientCommunicator
     (
         $node_id:expr,
         $cluster_config:expr,
@@ -44,7 +62,7 @@ macro_rules! create_node_configuration_with_log {
             crate::steps::get_client_communication_timeout(),
         );
 
-        crate::create_node_configuration_with_client_handler!(
+        crate::create_node_configuration!(
             $node_id,
             client_request_handler,
             $cluster_config,
@@ -52,29 +70,6 @@ macro_rules! create_node_configuration_with_log {
             $election_timer,
             $rsm,
             $operation_log
-        )
-    }};
-}
-
-#[macro_export]
-macro_rules! create_node_configuration_in_proc {
-    (
-        $node_id:expr,
-        $all_nodes:expr,
-        $communicator:expr,
-        $election_timer:expr,
-        $rsm:expr
-    ) => {{
-        let cluster_config = raft_modules::ClusterConfiguration::new($all_nodes);
-        let operation_log = raft_modules::MemoryOperationLog::new(cluster_config.clone());
-
-        crate::create_node_configuration_with_log!(
-            $node_id,
-            cluster_config,
-            $communicator,
-            $election_timer,
-            $rsm,
-            operation_log
         )
     }};
 }
