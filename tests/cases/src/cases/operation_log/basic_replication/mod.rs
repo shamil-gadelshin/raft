@@ -6,7 +6,7 @@ use raft_modules::{ClusterConfiguration, MemoryRsm, RandomizedElectionTimer};
 
 mod custom_operation_log;
 
-use crate::create_node_configuration;
+use crate::create_node_configuration_with_log;
 
 pub fn run() {
     let node_ids = vec![1, 2];
@@ -35,7 +35,7 @@ pub fn run() {
     // run new server
     cluster.add_new_server(new_node_id, |node_id, all_nodes, peer_communicator| {
         let cluster_config = ClusterConfiguration::new(all_nodes);
-        let (client_request_handler, node_config) = create_node_configuration!(
+        let (client_request_handler, node_config) = create_node_configuration_with_log!(
             node_id,
             cluster_config,
             peer_communicator,

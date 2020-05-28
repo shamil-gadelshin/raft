@@ -11,17 +11,16 @@ pub fn create_custom_node_inproc<Pc>(
 where
     Pc: PeerRequestHandler + PeerRequestChannels,
 {
-    let election_timer = FixedElectionTimer::new(1000); // leader
-    let mut node_limits = NodeLimits::default();
-    node_limits.max_data_content_size = 15;
-
     let (client_request_handler, generic_node_config) = create_node_configuration_in_proc!(
         node_id,
         all_nodes,
         peer_communicator,
-        election_timer,
+        FixedElectionTimer::new(1000), // leader,
         MemoryRsm::new()
     );
+
+    let mut node_limits = NodeLimits::default();
+    node_limits.max_data_content_size = 15;
 
     let node_config = NodeConfiguration {
         limits: node_limits,
