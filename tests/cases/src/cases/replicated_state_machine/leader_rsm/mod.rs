@@ -4,7 +4,7 @@ use crossbeam_channel::{Receiver, Sender};
 use raft::DataEntryContent;
 use raft_modules::FixedElectionTimer;
 
-mod configuration;
+use crate::create_node_configuration_in_proc;
 mod custom_rsm;
 
 pub fn run() {
@@ -20,14 +20,13 @@ pub fn run() {
         peer_communicator,
         |node_id, all_nodes, peer_communicator| {
             let election_timer = FixedElectionTimer::new(1000);
-            let (client_request_handler, node_config) =
-                configuration::create_node_configuration_inproc(
-                    node_id,
-                    all_nodes,
-                    peer_communicator,
-                    election_timer,
-                    rsm.clone(),
-                );
+            let (client_request_handler, node_config) = create_node_configuration_in_proc!(
+                node_id,
+                all_nodes,
+                peer_communicator,
+                election_timer,
+                rsm.clone(),
+            );
             let node_worker = raft::start_node(node_config);
 
             (node_worker, client_request_handler)

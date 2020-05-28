@@ -86,7 +86,7 @@ dependencies = [
 
 [[package]]
 name = "cases"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -961,7 +961,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "smoke"
 version = "0.1.0"
 dependencies = [
- "cases 0.1.0",
+ "cases 0.1.1",
  "chrono 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -12,6 +12,8 @@ use std::time::Duration;
 pub mod cluster;
 pub mod data;
 
+pub mod configuration;
+
 pub fn get_generic_peer_communicator(nodes: Vec<u64>) -> InProcPeerCommunicator {
     InProcPeerCommunicator::new(nodes, get_peers_communication_timeout())
 }

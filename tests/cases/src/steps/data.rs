@@ -47,7 +47,6 @@ pub fn add_server<Cc: ClientRequestHandler>(leader: &Leader<Cc>, new_node_id: u6
 
 pub fn add_ten_thousands_data_samples<Cc: ClientRequestHandler>(leader: Leader<Cc>) {
     fn add_thousands_of_data<Cc: ClientRequestHandler + ?Sized + Sync>(client_handler: Arc<Cc>) {
-        //  thread::sleep(Duration::from_secs(7));
         let bytes = b"lot of small data";
         let data_request = NewDataRequest {
             data: Arc::new(bytes),
@@ -58,5 +57,4 @@ pub fn add_ten_thousands_data_samples<Cc: ClientRequestHandler>(leader: Leader<C
     }
 
     add_thousands_of_data(leader.client_handler);
-    //	thread::spawn(     ||add_thousands_of_data(leader.client_handler));
 }

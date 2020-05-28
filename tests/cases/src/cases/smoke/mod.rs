@@ -7,7 +7,7 @@ pub fn run() {
     let node_ids = vec![1, 2];
     let new_node_id = node_ids.last().unwrap() + 1;
 
-    let peer_communicator = steps::get_generic_peer_communicator(vec![1, 2, 3]); //stub
+    let peer_communicator = steps::get_generic_peer_communicator(vec![1, 2, 3]);
     let mut cluster = steps::cluster::start_initial_cluster(
         node_ids,
         peer_communicator,

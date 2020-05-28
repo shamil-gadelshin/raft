@@ -4,7 +4,7 @@ use crossbeam_channel::{Receiver, Sender};
 use raft::DataEntryContent;
 use raft_modules::RandomizedElectionTimer;
 
-mod configuration;
+use crate::create_node_configuration_in_proc;
 mod custom_rsm;
 
 pub fn run() {
@@ -32,7 +32,7 @@ pub fn run() {
     // run new server
     cluster.add_new_server(new_node_id, |node_id, all_nodes, peer_communicator| {
         let election_timer = RandomizedElectionTimer::new(2000, 4000);
-        let (client_request_handler, node_config) = configuration::create_node_configuration_inproc(
+        let (client_request_handler, node_config) = create_node_configuration_in_proc!(
             node_id,
             all_nodes,
             peer_communicator,
