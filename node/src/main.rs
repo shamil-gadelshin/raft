@@ -1,3 +1,7 @@
+//! # Raft Node
+//!
+//! This subproject of the provides assembled Raft Node Server example.
+
 #[macro_use]
 extern crate log;
 extern crate chrono;

@@ -46,28 +46,20 @@ Project designed to be modular and independent of the actual implementations.
 
 ## These modules must be implemented in order to run Raft Node
 
-- Operation log
-  + Supports operation log entries processing and calculating parameters (index, term, etc).
-- Replicated state machine
-  + Supports operations with replicated state machine (like 'append new entry').
-- Peer request handler
-  + Module responsible for communication between Raft Nodes.
-- Client request handler
-  + This module responsible for client communication. Module handles request like 'add new data' or 'add server'.
-- Cluster
-  + Defines cluster membership and quorum rules.
-- Election timer
-  + Calculates duration to the next elections.
-- Node limits
-  + Defines node timeouts and limits (e.g.: max request data size)
-- Node state saver
-  + Responsible for node state persistence
+- **Operation log** - supports operation log entries processing and calculating parameters (index, term, etc).
+- **Replicated state machine** - supports operations with replicated state machine (like 'append new entry').
+- **Peer request handler** - Module responsible for communication between Raft Nodes.
+- **Client request handler** - this module responsible for client communication. Module handles request like 'add new data' or 'add server'.
+- **Cluster** - defines cluster membership and quorum rules.
+- **Election timer** - calculates duration to the next elections.
+- **Node limits** - defines node timeouts and limits (e.g.: max request data size)
+- **Node state saver** - responsible for node state persistence
 
 ## Raft Modules implementations
 
-Basic (examplar) implementations were separated in the [subproject](../master/raft-modules)
+Basic (example) implementations were separated in the [subproject](../master/raft-modules)
 
 ## Test cases and examples
-Assembled Raft Node server can be found [here](../master/tests/node), with [client example](../master/tests/client)
+Assembled Raft Node server can be found [here](../node), with [client example](../master/tests/client)
 
 Plenty of different test configurations and cases can be found in [this subproject](../master/tests/cases).

@@ -1,3 +1,7 @@
+//! # Raft Node Client
+//!
+//! This subproject of the  provides assembled Raft Node Client example.
+
 extern crate chrono;
 extern crate crossbeam_channel;
 extern crate env_logger;
