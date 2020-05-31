@@ -43,7 +43,7 @@ where
             peer_communicator,
             FixedElectionTimer::new(1000), // leader
             MemoryRsm::new()
-        )
+        );
     }
 
     create_node_worker!(

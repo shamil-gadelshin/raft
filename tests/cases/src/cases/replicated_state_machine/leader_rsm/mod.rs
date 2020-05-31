@@ -15,7 +15,7 @@ pub fn run() {
     let (tx, rx): (Sender<DataEntryContent>, Receiver<DataEntryContent>) =
         crossbeam_channel::unbounded();
     let rsm = custom_rsm::MemoryRsm::new(tx);
-    
+
     let cluster = steps::cluster::start_initial_cluster(
         node_ids,
         peer_communicator,
