@@ -4,7 +4,7 @@ use raft_modules::{
     RandomizedElectionTimer,
 };
 
-use crate::create_node_configuration;
+use crate::create_node_worker;
 
 pub fn create_node_with_network<Pc: PeerRequestHandler + PeerRequestChannels>(
     node_id: u64,
@@ -24,7 +24,7 @@ pub fn create_node_with_network<Pc: PeerRequestHandler + PeerRequestChannels>(
     let cluster_config = ClusterConfiguration::new(all_nodes);
     let operation_log = MemoryOperationLog::new(cluster_config.clone());
 
-    let (client_request_handler, node_config) = create_node_configuration!(
+    create_node_worker!(
         node_id,
         client_request_handler,
         cluster_config,
@@ -32,11 +32,7 @@ pub fn create_node_with_network<Pc: PeerRequestHandler + PeerRequestChannels>(
         RandomizedElectionTimer::new(2000, 4000),
         MemoryRsm::new(),
         operation_log
-    );
-
-    let node_worker = raft::start_node(node_config);
-
-    (node_worker, client_request_handler)
+    )
 }
 
 fn get_client_requests_address(node_id: u64) -> String {

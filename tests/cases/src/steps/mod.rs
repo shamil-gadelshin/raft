@@ -10,7 +10,7 @@ pub mod cluster;
 pub mod configuration;
 pub mod data;
 
-use crate::create_node_configuration;
+use crate::create_node_worker;
 
 pub fn get_generic_peer_communicator(nodes: Vec<u64>) -> InProcPeerCommunicator {
     InProcPeerCommunicator::new(nodes, get_peers_communication_timeout())
@@ -37,26 +37,20 @@ where
     Pc: PeerRequestHandler + PeerRequestChannels,
 {
     if node_id == 1 {
-        let (client_request_handler, node_config) = create_node_configuration!(
+        return create_node_worker!(
             node_id,
             all_nodes,
             peer_communicator,
             FixedElectionTimer::new(1000), // leader
             MemoryRsm::new()
-        );
-        let node_worker = raft::start_node(node_config);
-
-        return (node_worker, client_request_handler);
+        )
     }
 
-    let (client_request_handler, node_config) = create_node_configuration!(
+    create_node_worker!(
         node_id,
         all_nodes,
         peer_communicator,
         RandomizedElectionTimer::new(2000, 4000),
         MemoryRsm::new()
-    );
-    let node_worker = raft::start_node(node_config);
-
-    (node_worker, client_request_handler)
+    )
 }

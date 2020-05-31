@@ -4,7 +4,7 @@ use crossbeam_channel::{Receiver, Sender};
 use raft::DataEntryContent;
 use raft_modules::FixedElectionTimer;
 
-use crate::create_node_configuration;
+use crate::create_node_worker;
 mod custom_rsm;
 
 pub fn run() {
@@ -15,20 +15,18 @@ pub fn run() {
     let (tx, rx): (Sender<DataEntryContent>, Receiver<DataEntryContent>) =
         crossbeam_channel::unbounded();
     let rsm = custom_rsm::MemoryRsm::new(tx);
+    
     let cluster = steps::cluster::start_initial_cluster(
         node_ids,
         peer_communicator,
         |node_id, all_nodes, peer_communicator| {
-            let (client_request_handler, node_config) = create_node_configuration!(
+            create_node_worker!(
                 node_id,
                 all_nodes,
                 peer_communicator,
                 FixedElectionTimer::new(1000),
                 rsm.clone()
-            );
-            let node_worker = raft::start_node(node_config);
-
-            (node_worker, client_request_handler)
+            )
         },
     );
 

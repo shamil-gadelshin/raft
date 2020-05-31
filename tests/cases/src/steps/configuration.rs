@@ -73,3 +73,16 @@ macro_rules! create_node_configuration {
         )
     }};
 }
+
+#[macro_export]
+macro_rules! create_node_worker {
+    (
+        $($tail:tt)*
+    ) => {{
+        let (client_request_handler, node_config) = crate::create_node_configuration!($($tail)*);
+
+		let node_worker = raft::start_node(node_config);
+
+		(node_worker, client_request_handler)
+    }}
+}
