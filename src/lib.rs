@@ -17,7 +17,6 @@ mod errors;
 mod leadership;
 mod node;
 mod operation_log;
-mod raft_facets;
 mod request_handler;
 mod rsm;
 
