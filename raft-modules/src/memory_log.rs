@@ -1,8 +1,9 @@
 use crate::ClusterConfiguration;
+use parking_lot::Mutex;
 use raft::OperationLog;
 use raft::RaftError;
 use raft::{EntryContent, LogEntry};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Basic in-memory implementation of the OperationLog trait. It is responsible for updating
 /// the cluster configuration.

@@ -58,10 +58,8 @@ fn process_update_fsm_request<Log, Rsm, Pc, Ns, Cl>(
     Ns: NodeStateSaver,
     Cl: Cluster,
 {
-    let mut node = params
-        .protected_node
-        .lock()
-        .expect("node lock is not poisoned");
+    let mut node = params.protected_node.lock();
+
     trace!(
         "Update Rsm request for Node {}, Commit index = {}",
         node.id,

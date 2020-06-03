@@ -61,10 +61,8 @@ fn process_replication_request<Log, Rsm, Pc, Ns, Cl>(
 {
     trace!("Replicate request for peer {}", peer_id);
 
-    let mut node = params
-        .protected_node
-        .lock()
-        .expect("node lock is not poisoned");
+    let mut node = params.protected_node.lock();
+
     if node.status != NodeStatus::Leader {
         warn!(
             "Obsolete (Not a Leader) replicate log request - Node {} to peer {} ",

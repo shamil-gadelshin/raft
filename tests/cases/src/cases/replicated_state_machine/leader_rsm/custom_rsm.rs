@@ -1,7 +1,8 @@
 use crossbeam_channel::Sender;
+use parking_lot::Mutex;
 use raft::RaftError;
 use raft::{DataEntryContent, EntryContent, LogEntry, ReplicatedStateMachine};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct MemoryRsm {

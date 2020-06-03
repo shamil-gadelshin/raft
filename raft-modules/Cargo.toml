@@ -9,6 +9,7 @@ raft = { package = "raft", path = "../"}
 log = "0.4"
 crossbeam-channel = "0.3"
 rand = "0.6.5"
+parking_lot = "0.10.2"
 
 futures = "0.1"
 bytes = "0.4"

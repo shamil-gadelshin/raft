@@ -1,6 +1,7 @@
+use parking_lot::Mutex;
 use raft::RaftError;
 use raft::{DataEntryContent, EntryContent, LogEntry, ReplicatedStateMachine};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Basic in-memory implementation of the ReplicatedStateMachine trait.
 #[derive(Debug, Clone)]

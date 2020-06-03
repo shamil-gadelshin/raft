@@ -106,7 +106,7 @@ where
     Ns: NodeStateSaver,
     Cl: Cluster,
 {
-    let mut node = protected_node.lock().expect("node lock is not poisoned");
+    let mut node = protected_node.lock();
 
     if let EntryContent::Data(content) = &entry_content {
         if content.data.len() as u64 > max_data_content_size {

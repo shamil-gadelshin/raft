@@ -72,10 +72,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
 {
     match event {
         LeaderElectionEvent::PromoteNodeToCandidate(vr) => {
-            let mut node = params
-                .protected_node
-                .lock()
-                .expect("node lock is not poisoned");
+            let mut node = params.protected_node.lock();
 
             let node_id = node.id;
             node.set_voted_for_id(Some(node_id));
@@ -105,10 +102,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
             common::run_worker_thread(start_election, params);
         }
         LeaderElectionEvent::PromoteNodeToLeader(term) => {
-            let mut node = params
-                .protected_node
-                .lock()
-                .expect("node lock is not poisoned");
+            let mut node = params.protected_node.lock();
 
             if node.status != NodeStatus::Candidate {
                 warn!(
@@ -138,7 +132,7 @@ fn change_node_leadership_state<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
                 .expect("can send leader initial heartbeat");
         }
         LeaderElectionEvent::ResetNodeToFollower(info) => {
-            let mut node = params.protected_node.lock().expect("node lock is poisoned");
+            let mut node = params.protected_node.lock();
 
             if let Some(leader_id) = info.leader_id {
                 node.current_leader_id = Some(leader_id);

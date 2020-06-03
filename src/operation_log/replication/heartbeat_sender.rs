@@ -75,7 +75,7 @@ fn send_heartbeat<Log, Rsm, Pc, Ns, Cl>(
     Ns: NodeStateSaver,
     Cl: Cluster,
 {
-    let node = protected_node.lock().expect("node lock is not poisoned");
+    let node = protected_node.lock();
 
     if let NodeStatus::Leader = node.status {
         let peers_list_copy = cluster_configuration.peers(node.id);

@@ -42,13 +42,7 @@ pub fn process_peer_request<Log, Rsm, Pc, Ns, Cl, Rl, Re>(
     Re: RaftElections,
 {
     info!("Peer request processor worker started");
-    let node_id = {
-        params
-            .protected_node
-            .lock()
-            .expect("node lock is not poisoned")
-            .id
-    };
+    let node_id = { params.protected_node.lock().id };
     let vote_request_rx = params.peer_communicator.vote_request_rx(node_id);
     let append_entries_request_rx = params.peer_communicator.append_entries_request_rx(node_id);
 

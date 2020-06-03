@@ -25,7 +25,7 @@ where
     Rl: ResetLeadershipStatusWatchdog,
     Re: RaftElections,
 {
-    let mut node = protected_node.lock().expect("node lock is not poisoned");
+    let mut node = protected_node.lock();
 
     if request.term < node.current_term() {
         warn!(

@@ -19,7 +19,7 @@ where
     Cl: Cluster,
     Re: RaftElections,
 {
-    let node = protected_node.lock().expect("node lock is not poisoned");
+    let node = protected_node.lock();
 
     let mut vote_granted = false;
     let mut response_current_term = node.current_term();

@@ -57,7 +57,7 @@ pub fn watch_leader_status<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
                 if let Err(err) = watchdog_event_result {
                     error!("Invalid result from watchdog_event_rx: {}", err);
                 }
-                let node = params.protected_node.lock().expect("node lock is not poisoned");
+                let node = params.protected_node.lock();
                 trace!("Node {} Received reset watchdog ", node.id);
                 continue
             },
@@ -78,10 +78,8 @@ fn propose_node_election<Log, Rsm, Pc, Et, Ns, Cl, Rl, Re>(
     Rl: ResetLeadershipEventChannelRx,
     Re: RaftElections,
 {
-    let node = params
-        .protected_node
-        .lock()
-        .expect("node lock is not poisoned");
+    let node = params.protected_node.lock();
+
     if let NodeStatus::Follower = node.status {
         info!(
             "Node {} Leader awaiting time elapsed. Starting new election",

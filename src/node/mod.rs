@@ -1,7 +1,8 @@
 pub mod configuration;
 pub mod state;
 
-use std::sync::{Arc, Mutex};
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 use crossbeam_channel::{Receiver, Sender};
 

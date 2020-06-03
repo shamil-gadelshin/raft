@@ -1,6 +1,7 @@
+use parking_lot::Mutex;
 use raft::Cluster;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Basic in-memory implementation of the Cluster trait. It manages the current cluster
 /// configuration. Calculates quorum as majority.
@@ -11,19 +12,19 @@ pub struct ClusterConfiguration {
 
 impl Cluster for ClusterConfiguration {
     fn quorum_size(&self) -> u32 {
-        let cluster = self.cluster.lock().expect("cluster lock is not poisoned");
+        let cluster = self.cluster.lock();
 
         cluster.quorum_size()
     }
 
     fn all_nodes(&self) -> Vec<u64> {
-        let cluster = self.cluster.lock().expect("cluster lock is not poisoned");
+        let cluster = self.cluster.lock();
 
         cluster.all_nodes()
     }
 
     fn peers(&self, node_id: u64) -> Vec<u64> {
-        let cluster = self.cluster.lock().expect("cluster lock is not poisoned");
+        let cluster = self.cluster.lock();
 
         cluster.peers(node_id)
     }
@@ -92,7 +93,7 @@ impl ClusterConfiguration {
 
     /// Adds a peer id to the cluster configuration.
     pub fn add_peer(&mut self, peer: u64) {
-        let mut cluster = self.cluster.lock().expect("cluster lock is not poisoned");
+        let mut cluster = self.cluster.lock();
 
         cluster.add_peer(peer);
     }

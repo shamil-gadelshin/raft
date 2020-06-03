@@ -8,7 +8,8 @@ use crate::errors::{new_err, RaftError};
 use crate::operation_log::{EntryContent, LogEntry, OperationLog};
 use crate::rsm::ReplicatedStateMachine;
 use crate::{errors, Cluster};
-use std::sync::{Arc, Mutex};
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 mod tests;
 
