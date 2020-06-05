@@ -1,6 +1,6 @@
 [package]
 name = "raft"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Shamil Gadelshin <shamilgadelshin@gmail.com>"]
 edition = "2018"
 description = "Raft consensus implementation in Rust"

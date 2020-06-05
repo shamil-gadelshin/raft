@@ -93,8 +93,8 @@ dependencies = [
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "raft 0.1.0",
- "raft-modules 0.1.1",
+ "raft 0.1.1",
+ "raft-modules 0.1.2",
 ]
 
 [[package]]
@@ -125,8 +125,8 @@ dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "raft 0.1.0",
- "raft-modules 0.1.1",
+ "raft 0.1.1",
+ "raft-modules 0.1.2",
 ]
 
 [[package]]
@@ -547,8 +547,8 @@ dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "raft 0.1.0",
- "raft-modules 0.1.1",
+ "raft 0.1.1",
+ "raft-modules 0.1.2",
 ]
 
 [[package]]
@@ -716,7 +716,7 @@ dependencies = [
 
 [[package]]
 name = "raft"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive_more 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -727,7 +727,7 @@ dependencies = [
 
 [[package]]
 name = "raft-modules"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -738,7 +738,7 @@ dependencies = [
  "parking_lot 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost-build 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "raft 0.1.0",
+ "raft 0.1.1",
  "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.1.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "tower-grpc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
